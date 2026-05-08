@@ -943,11 +943,10 @@ a.click();
 // ===============================
 
 function logout(){
-
-localStorage.clear();
-
-location.reload();
-
+  localStorage.removeItem("user");
+  localStorage.removeItem("role");
+  sessionStorage.clear();
+  window.location.replace("login.html");
 }
 
 // ===============================
