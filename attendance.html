@@ -6,21 +6,172 @@
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
 
 <meta name="viewport" content="width=device-width, initial-scale=1">
+
 <link href="https://fonts.googleapis.com/css2?family=Poppins&display=swap" rel="stylesheet">
 
 <style>
-body{margin:0;font-family:Poppins;background:linear-gradient(135deg,#0f2027,#203a43,#2c5364);color:white;}
-.navbar{display:flex;justify-content:space-between;padding:15px;background:rgba(255,255,255,0.08);}
-button{background:#ddf59d;color:#0509f3;border:none;padding:8px 15px;border-radius:25px;cursor:pointer;}
-.glass{background: rgba(255,255,255,0.08);backdrop-filter: blur(20px);border-radius:20px;padding:15px;margin:10px;}
-.calendar-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:8px;}
-.day{padding:12px;text-align:center;border-radius:12px;cursor:pointer;}
-.today{border:3px solid yellow;}
-.p{background:#08e613;}
-.a{background:#ff4b2b;}
-.modal{display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.7);justify-content:center;align-items:center;}
-.modal-box{background:#111;padding:20px;border-radius:15px;width:90%;max-width:500px;}
-input{width:100%;padding:10px;margin:5px;border-radius:10px;border:none;}
+
+body{
+margin:0;
+font-family:Poppins;
+background:linear-gradient(135deg,#0f2027,#203a43,#2c5364);
+color:white;
+}
+
+.navbar{
+display:flex;
+justify-content:space-between;
+align-items:center;
+padding:15px;
+background:rgba(255,255,255,0.08);
+backdrop-filter:blur(10px);
+}
+
+button{
+background:#ddf59d;
+color:#0509f3;
+border:none;
+padding:10px 15px;
+border-radius:25px;
+cursor:pointer;
+font-weight:bold;
+margin:3px;
+}
+
+.glass{
+background:rgba(255,255,255,0.08);
+backdrop-filter:blur(20px);
+border-radius:20px;
+padding:15px;
+margin:10px;
+}
+
+.calendar-grid{
+display:grid;
+grid-template-columns:repeat(7,1fr);
+gap:8px;
+}
+
+.day{
+padding:12px;
+text-align:center;
+border-radius:12px;
+cursor:pointer;
+font-weight:bold;
+transition:0.3s;
+}
+
+.day:hover{
+transform:scale(1.05);
+}
+
+.today{
+border:3px solid yellow;
+}
+
+.p{
+background:#08e613;
+color:black;
+}
+
+.a{
+background:#ff4b2b;
+}
+
+.modal{
+display:none;
+position:fixed;
+top:0;
+left:0;
+width:100%;
+height:100%;
+background:rgba(0,0,0,0.7);
+justify-content:center;
+align-items:center;
+z-index:999;
+}
+
+.modal-box{
+background:#111;
+padding:20px;
+border-radius:15px;
+width:90%;
+max-width:500px;
+max-height:90vh;
+overflow:auto;
+}
+
+input{
+width:100%;
+padding:12px;
+margin:5px 0;
+border-radius:10px;
+border:none;
+outline:none;
+}
+
+.user-card{
+background:rgba(255,255,255,0.08);
+padding:12px;
+margin:10px 0;
+border-radius:15px;
+transition:0.3s;
+}
+
+.user-card:hover{
+transform:scale(1.02);
+background:rgba(255,255,255,0.12);
+}
+
+.map-btn{
+margin-top:10px;
+background:#00c853;
+color:white;
+}
+
+.live-btn{
+background:#ff9800;
+color:white;
+}
+
+.delete-btn{
+background:red;
+color:white;
+margin-top:10px;
+}
+
+.status{
+padding:5px 10px;
+border-radius:20px;
+font-size:12px;
+font-weight:bold;
+display:inline-block;
+margin-top:5px;
+}
+
+.online{
+background:#00e676;
+color:black;
+}
+
+.offline{
+background:#ff1744;
+color:white;
+}
+
+@media(max-width:700px){
+
+.calendar-grid{
+grid-template-columns:repeat(4,1fr);
+}
+
+.navbar{
+flex-direction:column;
+gap:10px;
+}
+
+}
+
 </style>
 
 </head>
@@ -28,246 +179,778 @@ input{width:100%;padding:10px;margin:5px;border-radius:10px;border:none;}
 <body>
 
 <div class="navbar">
+
 <h2>Bhavy Softech Solution</h2>
+
 <div>
+
 <span id="userName"></span>
-<button onclick="goDashboard()">🏠 Dashboard</button>
-<button onclick="logout()">Logout</button>
+
+<button onclick="goDashboard()">
+🏠 Dashboard
+</button>
+
+<button onclick="logout()">
+Logout
+</button>
+
 </div>
+
 </div>
 
 <div class="glass">
-<button onclick="openAttendance()">📍 Mark Attendance</button>
-<button onclick="openDownload()">📥 Download</button>
+
+<button onclick="openAttendance()">
+📍 Punch In
+</button>
+
+<button onclick="punchOut()">
+🛑 Punch Out
+</button>
+
+<button onclick="openDownload()">
+📥 Download
+</button>
+
+<button
+id="liveTrackingBtn"
+onclick="showLiveUsers()"
+style="display:none;background:#ff9800;color:white;">
+📡 Live Tracking
+</button>
+
 </div>
 
 <div class="glass">
+
 <h3>
+
 <button onclick="prevMonth()">⬅</button>
+
 <span id="monthLabel"></span>
+
 <button onclick="nextMonth()">➡</button>
+
 </h3>
 
 <div id="calendarGrid" class="calendar-grid"></div>
 
 <h3>👷 Engineers</h3>
-<div id="engineerList">Click any date...</div>
+
+<div id="engineerList">
+Click any date...
 </div>
 
-<!-- Attendance Modal -->
+</div>
+
+<!-- ATTENDANCE MODAL -->
+
 <div id="attendanceModal" class="modal">
+
 <div class="modal-box">
+
+<h3>📍 Punch In</h3>
+
 <input id="manualPlace" placeholder="Enter Place">
-<input id="autoLocation" readonly>
-<button onclick="submitAttendance()">Submit</button>
-<button onclick="closeAttendance()">Close</button>
-</div>
+
+<input id="autoLocation" readonly placeholder="Fetching GPS...">
+
+<button onclick="submitAttendance()">
+Submit
+</button>
+
+<button onclick="closeAttendance()">
+Close
+</button>
+
 </div>
 
-<!-- Download Modal -->
-<div id="downloadModal" class="modal">
-<div class="modal-box">
-<h3>Download Data</h3>
-<input type="date" id="fromDate">
-<input type="date" id="toDate">
-<button onclick="downloadCSV()">Download</button>
-<button onclick="closeDownload()">Close</button>
 </div>
+
+<!-- DOWNLOAD MODAL -->
+
+<div id="downloadModal" class="modal">
+
+<div class="modal-box">
+
+<h3>📥 Download Data</h3>
+
+<input type="date" id="fromDate">
+
+<input type="date" id="toDate">
+
+<button onclick="downloadCSV()">
+Download
+</button>
+
+<button onclick="closeDownload()">
+Close
+</button>
+
+</div>
+
+</div>
+
+<!-- LIVE TRACKING MODAL -->
+
+<div id="liveModal" class="modal">
+
+<div class="modal-box">
+
+<h3>📡 Live Tracking</h3>
+
+<div id="liveUsersList">
+Loading...
+</div>
+
+<button onclick="closeLiveModal()">
+Close
+</button>
+
+</div>
+
 </div>
 
 <script>
 
-// 🔥 Firebase Config
+// ===============================
+// FIREBASE
+// ===============================
+
 const firebaseConfig = {
-  apiKey: "AIzaSyAbjZrPfGx0UTBAW4HndPxf9mMhhmg513s",
-  authDomain: "attendance-system-fc71c.firebaseapp.com",
-  projectId: "attendance-system-fc71c",
-  storageBucket: "attendance-system-fc71c.appspot.com",
-  appId: "1:57089003187:web:dc8864aa56701384d6aac6"
+
+apiKey: "AIzaSyAbjZrPfGx0UTBAW4HndPxf9mMhhmg513s",
+
+authDomain: "attendance-system-fc71c.firebaseapp.com",
+
+projectId: "attendance-system-fc71c",
+
+storageBucket: "attendance-system-fc71c.appspot.com",
+
+appId: "1:57089003187:web:dc8864aa56701384d6aac6"
+
 };
 
 firebase.initializeApp(firebaseConfig);
+
 const db = firebase.firestore();
 
+// ===============================
 // USER
-let user = localStorage.getItem("user") || prompt("Enter Name");
-localStorage.setItem("user", user);
-document.getElementById("userName").innerText = user;
+// ===============================
+
+let user =
+localStorage.getItem("user") || "Guest";
+
+let role =
+localStorage.getItem("role") || "user";
+
+document.getElementById("userName").innerText =
+user + " (" + role + ")";
+
+// ADMIN BUTTON
+
+if(role === "admin"){
+
+document.getElementById("liveTrackingBtn").style.display =
+"inline-block";
+
+}
+
+// ===============================
 
 let allData = [];
+
 let currentDate = new Date();
+
 let isSubmitting = false;
 
+let trackingInterval = null;
+
+// ===============================
 // DATE FORMAT
+// ===============================
+
 function getDate(d){
-let x=new Date(d);
-return x.getFullYear()+"-"+String(x.getMonth()+1).padStart(2,'0')+"-"+String(x.getDate()).padStart(2,'0');
+
+let x = new Date(d);
+
+return x.getFullYear() + "-" +
+String(x.getMonth()+1).padStart(2,'0') + "-" +
+String(x.getDate()).padStart(2,'0');
+
 }
 
+// ===============================
 // DASHBOARD
+// ===============================
+
 function goDashboard(){
-window.location.href="dashboard.html";
+
+window.location.href = "dashboard.html";
+
 }
 
-// MODAL
+// ===============================
+// MODALS
+// ===============================
+
 function openAttendance(){
-attendanceModal.style.display="flex";
-navigator.geolocation.getCurrentPosition(p=>{
-autoLocation.value=p.coords.latitude+","+p.coords.longitude;
-});
-}
-function closeAttendance(){attendanceModal.style.display="none";}
 
-// SAVE
+attendanceModal.style.display = "flex";
+
+navigator.geolocation.getCurrentPosition(
+
+p=>{
+
+autoLocation.value =
+p.coords.latitude + "," + p.coords.longitude;
+
+},
+
+()=>{
+
+autoLocation.value =
+"Location Permission Denied";
+
+}
+
+);
+
+}
+
+function closeAttendance(){
+
+attendanceModal.style.display = "none";
+
+}
+
+function openDownload(){
+
+downloadModal.style.display = "flex";
+
+}
+
+function closeDownload(){
+
+downloadModal.style.display = "none";
+
+}
+
+function closeLiveModal(){
+
+liveModal.style.display = "none";
+
+}
+
+// ===============================
+// PUNCH IN
+// ===============================
+
 async function submitAttendance(){
 
 if(isSubmitting) return;
-isSubmitting=true;
 
-let today=getDate(new Date());
+isSubmitting = true;
 
-// duplicate check
-let exist=allData.find(x=>x.name===user && x.date===today);
+let today = getDate(new Date());
+
+let exist = allData.find(
+x => x.name === user && x.date === today
+);
 
 if(exist){
+
 alert("Already Marked");
-isSubmitting=false;
+
+isSubmitting = false;
+
 return;
+
 }
+
+navigator.geolocation.getCurrentPosition(
+
+async p=>{
+
+try{
+
+await db.collection("attendance").add({
+
+name:user,
+
+date:today,
+
+place:manualPlace.value,
+
+lat:p.coords.latitude,
+
+lon:p.coords.longitude,
+
+status:"online",
+
+timestamp:new Date()
+
+});
+
+// START TRACKING
+startLiveTracking();
+
+alert("Punch In Success ✅");
+
+closeAttendance();
+
+loadData();
+
+}
+catch(e){
+
+console.log(e);
+
+alert("Error Saving");
+
+}
+
+isSubmitting = false;
+
+}
+
+);
+
+}
+
+// ===============================
+// LIVE TRACKING
+// ===============================
+
+function startLiveTracking(){
+
+if(trackingInterval){
+
+clearInterval(trackingInterval);
+
+}
+
+trackingInterval = setInterval(()=>{
 
 navigator.geolocation.getCurrentPosition(async p=>{
 
-await db.collection("attendance").add({
+await db.collection("liveTracking")
+.doc(user)
+.set({
+
 name:user,
-date:today,
-place:manualPlace.value,
+
 lat:p.coords.latitude,
+
 lon:p.coords.longitude,
-timestamp:new Date()
-});
 
-alert("Saved ✅");
-closeAttendance();
-loadData();
-isSubmitting=false;
+updated:new Date(),
+
+status:"online"
 
 });
+
+});
+
+},10000);
+
 }
 
-// LOAD
+// ===============================
+// PUNCH OUT
+// ===============================
+
+async function punchOut(){
+
+if(trackingInterval){
+
+clearInterval(trackingInterval);
+
+}
+
+await db.collection("liveTracking")
+.doc(user)
+.set({
+
+name:user,
+
+status:"offline",
+
+updated:new Date()
+
+});
+
+alert("Punch Out Success");
+
+}
+
+// ===============================
+// LIVE USERS
+// ===============================
+
+async function showLiveUsers(){
+
+if(role !== "admin"){
+
+alert("Admin Only");
+
+return;
+
+}
+
+liveModal.style.display = "flex";
+
+let snap =
+await db.collection("liveTracking").get();
+
+let html = "";
+
+snap.forEach(doc=>{
+
+let x = doc.data();
+
+html += `
+
+<div class="user-card">
+
+<h3>👷 ${x.name}</h3>
+
+<div class="status ${x.status==='online'?'online':'offline'}">
+${x.status}
+</div>
+
+<br>
+
+<button
+class="live-btn"
+onclick="openMap('${x.lat}','${x.lon}')">
+
+📡 Live Location
+
+</button>
+
+</div>
+
+`;
+
+});
+
+document.getElementById("liveUsersList").innerHTML =
+html || "No Live Users";
+
+}
+
+// ===============================
+// LOAD DATA
+// ===============================
+
 async function loadData(){
-let snap=await db.collection("attendance").get();
-allData=snap.docs.map(d=>d.data());
+
+let snap =
+await db.collection("attendance").get();
+
+allData =
+snap.docs.map(d=>({
+id:d.id,
+...d.data()
+}));
+
 renderCalendar();
+
 }
 
-// 🔥 26 → 25 CALENDAR
+// ===============================
+// CALENDAR
+// ===============================
+
 function renderCalendar(){
 
-calendarGrid.innerHTML="";
+calendarGrid.innerHTML = "";
 
-let base=new Date(currentDate);
+let base = new Date(currentDate);
 
-// start 26
-let start = base.getDate()>=26
-? new Date(base.getFullYear(),base.getMonth(),26)
-: new Date(base.getFullYear(),base.getMonth()-1,26);
+let start =
+base.getDate() >= 26
+?
+new Date(base.getFullYear(),base.getMonth(),26)
+:
+new Date(base.getFullYear(),base.getMonth()-1,26);
 
-// end 25
-let end = new Date(start.getFullYear(),start.getMonth()+1,25);
+let end =
+new Date(start.getFullYear(),start.getMonth()+1,25);
 
 monthLabel.innerText =
-start.toDateString()+" → "+end.toDateString();
+start.toDateString() + " → " +
+end.toDateString();
 
-let temp=new Date(start);
+let temp = new Date(start);
 
-while(temp<=end){
+while(temp <= end){
 
-let full=getDate(temp);
-let found=allData.some(x=>x.date===full);
+let full = getDate(temp);
 
-calendarGrid.innerHTML+=`
-<div class="day ${found?'p':'a'}" onclick="showDay('${full}')">
-${temp.getDate()}<br><small>${temp.toLocaleDateString("en-IN",{weekday:'short'})}</small>
-</div>`;
+let found =
+allData.some(x=>x.date===full);
+
+let today =
+getDate(new Date()) === full;
+
+calendarGrid.innerHTML += `
+
+<div
+class="day ${found?'p':'a'} ${today?'today':''}"
+onclick="showDay('${full}')"
+>
+
+${temp.getDate()}
+
+<br>
+
+<small>
+${temp.toLocaleDateString(
+"en-IN",
+{weekday:'short'}
+)}
+</small>
+
+</div>
+`;
 
 temp.setDate(temp.getDate()+1);
-}
+
 }
 
+}
+
+// ===============================
 // SHOW DAY
+// ===============================
+
 function showDay(date){
-let list=allData.filter(x=>x.date===date);
+
+let list =
+allData.filter(x=>x.date===date);
 
 if(list.length===0){
-engineerList.innerHTML="No Attendance";
+
+engineerList.innerHTML =
+"No Attendance";
+
 return;
+
 }
 
-let users={};
+let users = {};
+
 list.forEach(x=>users[x.name]=x);
 
-let unique=Object.values(users);
+let unique =
+Object.values(users);
 
-engineerList.innerHTML=unique.map(x=>`
-<div>
-👷 ${x.name}<br>
+engineerList.innerHTML =
+unique.map(x=>`
+
+<div class="user-card">
+
+<div style="font-size:18px;font-weight:bold;">
+👷 ${x.name}
+</div>
+
+<div style="margin-top:5px;">
 📍 ${x.place || "No Place"}
-</div>`).join("");
+</div>
+
+<button
+class="map-btn"
+onclick="openMap('${x.lat}','${x.lon}')">
+
+🗺 Attendance Location
+
+</button>
+
+${
+role === "admin"
+?
+
+`<button
+class="delete-btn"
+onclick="deleteAttendance('${x.id}')">
+
+🗑 Delete Attendance
+
+</button>`
+
+:
+
+""
 }
 
-// NAV
+</div>
+
+`).join("");
+
+}
+
+// ===============================
+// DELETE ATTENDANCE
+// ===============================
+
+async function deleteAttendance(id){
+
+if(role !== "admin"){
+
+alert("Only Admin Can Delete");
+
+return;
+
+}
+
+let ok =
+confirm("Delete Attendance ?");
+
+if(!ok) return;
+
+try{
+
+await db.collection("attendance")
+.doc(id)
+.delete();
+
+alert("Deleted ✅");
+
+loadData();
+
+}
+catch(e){
+
+console.log(e);
+
+alert("Delete Failed");
+
+}
+
+}
+
+// ===============================
+// OPEN MAP
+// ===============================
+
+function openMap(lat,lon){
+
+if(!lat || !lon){
+
+alert("Location Not Found");
+
+return;
+
+}
+
+window.open(
+`https://www.google.com/maps?q=${lat},${lon}`,
+"_blank"
+);
+
+}
+
+// ===============================
+// NAVIGATION
+// ===============================
+
 function prevMonth(){
-currentDate.setMonth(currentDate.getMonth()-1);
+
+currentDate.setMonth(
+currentDate.getMonth()-1
+);
+
 renderCalendar();
-}
-function nextMonth(){
-currentDate.setMonth(currentDate.getMonth()+1);
-renderCalendar();
+
 }
 
-// DOWNLOAD
-function openDownload(){downloadModal.style.display="flex";}
-function closeDownload(){downloadModal.style.display="none";}
+function nextMonth(){
+
+currentDate.setMonth(
+currentDate.getMonth()+1
+);
+
+renderCalendar();
+
+}
+
+// ===============================
+// DOWNLOAD CSV
+// ===============================
 
 function downloadCSV(){
 
-let from=fromDate.value;
-let to=toDate.value;
+let from = fromDate.value;
 
-if(!from||!to){
-alert("Select date");
+let to = toDate.value;
+
+if(!from || !to){
+
+alert("Select Date");
+
 return;
+
 }
 
-let filtered=allData.filter(x=>x.date>=from&&x.date<=to);
+let filtered =
+allData.filter(
+x=>x.date>=from && x.date<=to
+);
 
 if(filtered.length===0){
+
 alert("No Data");
+
 return;
+
 }
 
-let csv="Name,Date,Place,Lat,Lon\n";
+let csv =
+"Name,Date,Place,Latitude,Longitude\n";
 
 filtered.forEach(x=>{
-csv+=`${x.name},${x.date},${x.place},${x.lat},${x.lon}\n`;
+
+csv +=
+`${x.name},${x.date},${x.place},${x.lat},${x.lon}\n`;
+
 });
 
-let blob=new Blob([csv]);
-let a=document.createElement("a");
-a.href=URL.createObjectURL(blob);
-a.download="attendance.csv";
+let blob =
+new Blob([csv]);
+
+let a =
+document.createElement("a");
+
+a.href =
+URL.createObjectURL(blob);
+
+a.download =
+"attendance.csv";
+
 a.click();
+
 }
 
+// ===============================
 // LOGOUT
+// ===============================
+
 function logout(){
+
 localStorage.clear();
+
 location.reload();
+
 }
 
+// ===============================
 // START
-window.onload=loadData;
+// ===============================
+
+window.onload = loadData;
 
 </script>
 
