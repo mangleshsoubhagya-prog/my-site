@@ -691,7 +691,9 @@ while(temp <= end){
 let full = getDate(temp);
 
 let found =
-allData.some(x=>x.date===full);
+role === "admin"
+? allData.some(x => x.date === full)
+: allData.some(x => x.date === full && x.name === user);
 
 let today =
 getDate(new Date()) === full;
@@ -730,7 +732,9 @@ temp.setDate(temp.getDate()+1);
 function showDay(date){
 
 let list =
-allData.filter(x=>x.date===date);
+role === "admin"
+? allData.filter(x => x.date === date)
+: allData.filter(x => x.date === date && x.name === user);
 
 if(list.length===0){
 
