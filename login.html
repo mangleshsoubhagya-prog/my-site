@@ -1,0 +1,352 @@
+<!DOCTYPE html>
+<html>
+<head>
+
+<title>Firebase Login</title>
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
+
+<style>
+
+*{
+margin:0;
+padding:0;
+box-sizing:border-box;
+}
+
+body{
+height:100vh;
+display:flex;
+justify-content:center;
+align-items:center;
+background:
+linear-gradient(135deg,#0f172a,#1e3a8a,#7c3aed);
+font-family:Poppins;
+overflow:hidden;
+position:relative;
+}
+
+/* Glow Effects */
+
+body::before{
+content:'';
+position:absolute;
+width:500px;
+height:500px;
+background:radial-gradient(circle,#00f2ff55,transparent);
+top:-150px;
+left:-100px;
+filter:blur(80px);
+}
+
+body::after{
+content:'';
+position:absolute;
+width:450px;
+height:450px;
+background:radial-gradient(circle,#ff00ff44,transparent);
+bottom:-150px;
+right:-100px;
+filter:blur(80px);
+}
+
+/* Login Box */
+
+.login-box{
+width:90%;
+max-width:380px;
+padding:35px;
+border-radius:30px;
+background:rgba(255,255,255,0.08);
+backdrop-filter:blur(20px);
+border:1px solid rgba(255,255,255,0.15);
+box-shadow:0 15px 40px rgba(0,0,0,0.4);
+text-align:center;
+position:relative;
+z-index:10;
+animation:fadeIn 0.8s ease;
+}
+
+@keyframes fadeIn{
+from{
+opacity:0;
+transform:translateY(20px);
+}
+to{
+opacity:1;
+transform:translateY(0);
+}
+}
+
+.logo{
+font-size:55px;
+margin-bottom:10px;
+}
+
+h2{
+color:white;
+margin-bottom:25px;
+font-weight:600;
+letter-spacing:1px;
+}
+
+.input-box{
+margin-bottom:18px;
+}
+
+input{
+width:100%;
+padding:15px;
+border:none;
+outline:none;
+border-radius:16px;
+background:rgba(255,255,255,0.12);
+color:white;
+font-size:16px;
+border:1px solid rgba(255,255,255,0.12);
+transition:0.3s;
+}
+
+input::placeholder{
+color:#ddd;
+}
+
+input:focus{
+border:1px solid #00e5ff;
+box-shadow:0 0 15px rgba(0,229,255,0.5);
+}
+
+button{
+width:100%;
+padding:15px;
+border:none;
+border-radius:16px;
+font-size:16px;
+font-weight:bold;
+cursor:pointer;
+background:linear-gradient(135deg,#00c6ff,#0072ff);
+color:white;
+transition:0.3s;
+box-shadow:0 10px 20px rgba(0,114,255,0.4);
+}
+
+button:hover{
+transform:translateY(-2px);
+}
+
+#error{
+margin-top:15px;
+color:#ff4d4d;
+font-size:14px;
+font-weight:bold;
+}
+
+.success{
+background:linear-gradient(135deg,#16a34a,#22c55e) !important;
+}
+
+.loading{
+opacity:0.7;
+pointer-events:none;
+}
+
+.footer{
+margin-top:18px;
+font-size:13px;
+color:#ddd;
+}
+
+</style>
+
+</head>
+
+<body>
+
+<div class="login-box" id="loginBox">
+
+<div class="logo">🔐</div>
+
+<h2>Firebase Login</h2>
+
+<div class="input-box">
+<input
+id="userid"
+placeholder="Enter Username">
+</div>
+
+<div class="input-box">
+<input
+id="password"
+type="password"
+placeholder="Enter Password">
+</div>
+
+<button id="loginBtn" onclick="login()">
+LOGIN
+</button>
+
+<div id="error"></div>
+
+<div class="footer">
+Powered By Firebase
+</div>
+
+</div>
+
+<!-- ========================= -->
+<!-- FIREBASE -->
+<!-- ========================= -->
+
+<script type="module">
+
+import {
+initializeApp
+} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+
+import {
+getFirestore,
+collection,
+query,
+where,
+getDocs
+} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+/* ========================= */
+/* FIREBASE CONFIG */
+/* ========================= */
+
+const firebaseConfig = {
+
+apiKey: "AIzaSyAbjZrPfGx0UTBAW4HndPxf9mMhhmg513s",
+
+authDomain: "attendance-system-fc71c.firebaseapp.com",
+
+projectId: "attendance-system-fc71c",
+
+storageBucket: "attendance-system-fc71c.appspot.com",
+
+messagingSenderId: "57089003187",
+
+appId: "1:57089003187:web:dc8864aa56701384d6aac6"
+
+};
+
+/* ========================= */
+/* INIT */
+/* ========================= */
+
+const app = initializeApp(firebaseConfig);
+
+const db = getFirestore(app);
+
+/* ========================= */
+/* LOGIN */
+/* ========================= */
+
+window.login = async function(){
+
+let id =
+document.getElementById("userid").value.trim();
+
+let pass =
+document.getElementById("password").value.trim();
+
+let error =
+document.getElementById("error");
+
+let btn =
+document.getElementById("loginBtn");
+
+error.innerText = "";
+
+if(!id || !pass){
+
+error.innerText =
+"❌ Please enter username & password";
+
+return;
+
+}
+
+btn.innerText = "⏳ Checking...";
+
+btn.classList.add("loading");
+
+try{
+
+/* ========================= */
+/* FIRESTORE QUERY */
+/* ========================= */
+
+const q = query(
+collection(db,"users"),
+where("userid","==",id),
+where("password","==",pass)
+);
+
+const snap = await getDocs(q);
+
+if(!snap.empty){
+
+let userData =
+snap.docs[0].data();
+
+let role =
+(userData.role || "user").toLowerCase();
+
+/* SAVE LOGIN */
+
+localStorage.setItem("user", id);
+
+localStorage.setItem("role", role);
+
+/* SUCCESS */
+
+document.getElementById("loginBox")
+.classList.add("success");
+
+btn.innerText = "✅ Success";
+
+/* REDIRECT */
+
+setTimeout(()=>{
+
+window.location.href =
+"dashboard.html";
+
+},1000);
+
+}
+else{
+
+error.innerText =
+"❌ Invalid Username or Password";
+
+btn.innerText = "LOGIN";
+
+btn.classList.remove("loading");
+
+}
+
+}
+catch(e){
+
+console.error(e);
+
+error.innerText =
+"❌ Firebase Error";
+
+btn.innerText = "LOGIN";
+
+btn.classList.remove("loading");
+
+}
+
+};
+
+</script>
+
+</body>
+</html>

@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html>
+<head>
+
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link href="https://fonts.googleapis.com/css2?family=Poppins&display=swap" rel="stylesheet">
+
+<style>
+body{margin:0;font-family:Poppins;background:linear-gradient(135deg,#0f2027,#203a43,#2c5364);color:white;}
+.navbar{display:flex;justify-content:space-between;padding:15px;background:rgba(255,255,255,0.08);}
+button{background:#ddf59d;color:#0509f3;border:none;padding:8px 15px;border-radius:25px;cursor:pointer;}
+.glass{background: rgba(255,255,255,0.08);backdrop-filter: blur(20px);border-radius:20px;padding:15px;margin:10px;}
+.calendar-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:8px;}
+.day{padding:12px;text-align:center;border-radius:12px;cursor:pointer;}
+.today{border:3px solid yellow;}
+.p{background:#08e613;}
+.a{background:#ff4b2b;}
+.modal{display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.7);justify-content:center;align-items:center;}
+.modal-box{background:#111;padding:20px;border-radius:15px;width:90%;max-width:500px;}
+input{width:100%;padding:10px;margin:5px;border-radius:10px;border:none;}
+</style>
+
+</head>
+
+<body>
+
+<div class="navbar">
+<h2>Bhavy Softech Solution</h2>
+<div>
+<span id="userName"></span>
+<button onclick="goDashboard()">🏠 Dashboard</button>
+<button onclick="logout()">Logout</button>
+</div>
+</div>
+
+<div class="glass">
+<button onclick="openAttendance()">📍 Mark Attendance</button>
+<button onclick="openDownload()">📥 Download</button>
+</div>
+
+<div class="glass">
+<h3>
+<button onclick="prevMonth()">⬅</button>
+<span id="monthLabel"></span>
+<button onclick="nextMonth()">➡</button>
+</h3>
+
+<div id="calendarGrid" class="calendar-grid"></div>
+
+<h3>👷 Engineers</h3>
+<div id="engineerList">Click any date...</div>
+</div>
+
+<!-- Attendance Modal -->
+<div id="attendanceModal" class="modal">
+<div class="modal-box">
+<input id="manualPlace" placeholder="Enter Place">
+<input id="autoLocation" readonly>
+<button onclick="submitAttendance()">Submit</button>
+<button onclick="closeAttendance()">Close</button>
+</div>
+</div>
+
+<!-- Download Modal -->
+<div id="downloadModal" class="modal">
+<div class="modal-box">
+<h3>Download Data</h3>
+<input type="date" id="fromDate">
+<input type="date" id="toDate">
+<button onclick="downloadCSV()">Download</button>
+<button onclick="closeDownload()">Close</button>
+</div>
+</div>
+
+<script>
+
+// 🔥 Firebase Config
+const firebaseConfig = {
+  apiKey: "AIzaSyAbjZrPfGx0UTBAW4HndPxf9mMhhmg513s",
+  authDomain: "attendance-system-fc71c.firebaseapp.com",
+  projectId: "attendance-system-fc71c",
+  storageBucket: "attendance-system-fc71c.appspot.com",
+  appId: "1:57089003187:web:dc8864aa56701384d6aac6"
+};
+
+firebase.initializeApp(firebaseConfig);
+const db = firebase.firestore();
+
+// USER
+let user = localStorage.getItem("user") || prompt("Enter Name");
+localStorage.setItem("user", user);
+document.getElementById("userName").innerText = user;
+
+let allData = [];
+let currentDate = new Date();
+let isSubmitting = false;
+
+// DATE FORMAT
+function getDate(d){
+let x=new Date(d);
+return x.getFullYear()+"-"+String(x.getMonth()+1).padStart(2,'0')+"-"+String(x.getDate()).padStart(2,'0');
+}
+
+// DASHBOARD
+function goDashboard(){
+window.location.href="dashboard.html";
+}
+
+// MODAL
+function openAttendance(){
+attendanceModal.style.display="flex";
+navigator.geolocation.getCurrentPosition(p=>{
+autoLocation.value=p.coords.latitude+","+p.coords.longitude;
+});
+}
+function closeAttendance(){attendanceModal.style.display="none";}
+
+// SAVE
+async function submitAttendance(){
+
+if(isSubmitting) return;
+isSubmitting=true;
+
+let today=getDate(new Date());
+
+// duplicate check
+let exist=allData.find(x=>x.name===user && x.date===today);
+
+if(exist){
+alert("Already Marked");
+isSubmitting=false;
+return;
+}
+
+navigator.geolocation.getCurrentPosition(async p=>{
+
+await db.collection("attendance").add({
+name:user,
+date:today,
+place:manualPlace.value,
+lat:p.coords.latitude,
+lon:p.coords.longitude,
+timestamp:new Date()
+});
+
+alert("Saved ✅");
+closeAttendance();
+loadData();
+isSubmitting=false;
+
+});
+}
+
+// LOAD
+async function loadData(){
+let snap=await db.collection("attendance").get();
+allData=snap.docs.map(d=>d.data());
+renderCalendar();
+}
+
+// 🔥 26 → 25 CALENDAR
+function renderCalendar(){
+
+calendarGrid.innerHTML="";
+
+let base=new Date(currentDate);
+
+// start 26
+let start = base.getDate()>=26
+? new Date(base.getFullYear(),base.getMonth(),26)
+: new Date(base.getFullYear(),base.getMonth()-1,26);
+
+// end 25
+let end = new Date(start.getFullYear(),start.getMonth()+1,25);
+
+monthLabel.innerText =
+start.toDateString()+" → "+end.toDateString();
+
+let temp=new Date(start);
+
+while(temp<=end){
+
+let full=getDate(temp);
+let found=allData.some(x=>x.date===full);
+
+calendarGrid.innerHTML+=`
+<div class="day ${found?'p':'a'}" onclick="showDay('${full}')">
+${temp.getDate()}<br><small>${temp.toLocaleDateString("en-IN",{weekday:'short'})}</small>
+</div>`;
+
+temp.setDate(temp.getDate()+1);
+}
+}
+
+// SHOW DAY
+function showDay(date){
+let list=allData.filter(x=>x.date===date);
+
+if(list.length===0){
+engineerList.innerHTML="No Attendance";
+return;
+}
+
+let users={};
+list.forEach(x=>users[x.name]=x);
+
+let unique=Object.values(users);
+
+engineerList.innerHTML=unique.map(x=>`
+<div>
+👷 ${x.name}<br>
+📍 ${x.place || "No Place"}
+</div>`).join("");
+}
+
+// NAV
+function prevMonth(){
+currentDate.setMonth(currentDate.getMonth()-1);
+renderCalendar();
+}
+function nextMonth(){
+currentDate.setMonth(currentDate.getMonth()+1);
+renderCalendar();
+}
+
+// DOWNLOAD
+function openDownload(){downloadModal.style.display="flex";}
+function closeDownload(){downloadModal.style.display="none";}
+
+function downloadCSV(){
+
+let from=fromDate.value;
+let to=toDate.value;
+
+if(!from||!to){
+alert("Select date");
+return;
+}
+
+let filtered=allData.filter(x=>x.date>=from&&x.date<=to);
+
+if(filtered.length===0){
+alert("No Data");
+return;
+}
+
+let csv="Name,Date,Place,Lat,Lon\n";
+
+filtered.forEach(x=>{
+csv+=`${x.name},${x.date},${x.place},${x.lat},${x.lon}\n`;
+});
+
+let blob=new Blob([csv]);
+let a=document.createElement("a");
+a.href=URL.createObjectURL(blob);
+a.download="attendance.csv";
+a.click();
+}
+
+// LOGOUT
+function logout(){
+localStorage.clear();
+location.reload();
+}
+
+// START
+window.onload=loadData;
+
+</script>
+
+</body>
+</html>

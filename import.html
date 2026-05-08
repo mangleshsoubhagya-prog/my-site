@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html>
+<head>
+
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+
+</head>
+<body style="background:#111;color:white;text-align:center;">
+
+<h2>🔥 Debug Upload</h2>
+
+<input type="file" id="file">
+<button onclick="uploadCSV()">Upload</button>
+
+<pre id="log"></pre>
+
+<script>
+
+const firebaseConfig = {
+  apiKey: "AIzaSyAbjZrPfGx0UTBAW4HndPxf9mMhhmg513s",
+  authDomain: "attendance-system-fc71c.firebaseapp.com",
+  projectId: "attendance-system-fc71c"
+};
+
+firebase.initializeApp(firebaseConfig);
+const db = firebase.firestore();
+
+function log(msg){
+document.getElementById("log").innerText += msg + "\n";
+console.log(msg);
+}
+
+async function uploadCSV(){
+
+log("Started...");
+
+let file = document.getElementById("file").files[0];
+if(!file){
+log("❌ No file selected");
+return;
+}
+
+let text = await file.text();
+let rows = text.split("\n");
+
+log("Total rows: " + rows.length);
+
+for(let i=1;i<5;i++){  // 🔥 सिर्फ 5 rows test
+
+let row = rows[i];
+log("Row: " + row);
+
+// 🔥 Try multiple splits
+let cols = row.split("\t");
+
+if(cols.length < 3){
+cols = row.split(",");
+}
+
+if(cols.length < 3){
+cols = row.trim().split(/\s+/);
+}
+
+log("Cols length: " + cols.length);
+
+try{
+
+let name = cols[1];
+let place = cols[2];
+
+let rawDate = cols[6] || cols.slice(4).join(" ");
+
+let d = new Date(rawDate);
+let fixedDate = d.getFullYear()+"-"+(d.getMonth()+1)+"-"+d.getDate();
+
+log("Parsed: " + name + " | " + place + " | " + fixedDate);
+
+await db.collection("attendance").add({
+name:name,
+place:place,
+date:fixedDate
+});
+
+log("✅ Saved");
+
+}catch(e){
+log("❌ Error: " + e);
+}
+
+}
+
+log("DONE");
+
+}
+
+</script>
+
+</body>
+</html>

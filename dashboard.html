@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Dashboard</title>
+
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<link href="https://fonts.googleapis.com/css2?family=Poppins&display=swap" rel="stylesheet">
+
+<style>
+
+body{
+margin:0;
+font-family:Poppins;
+
+/* 🔥 FIXED BACKGROUND (SAME OLD STYLE) */
+background:
+linear-gradient(rgba(0,0,0,0.6), rgba(0,0,0,0.6)),
+url("sidd.jpg");
+
+background-size:cover;
+background-position:center;
+background-repeat:no-repeat;
+background-attachment:fixed;
+
+color:white;
+}
+
+/* CONTENT */
+.main-content{
+position:relative;
+z-index:2;
+}
+
+/* NAVBAR */
+.navbar{
+position:relative;
+display:flex;
+justify-content:space-between;
+align-items:center;
+padding:15px 30px;
+background:rgba(9, 233, 233, 0.795);
+backdrop-filter:blur(30px);
+}
+
+.profile{
+display:flex;
+align-items:center;
+gap:15px;
+}
+
+.profile img{
+width:50px;
+border-radius:50%;
+cursor:pointer;
+}
+
+.bell{
+font-size:22px;
+cursor:pointer;
+}
+
+/* GRID */
+.container{
+display:grid;
+grid-template-columns:repeat(auto-fit,minmax(250px,1fr));
+gap:30px;
+padding:50px;
+}
+
+.card{
+background:rgba(255,255,255,0.2);
+padding:25px;
+border-radius:15px;
+text-align:center;
+backdrop-filter:blur(10px);
+border-bottom:2px solid #eb074bec;
+box-shadow: 0 2px 10px rgba(255, 0, 34, 0.5);
+}
+
+.card a{
+display:inline-block;
+margin-top:15px;
+padding:10px 20px;
+background:#51c54242;
+color:black;
+border-radius:20px;
+text-decoration:none;
+border-bottom:2px solid #00ffcc;
+box-shadow: 0 2px 10px rgba(0,255,204,0.7);
+}
+
+/* DARK MODE */
+.dark{
+background:#111;
+}
+
+/* THEME BUTTON */
+.toggle{
+cursor:pointer;
+background:rgb(233, 9, 9);
+color:white;
+padding:6px 12px;
+border-radius:8px;
+}
+
+/* TITLE */
+.title-container{
+position:absolute;
+left:50%;
+top:50%;
+transform:translate(-50%,-50%);
+width:70%;
+overflow:hidden;
+text-align:center;
+}
+
+.moving-text{
+white-space:nowrap;
+display:inline-block;
+animation:scrollText 8s linear infinite;
+font-size:28px;
+font-weight:500;
+letter-spacing:2px;
+}
+
+@keyframes scrollText{
+0%{ transform:translateX(30%); }
+100%{ transform:translateX(-10%); }
+
+}
+
+/* LOGOUT (fixed click issue + visible) */
+.logout{
+position:fixed;
+top:15px;
+right:15px;
+background:#df5709;
+color:white;
+padding:8px 14px;
+border-radius:8px;
+cursor:pointer;
+font-weight:bold;
+z-index:9999;
+}
+
+</style>
+</head>
+
+<body>
+
+<!-- 🔴 LOGOUT FIX -->
+<div class="logout" onclick="logout()">Logout</div>
+
+<div class="main-content">
+
+<div class="navbar">
+
+<span class="toggle" onclick="toggleMode()">🌙</span>
+
+<div class="title-container">
+<h3 class="moving-text">BHAVY SOFTECH SOLUTION</h3>
+</div>
+
+<div class="profile">
+<span class="bell">🔔</span>
+
+<img id="profilePic" src="logo.png.png">
+
+<input type="file" id="uploadPhoto" accept="image/*" style="display:none">
+
+<span id="userName"></span>
+</div>
+
+</div>
+
+<div class="container">
+
+<div class="card">
+<h3>Attendance</h3>
+<a href="attendance.html">Mark Attendance</a>
+</div>
+
+<div class="card">
+<h3>Working Form</h3>
+<a href="form.html">Open</a>
+</div>
+
+<div class="card">
+<h3>Reports</h3>
+<a href="Reports.html">Open</a>
+</div>
+
+<div class="card">
+<h3>Expense</h3>
+<a href="expence.html">Open</a>
+</div>
+
+<div class="card" id="adminPanel">
+<h3>Admin Panel</h3>
+<a href="#">Manage Data</a>
+</div>
+
+</div>
+
+</div>
+
+<script>
+
+document.addEventListener("DOMContentLoaded", function(){
+
+let user = localStorage.getItem("user");
+let role = localStorage.getItem("role");
+
+if(!user){
+  window.location.href = "login.html";
+}
+
+document.getElementById("userName").innerText = user;
+
+/* ADMIN HIDE */
+if(role !== "Admin"){
+document.getElementById("adminPanel").style.display="none";
+}
+
+/* PROFILE UPLOAD */
+document.getElementById("profilePic").addEventListener("click", function(){
+document.getElementById("uploadPhoto").click();
+});
+
+let savedPhoto = localStorage.getItem("profilePic_"+user);
+if(savedPhoto){
+document.getElementById("profilePic").src = savedPhoto;
+}
+
+document.getElementById("uploadPhoto").addEventListener("change", function(){
+
+let file = this.files[0];
+
+if(file){
+let reader = new FileReader();
+
+reader.onload = function(e){
+let imgData = e.target.result;
+localStorage.setItem("profilePic_"+user, imgData);
+document.getElementById("profilePic").src = imgData;
+};
+
+reader.readAsDataURL(file);
+}
+
+});
+
+});
+
+/* THEME */
+function toggleMode(){
+document.body.classList.toggle("dark");
+}
+
+/* LOGOUT FIX */
+function logout(){
+localStorage.clear();
+window.location.href = "login.html";
+}
+
+</script>
+
+</body>
+</html>

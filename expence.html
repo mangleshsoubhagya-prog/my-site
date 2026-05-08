@@ -1,0 +1,965 @@
+<!DOCTYPE html>
+<html>
+<head>
+
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
+
+<style>
+
+*{box-sizing:border-box;}
+
+body{
+margin:0;
+font-family:Poppins;
+background:linear-gradient(135deg,#667eea,#764ba2);
+
+}
+/* ✅ H3 alag likho */
+h3{
+font-size:30px; /* 🔥 text bada */
+margin:6px 0;
+transition:0.3s;
+cursor:pointer;
+}
+
+h3:hover{
+color:#00ffcc;
+text-shadow:0 0 10px #00ffcc;
+transform:scale(1.05);
+}
+.cat-row{
+display:flex;
+justify-content:space-between;
+align-items:center;
+margin: 6px;
+padding:8px 12px;
+border-radius:10px;
+cursor:pointer;
+background:rgba(255,255,255,0.05);
+transition:0.3s;
+font-size:30px; /* 🔥 text bada */
+box-shadow: #e9370b;
+
+
+}
+
+.cat-row span:first-child{
+  flex:1; /*left side ( Food , hotel...) full space le */
+}
+
+.cat-row span:last-child{
+  min-width:100px;
+  text-size-adjust:  500px;
+font-weight:bold;
+color:#a4c4c5;
+font-size:20px; /*amount small*/
+}
+
+.cat-row:hover{
+background:rgba(0,255,204,0.2);
+transform:scale(1.03);
+box-shadow:0 0 10px #00ffcc;
+border-bottom:4px solid #ebc107ec;
+  box-shadow: 0 8px 9px rgba(229, 255, 0, 0.973);
+
+}
+input:hover, select:hover{
+background:rgba(0,255,204,0.2);
+box-shadow:0 0 8px #00ffcc;
+transform:scale(1.02);
+border-bottom:4px solid #ebc107ec;
+  box-shadow: 0 8px 9px rgba(229, 255, 0, 0.973);
+
+}
+select{
+font-size:21px;
+}
+
+select:hover{
+color:#8ffc00;
+border-bottom:4px solid #ebc107ec;
+  box-shadow: 0 8px 9px rgba(229, 255, 0, 0.973);
+
+
+}
+.modal-box h3{
+text-align:center;
+font-size:30px;
+color:#ffcc00;
+margin-bottom:10px;
+letter-spacing:3px;
+border-bottom:4px solid #07e4ebec;
+  box-shadow: 0 8px 9px rgba(26, 207, 207, 0.973);
+}
+
+/* Navbar */
+.navbar{
+display:flex;
+justify-content:space-between;
+align-items:center;
+padding:15px 20px;
+background:rgba(255,255,255,0.1);
+backdrop-filter:blur(12px);
+color:#fff;
+box-shadow:0 4px 30px rgba(0,0,0,0.2);
+}
+
+.navbar button{
+position:fixed;
+bottom:50px;
+right:100px;
+width:100px;
+height:50px;
+border-radius:50%;
+font-size:15px;
+border-radius:25px;
+border:none;
+background:linear-gradient(135deg,#ff512f,#dd2476);
+color:rgb(7, 7, 7);
+cursor:pointer;
+box-shadow:0 3px 8px rgba(0,0,0,0.3);
+border-bottom:4px solid #ebc107ec;
+  box-shadow: 0 8px 9px rgba(229, 255, 0, 0.973);
+
+}
+
+/* Floating Button */
+.fab{
+position:fixed;
+bottom:50px;
+right:100px;
+width:80px;
+height:80px;
+border-radius:80%;
+background:linear-gradient(135deg,#00c6ff,#0072ff);
+color:white;
+font-size:40px;
+display:flex;
+align-items:center;
+justify-content:center;
+cursor:pointer;
+box-shadow:0 6px 20px rgba(0,0,0,0.3);
+transition:0.3s;
+z-index:1000;
+border-bottom:4px solid #f7f309ec;
+  box-shadow: 0 8px 9px rgba(229, 255, 0, 0.973);
+
+}
+
+.fab:hover{
+transform:scale(1.1) rotate(90deg);
+}
+
+/* Modal */
+.modal{
+display:none;
+position:fixed;
+top:0;
+left:0;
+width:100%;
+height:100%;
+background:rgba(0,0,0,0.5);
+justify-content:center;
+align-items:center;
+padding:10px;
+}
+
+.modal-box{
+background:rgba(0, 0, 0, 0.085);
+backdrop-filter:blur(10px);
+padding:25px;
+border-radius:15px;
+width:100%;
+max-width:300px;
+color:#fff;/* 🔥 white text */
+box-shadow:0 0px 20px rgba(0,255,204,0.5);
+animation:pop 0.3s ease;
+}
+
+@keyframes pop{
+from{transform:scale(2.9);opacity:2;}
+to{transform:scale(1);opacity:1;}
+}
+
+/* Inputs */
+input, select{
+width:100%;
+padding:20px;
+margin-top:12px;
+border:none;
+border-radius:12px;
+background:rgba(18, 19, 19, 0.849);
+color:rgb(236, 221, 10);
+outline:none;
+font-size:20px;
+}
+
+/* Buttons */
+button{
+padding:12px;
+margin-top:12px;
+border:none;
+border-radius:12px;
+cursor:pointer;
+font-weight:600;
+}
+
+.submit{
+background:linear-gradient(135deg,#ff9900,#00c9a7);
+color:black;
+position:relative;
+font-size:20px;
+border-bottom:4px solid #09f7cfec;
+  box-shadow: 0 8px 9px rgba(0, 255, 221, 0.973);
+
+}
+
+/* Loading Spinner */
+.loader{
+width:20px;
+height:20px;
+border:3px solid white;
+border-top:3px solid transparent;
+border-radius:50%;
+animation:spin 1s linear infinite;
+margin:auto;
+display:none;
+}
+
+@keyframes spin{
+0%{transform:rotate(0deg);}
+100%{transform:rotate(360deg);}
+}
+
+.close{
+background:linear-gradient(135deg,#7fc50dc5,#ff0000);
+color:white;
+font-size:20px;
+border-bottom:4px solid #0cf0ddd0;
+  box-shadow: 0 8px 9px rgba(0, 255, 255, 0.973);
+
+
+}
+
+#preview{
+width:100%;
+margin-top:12px;
+border-radius:12px;
+display:none;
+}
+h3:nth-child(1){ color:red; }
+h3:nth-child(2){ color:yellow; }
+h3:nth-child(3){ color:lime; }
+h3:nth-child(4){ color:cyan; }
+h3:nth-child(5){ color:rgb(232, 238, 238); }
+h3:nth-child(6){ color:rgb(243, 239, 7); }
+h3:nth-child(7){ color:rgb(236, 183, 6); }
+.cat-row{
+display:flex;
+justify-content:space-between;
+margin:5px 0;
+cursor:pointer;
+}
+
+.cat-row:hover{
+text-shadow:0 0 15px #00ffcc;
+}
+input::placeholder{
+font-size:25px;         /* 🔥 placeholder size */
+color:rgba(255,255,255,0.7);
+}
+input:focus, select:focus{
+box-shadow:0 0 10px #00ffcc;
+transform:scale(1.02);
+}/* 📱 Mobile Responsive */
+@media(max-width:600px){
+
+.navbar h2{
+font-size:18px;
+}
+
+.fab{
+width:60px;
+height:60px;
+font-size:28px;
+right:20px;
+bottom:20px;
+}
+
+.modal-box{
+max-width:95%;
+padding:15px;
+}
+
+input, select{
+padding:12px;
+font-size:16px;
+}
+
+.cat-row{
+font-size:16px;
+padding:8px;
+}
+
+.cat-row span:last-child{
+font-size:14px;
+}
+
+button{
+font-size:14px;
+padding:10px;
+}
+
+}
+
+/* 💻 Tablet / Medium screen */
+@media(min-width:601px) and (max-width:1024px){
+
+.modal-box{
+max-width:600px;
+}
+
+.cat-row{
+font-size:20px;
+}
+
+}
+
+/* 💻 Large Screen */
+@media(min-width:1025px)
+{
+
+.modal-box{
+  max-width:800px;
+max-height:90vh;      /* 🔥 screen ke andar fit */
+overflow-y:auto;      /* 🔥 vertical scroll ON */
+}
+.form-grid{
+display:grid;
+grid-template-columns: 1fr 1fr; /* 2 column */
+gap:12px;
+margin-top:10px;
+}
+
+/* Full width fields */
+#preview{
+  width:100%;
+  max-height:120px;
+  object-fit:cover;
+  margin-top:12px;
+  border-radius:12px;
+  display:none;
+}
+}
+
+/* Buttons full width */
+.button-group{
+grid-column: span 2;
+display:flex;
+gap:10px;
+}
+
+.button-group button{
+flex:1;
+}
+
+/* Mobile responsive */
+@media(max-width:600px){
+.form-grid{
+grid-template-columns: 1fr;
+}
+}
+
+
+.cat-row{
+font-size:22px;
+}
+.form-grid{
+display:grid;
+grid-template-columns: 1fr 1fr; /* 2 column */
+gap:10px;
+}
+
+/* Full width wale fields */
+.form-grid input[type="file"],
+.form-grid #details,
+.form-grid #amount{
+grid-column: span 2;
+}
+
+/* Mobile pe wapas 1 column */
+@media(max-width:600px){
+.form-grid{
+grid-template-columns: 1fr;
+}
+}
+
+
+</style>
+
+</head>
+
+<body>
+  
+
+<div class="navbar">
+  <h2>💼 Expense System</h2>
+  <button onclick="goDashboard()">⬅ Dashboard</button>
+</div>
+<div id="categoryTotals"></div>
+<div style="padding:10px;text-align:center;color:white;">
+<button onclick="prevMonth()">⬅</button>
+<span id="monthLabel"></span>
+<button onclick="nextMonth()">➡</button>
+</div>
+
+<div id="calendar" style="display:grid;grid-template-columns:repeat(7,1fr);gap:5px;padding:10px;"></div>
+
+<!-- Floating Button -->
+
+<div class="fab" onclick="openModal()">+</div>
+
+<div class="modal" id="modal">
+<div class="modal-box">
+
+<h3>💸 Expense Entry</h3>
+<div class="form-grid">
+<input type="date" id="date">
+<input id="name" placeholder="Engineer Name">
+
+<select id="type">
+<option value="">Select Expense Type</option>
+<option>Travel By Bus</option>
+<option>Travel By Train</option>
+<option>Food</option>
+<option>Hotel</option>
+<option>Room Rent</option>
+<option>Cable Tie</option>
+<option>Thimble</option>
+<option>Petrol</option>
+</select>
+
+<input id="details" placeholder="Expense Details">
+<input type="number" id="amount" placeholder="Amount">
+
+<input type="file" id="photo" accept="image/*" onchange="previewPhoto()">
+</div>
+<img id="preview">
+
+<div class="button-group">
+<button class="submit"id="submitBtn"onclick="submitExpense()">Submit</button>
+<button class="close" onclick="closeModal()">Close</button>
+</div>
+</div>
+</div>
+
+<!-- ⚠️ ONLY SCRIPT PART CHANGE -->
+<!-- ✅ FIREBASE SDK -->
+<script type="module">
+
+// ================= FIREBASE =================
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+
+import {
+getFirestore,
+collection,
+addDoc,
+getDocs,
+query,
+orderBy
+}
+from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+// ✅ YOUR FIREBASE CONFIG
+const firebaseConfig = {
+
+apiKey: "AIzaSyAbjZrPfGx0UTBAW4HndPxf9mMhhmg513s",
+
+authDomain: "attendance-system-fc71c.firebaseapp.com",
+
+projectId: "attendance-system-fc71c",
+
+storageBucket: "attendance-system-fc71c.firebasestorage.app",
+
+messagingSenderId: "57089003187",
+
+appId: "1:57089003187:web:dc8864aa56701384d6aac6"
+
+};
+
+// ✅ INIT FIREBASE
+const app = initializeApp(firebaseConfig);
+
+const db = getFirestore(app);
+
+// ================= DASHBOARD =================
+function goDashboard(){
+window.location.href = "dashboard.html";
+}
+
+window.goDashboard = goDashboard;
+
+// ================= VARIABLES =================
+let currentDate = new Date();
+
+let originalForm = "";
+
+let allData = [];
+
+let currentDayList = [];
+
+let isSubmitting = false;
+
+// ================= DATE FIX =================
+function fixDate(d){
+
+if(!d) return "";
+
+let date = new Date(d);
+
+if(isNaN(date)) return "";
+
+return date.toISOString().split("T")[0];
+
+}
+
+// ================= MODAL =================
+function openModal(){
+
+document.querySelector(".modal-box").innerHTML = originalForm;
+
+document.getElementById("modal").style.display="flex";
+
+document.getElementById("date").value = fixDate(new Date());
+
+}
+
+window.openModal = openModal;
+
+function closeModal(){
+
+document.getElementById("modal").style.display="none";
+
+}
+
+window.closeModal = closeModal;
+
+// ================= PHOTO PREVIEW =================
+function previewPhoto(){
+
+let file = document.getElementById("photo").files[0];
+
+let preview = document.getElementById("preview");
+
+if(!file){
+
+preview.style.display="none";
+
+return;
+
+}
+
+// ✅ 15MB LIMIT
+if(file.size > 15 * 1024 * 1024){
+
+alert("❌ Max 15MB allowed");
+
+document.getElementById("photo").value = "";
+
+preview.style.display="none";
+
+return;
+
+}
+
+preview.src = URL.createObjectURL(file);
+
+preview.style.display="block";
+
+}
+
+window.previewPhoto = previewPhoto;
+
+// ================= CLOUDINARY UPLOAD =================
+async function uploadToCloudinary(file){
+
+let formData = new FormData();
+
+formData.append("file", file);
+
+// ✅ YOUR PRESET
+formData.append("upload_preset", "expense_upload");
+
+let response = await fetch(
+"https://api.cloudinary.com/v1_1/dhs6u2y6l/image/upload",
+{
+method:"POST",
+body:formData
+}
+);
+
+let data = await response.json();
+
+console.log(data);
+
+return data.secure_url;
+
+}
+
+// ================= CALENDAR =================
+function renderCalendar(){
+
+let year = currentDate.getFullYear();
+
+let month = currentDate.getMonth();
+
+document.getElementById("monthLabel").innerText =
+currentDate.toLocaleString('default',{
+month:'long',
+year:'numeric'
+});
+
+let firstDay = new Date(year,month,1).getDay();
+
+let days = new Date(year,month+1,0).getDate();
+
+let html = "";
+
+for(let i=0;i<firstDay;i++){
+
+html += "<div></div>";
+
+}
+
+for(let d=1; d<=days; d++){
+
+let date =
+`${year}-${String(month+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+
+let found = allData.filter(
+x => fixDate(x.date) === date
+);
+
+let color = found.length ? "#22c55e" : "#ef4444";
+
+html += `
+<div onclick="showDay('${date}')"
+
+style="
+padding:10px;
+text-align:center;
+border-radius:8px;
+background:${color};
+cursor:pointer;
+color:white;
+font-weight:bold;
+">
+
+${d}
+
+</div>
+`;
+
+}
+
+document.getElementById("calendar").innerHTML = html;
+
+}
+
+// ================= SHOW DAY =================
+function showDay(date){
+
+let list = allData.filter(
+x => fixDate(x.date) === date
+);
+
+if(list.length === 0){
+
+alert("No expense on this day");
+
+return;
+
+}
+
+currentDayList = list;
+
+let total = 0;
+
+let html = `<h3>📅 ${date}</h3>`;
+
+list.forEach((x,i)=>{
+
+total += Number(x.amount || 0);
+
+html += `
+<div
+
+style="
+margin:10px 0;
+padding:10px;
+background:#222;
+border-radius:10px;
+cursor:pointer;
+"
+
+onclick="showPhoto(${i})">
+
+👤 ${x.name}<br>
+
+🏷 ${x.expenseType}<br>
+
+💰 ₹ ${x.amount}
+
+</div>
+`;
+
+});
+
+html += `
+<h3>Total: ₹ ${total}</h3>
+
+<button class="close" onclick="closeModal()">
+Close
+</button>
+`;
+
+document.querySelector(".modal-box").innerHTML = html;
+
+document.getElementById("modal").style.display="flex";
+
+}
+
+window.showDay = showDay;
+
+// ================= SHOW PHOTO =================
+function showPhoto(index){
+
+let data = currentDayList[index];
+
+if(!data.photo){
+
+alert("No photo uploaded");
+
+return;
+
+}
+
+let html = `
+<h3>👤 ${data.name}</h3>
+
+<img src="${data.photo}"
+
+style="
+width:100%;
+border-radius:10px;
+max-height:500px;
+object-fit:contain;
+">
+
+<br><br>
+
+<a href="${data.photo}" download>
+
+<button class="submit">
+
+⬇ Download
+
+</button>
+
+</a>
+
+<button class="close" onclick="closeModal()">
+
+Close
+
+</button>
+`;
+
+document.querySelector(".modal-box").innerHTML = html;
+
+}
+
+window.showPhoto = showPhoto;
+
+// ================= LOAD DATA =================
+async function loadTotals(){
+
+try{
+
+allData = [];
+
+const q = query(
+collection(db,"expenses"),
+orderBy("createdAt","desc")
+);
+
+const querySnapshot = await getDocs(q);
+
+querySnapshot.forEach((doc)=>{
+
+allData.push(doc.data());
+
+});
+
+}catch(err){
+
+console.error(err);
+
+alert("❌ Data load failed");
+
+}
+
+}
+
+// ================= MONTH =================
+function prevMonth(){
+
+currentDate.setMonth(
+currentDate.getMonth()-1
+);
+
+renderCalendar();
+
+}
+
+window.prevMonth = prevMonth;
+
+function nextMonth(){
+
+currentDate.setMonth(
+currentDate.getMonth()+1
+);
+
+renderCalendar();
+
+}
+
+window.nextMonth = nextMonth;
+
+// ================= SUBMIT =================
+async function submitExpense(){
+
+if(isSubmitting) return;
+
+isSubmitting = true;
+
+let btn = document.getElementById("submitBtn");
+
+btn.disabled = true;
+
+btn.innerHTML = "⏳ Saving...";
+
+// ✅ INPUTS
+let date = document.getElementById("date").value;
+
+let name = document.getElementById("name").value;
+
+let type = document.getElementById("type").value;
+
+let details = document.getElementById("details").value;
+
+let amount = document.getElementById("amount").value;
+
+let file = document.getElementById("photo").files[0];
+
+// ✅ VALIDATION
+if(!name || !amount){
+
+alert("⚠️ Fill required fields");
+
+btn.disabled = false;
+
+btn.innerHTML = "Submit";
+
+isSubmitting = false;
+
+return;
+
+}
+
+// ✅ IMAGE URL
+let photoURL = "";
+
+// ✅ UPLOAD TO CLOUDINARY
+try{
+
+if(file){
+
+photoURL = await uploadToCloudinary(file);
+
+}
+
+// ✅ SAVE TO FIRESTORE
+await addDoc(collection(db,"expenses"),{
+
+date,
+name,
+expenseType:type,
+details,
+amount,
+photo:photoURL,
+createdAt:new Date()
+
+});
+
+alert("✅ Saved");
+
+// ✅ RESET
+document.getElementById("date").value = "";
+
+document.getElementById("name").value = "";
+
+document.getElementById("type").value = "";
+
+document.getElementById("details").value = "";
+
+document.getElementById("amount").value = "";
+
+document.getElementById("photo").value = "";
+
+document.getElementById("preview").style.display="none";
+
+closeModal();
+
+await init();
+
+}catch(err){
+
+console.error(err);
+
+alert("❌ Upload failed");
+
+}
+
+btn.disabled = false;
+
+btn.innerHTML = "Submit";
+
+isSubmitting = false;
+
+}
+
+window.submitExpense = submitExpense;
+
+// ================= INIT =================
+window.onload = function(){
+
+originalForm =
+document.querySelector(".modal-box").innerHTML;
+
+init();
+
+};
+
+async function init(){
+
+await loadTotals();
+
+renderCalendar();
+
+}
+
+</script>
+</body>
+</html>
