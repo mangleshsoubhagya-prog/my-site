@@ -377,6 +377,9 @@ type="file"
 id="gpsPhoto"
 accept="image/*"
 onchange="handleFile(this)">
+<div id="gpsPhotoStatus"
+style="margin-top:8px;font-size:13px;color:#fff;">
+</div>
 
 </div>
 
@@ -422,11 +425,24 @@ onchange="handleFile(this)">
 
 <label>Installation Video</label>
 
-<input
-type="file"
-id="sensorVideo"
-accept="video/*"
-onchange="handleFile(this)">
+<button
+type="button"
+class="submit"
+onclick="openVideoUploader()">
+
+📤 Upload Video
+
+</button>
+
+<input type="hidden" id="videoLink">
+
+<div id="videoStatus"
+style="margin-top:8px;font-size:13px;color:#fff;">
+No Video Uploaded
+</div>
+<div id="videoStatus"
+style="margin-top:8px;font-size:13px;color:#fff;">
+</div>
 
 </div>
 
@@ -439,6 +455,9 @@ type="file"
 id="reportPhoto"
 accept="image/*"
 onchange="handleFile(this)">
+<div id="reportPhotoStatus"
+style="margin-top:8px;font-size:13px;color:#fff;">
+</div>
 
 </div>
 
@@ -500,8 +519,7 @@ getDocs,
 query,
 orderBy,
 deleteDoc,
-doc,
-updateDoc
+doc
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
 /* FIREBASE */
@@ -537,11 +555,25 @@ window.allData = [];
 window.currentUser =
 localStorage.getItem("user") || "Guest";
 
+const ADMIN_USERS = [
+"Admin",
+"Manglesh",
+"Bhavy"
+];
+
+const isAdmin =
+ADMIN_USERS.includes(currentUser);
+
+/* DASHBOARD */
+
 window.goDashboard = function(){
 
-window.location.href = "dashboard.html";
+window.location.href =
+"dashboard.html";
 
 };
+
+/* DATE */
 
 window.fixDate = function(d){
 
@@ -551,13 +583,18 @@ return `${date.getFullYear()}-${String(date.getMonth()+1).padStart(2,'0')}-${Str
 
 };
 
+/* MODAL */
+
 window.openModal = function(){
 
-document.getElementById("modal").style.display="flex";
+document.getElementById("modal").style.display =
+"flex";
 
-document.getElementById("formSection").style.display="block";
+document.getElementById("formSection").style.display =
+"block";
 
-document.getElementById("viewSection").style.display="none";
+document.getElementById("viewSection").style.display =
+"none";
 
 document.getElementById("date").value =
 fixDate(new Date());
@@ -569,9 +606,12 @@ currentUser;
 
 window.closeModal = function(){
 
-document.getElementById("modal").style.display="none";
+document.getElementById("modal").style.display =
+"none";
 
 };
+
+/* TYPE */
 
 window.toggleFields = function(){
 
@@ -586,40 +626,40 @@ type==="Sensor" ? "block" : "none";
 
 };
 
+/* FILE HANDLE */
+
 window.handleFile = async function(input){
 
 let file = input.files[0];
 
 if(!file) return;
 
-if(file.size > 20 * 1024 * 1024){
-
-alert("❌ Max 20MB");
-input.value="";
-return;
-
-}
-
-document.getElementById("uploadStatus").innerText =
-"⏳ Processing...";
+document.getElementById("uploadStatus").innerHTML =
+"⏳ Processing File...";
 
 if(file.type.startsWith("image/")){
 
 let compressed =
 await compressImage(file);
 
-input.compressedFile = compressed;
-
-}else{
-
-input.compressedFile = file;
+input.compressedFile =
+compressed;
 
 }
 
-document.getElementById("uploadStatus").innerText =
-"✅ Ready";
+else{
+
+input.compressedFile =
+file;
+
+}
+
+document.getElementById("uploadStatus").innerHTML =
+"✅ File Ready";
 
 };
+
+/* IMAGE COMPRESS */
 
 async function compressImage(file){
 
@@ -630,7 +670,9 @@ let img = new Image();
 let reader = new FileReader();
 
 reader.onload = e=>{
+
 img.src = e.target.result;
+
 };
 
 img.onload = ()=>{
@@ -683,6 +725,8 @@ reader.readAsDataURL(file);
 
 }
 
+/* CLOUDINARY IMAGE */
+
 async function uploadToCloudinary(file){
 
 let formData = new FormData();
@@ -694,25 +738,79 @@ formData.append(
 UPLOAD_PRESET
 );
 
-let isVideo =
-file.type.startsWith("video/");
-
-let url = isVideo
-?
-`https://api.cloudinary.com/v1_1/${CLOUD_NAME}/video/upload`
-:
-`https://api.cloudinary.com/v1_1/${CLOUD_NAME}/image/upload`;
-
-let response = await fetch(url,{
+let response = await fetch(
+`https://api.cloudinary.com/v1_1/${CLOUD_NAME}/image/upload`,
+{
 method:"POST",
 body:formData
-});
+}
+);
 
 let data = await response.json();
+
+if(data.error){
+
+throw data.error.message;
+
+}
 
 return data.secure_url;
 
 }
+
+/* VIDEO UPLOADER */
+
+window.openVideoUploader = function(){
+
+cloudinary.openUploadWidget({
+
+cloudName: "dhs6u2y6l",
+
+uploadPreset: "expense_upload",
+
+resourceType: "video",
+
+sources: ["local"],
+
+multiple: false,
+
+maxFiles: 1,
+
+clientAllowedFormats: ["mp4","mov","avi","mkv"],
+
+folder: "reports_videos"
+
+},
+
+function(error, result){
+
+if(!error && result && result.event === "success"){
+
+let videoUrl = result.info.secure_url;
+
+document.getElementById("videoLink").value =
+videoUrl;
+
+document.getElementById("videoStatus").innerHTML =
+"✅ Video Uploaded Successfully";
+
+console.log(videoUrl);
+
+}
+
+if(error){
+
+console.log(error);
+
+document.getElementById("videoStatus").innerHTML =
+"❌ Upload Failed";
+
+}
+
+});
+
+};
+/* SUBMIT */
 
 window.submitWorking = async function(){
 
@@ -720,7 +818,9 @@ let btn =
 document.getElementById("submitBtn");
 
 btn.disabled = true;
-btn.innerText = "Saving...";
+
+btn.innerHTML =
+"Saving...";
 
 try{
 
@@ -743,6 +843,8 @@ createdAt:Date.now()
 
 };
 
+/* GPS */
+
 if(type==="GPS"){
 
 saveData.rgno =
@@ -762,7 +864,7 @@ document.getElementById("gpsPhoto");
 
 if(photo.files[0]){
 
-document.getElementById("uploadStatus").innerText =
+document.getElementById("gpsPhotoStatus").innerHTML =
 "⏳ Uploading Photo...";
 
 saveData.photo =
@@ -770,9 +872,14 @@ await uploadToCloudinary(
 photo.compressedFile
 );
 
+document.getElementById("gpsPhotoStatus").innerHTML =
+"✅ Photo Uploaded";
+
 }
 
 }
+
+/* SENSOR */
 
 if(type==="Sensor"){
 
@@ -785,27 +892,19 @@ document.getElementById("usedWire").value;
 saveData.sensorNo =
 document.getElementById("sensorNo").value;
 
-let video =
-document.getElementById("sensorVideo");
-
-if(video.files[0]){
-
-document.getElementById("uploadStatus").innerText =
-"⏳ Uploading Video...";
+/* VIDEO LINK */
 
 saveData.video =
-await uploadToCloudinary(
-video.compressedFile
-);
+document.getElementById("videoLink").value || "";
 
-}
+/* PHOTO */
 
 let photo =
 document.getElementById("reportPhoto");
 
 if(photo.files[0]){
 
-document.getElementById("uploadStatus").innerText =
+document.getElementById("reportPhotoStatus").innerHTML =
 "⏳ Uploading Photo...";
 
 saveData.photo =
@@ -813,16 +912,21 @@ await uploadToCloudinary(
 photo.compressedFile
 );
 
+document.getElementById("reportPhotoStatus").innerHTML =
+"✅ Photo Uploaded";
+
 }
 
 }
+
+/* FIREBASE SAVE */
 
 await addDoc(
 collection(db,"reports"),
 saveData
 );
 
-alert("✅ Saved");
+alert("✅ Saved Successfully");
 
 resetForm();
 
@@ -830,31 +934,50 @@ closeModal();
 
 loadData();
 
-}catch(e){
+}
+catch(e){
 
-console.error(e);
+console.log(e);
 
-alert("❌ Error");
+alert("❌ Error : " + e);
 
 }
 
 btn.disabled = false;
-btn.innerText = "Submit";
+
+btn.innerHTML = "Submit";
 
 };
+
+/* RESET */
 
 window.resetForm = function(){
 
 document.querySelectorAll("input").forEach(x=>{
 
-if(x.type!=="date")
+if(x.type!=="date"){
+
 x.value="";
+
+}
 
 });
 
-document.getElementById("uploadStatus").innerText="";
+document.getElementById("videoStatus").innerHTML =
+"No Video Uploaded";
+
+document.getElementById("gpsPhotoStatus").innerHTML =
+"";
+
+document.getElementById("reportPhotoStatus").innerHTML =
+"";
+
+document.getElementById("uploadStatus").innerHTML =
+"";
 
 };
+
+/* LOAD DATA */
 
 window.loadData = async function(){
 
@@ -867,7 +990,7 @@ orderBy("createdAt","desc")
 let snap =
 await getDocs(q);
 
-allData=[];
+allData = [];
 
 snap.forEach(docSnap=>{
 
@@ -884,6 +1007,8 @@ renderCalendar();
 
 };
 
+/* CALENDAR */
+
 window.renderCalendar = function(){
 
 let year =
@@ -892,12 +1017,12 @@ currentDate.getFullYear();
 let month =
 currentDate.getMonth();
 
-document.getElementById("monthLabel").innerText =
+document.getElementById("monthLabel").innerHTML =
 currentDate.toLocaleString(
-'default',
+"default",
 {
-month:'long',
-year:'numeric'
+month:"long",
+year:"numeric"
 }
 );
 
@@ -907,7 +1032,7 @@ new Date(year,month,1).getDay();
 let days =
 new Date(year,month+1,0).getDate();
 
-let html="";
+let html = "";
 
 for(let i=0;i<firstDay;i++){
 
@@ -943,6 +1068,8 @@ html;
 
 };
 
+/* SHOW DAY */
+
 window.showDay = function(date){
 
 let list =
@@ -964,7 +1091,6 @@ if(list.length===0){
 document.getElementById("viewSection").innerHTML =
 `
 <h3>No Reports</h3>
-
 <br>
 
 <button
@@ -984,7 +1110,8 @@ return;
 
 }
 
-let html = `<h2>${date}</h2><br>`;
+let html =
+`<h2>${date}</h2><br>`;
 
 list.forEach(x=>{
 
@@ -992,15 +1119,18 @@ html += `
 
 <div class="report-card">
 
+${isAdmin ? `
 <button
 class="delete-btn"
 onclick="deleteEntry('${x.id}')">
 🗑
 </button>
+` : ""}
 
 <h3>👤 ${x.name}</h3>
 
 <p>📌 Type: ${x.type}</p>
+
 `;
 
 if(x.type==="GPS"){
@@ -1014,6 +1144,7 @@ html += `
 <p>📱 IMEI: ${x.imei || ""}</p>
 
 <p>🔢 Sensor No: ${x.sensorNo || ""}</p>
+
 `;
 
 if(x.photo){
@@ -1028,7 +1159,6 @@ class="media">
 
 <a
 href="${x.photo}"
-download
 target="_blank">
 
 <button class="submit">
@@ -1036,6 +1166,7 @@ target="_blank">
 </button>
 
 </a>
+
 `;
 
 }
@@ -1054,6 +1185,7 @@ ${x.usedWire || ""}</p>
 
 <p>🔢 Sensor No:
 ${x.sensorNo || ""}</p>
+
 `;
 
 if(x.video){
@@ -1063,14 +1195,17 @@ html += `
 <video
 src="${x.video}"
 controls
-class="media">
+class="media"
+style="
+max-height:500px;
+object-fit:contain;
+">
 </video>
 
 <br><br>
 
 <a
 href="${x.video}"
-download
 target="_blank">
 
 <button class="submit">
@@ -1078,6 +1213,7 @@ target="_blank">
 </button>
 
 </a>
+
 `;
 
 }
@@ -1094,7 +1230,6 @@ class="media">
 
 <a
 href="${x.photo}"
-download
 target="_blank">
 
 <button class="submit">
@@ -1102,6 +1237,7 @@ target="_blank">
 </button>
 
 </a>
+
 `;
 
 }
@@ -1144,10 +1280,21 @@ html;
 
 };
 
+/* DELETE */
+
 window.deleteEntry = async function(id){
 
-if(!confirm("Delete Entry?"))
+if(!isAdmin){
+
+alert("❌ Only Admin Can Delete");
+
 return;
+
+}
+
+if(!confirm("Delete Entry?")) return;
+
+try{
 
 await deleteDoc(
 doc(db,"reports",id)
@@ -1159,7 +1306,18 @@ closeModal();
 
 loadData();
 
+}
+catch(e){
+
+console.log(e);
+
+alert("❌ Delete Failed");
+
+}
+
 };
+
+/* DOWNLOAD CSV */
 
 window.downloadReports = function(){
 
@@ -1194,12 +1352,17 @@ x.usedWire || ""
 });
 
 let csv =
-rows.map(e=>e.join(",")).join("\n");
+rows.map(
+e=>e.join(",")
+).join("\n");
 
 let blob =
-new Blob([csv],{
+new Blob(
+[csv],
+{
 type:"text/csv"
-});
+}
+);
 
 let a =
 document.createElement("a");
@@ -1213,6 +1376,8 @@ a.download =
 a.click();
 
 };
+
+/* MONTH */
 
 window.prevMonth = function(){
 
@@ -1234,9 +1399,11 @@ renderCalendar();
 
 };
 
+/* START */
+
 loadData();
 
 </script>
-
+<script src="https://upload-widget.cloudinary.com/global/all.js"></script>
 </body>
 </html>
