@@ -320,13 +320,9 @@ Close
 const firebaseConfig = {
 
 apiKey: "AIzaSyAbjZrPfGx0UTBAW4HndPxf9mMhhmg513s",
-
 authDomain: "attendance-system-fc71c.firebaseapp.com",
-
 projectId: "attendance-system-fc71c",
-
 storageBucket: "attendance-system-fc71c.appspot.com",
-
 appId: "1:57089003187:web:dc8864aa56701384d6aac6"
 
 };
@@ -348,8 +344,6 @@ localStorage.getItem("role") || "user";
 document.getElementById("userName").innerText =
 user + " (" + role + ")";
 
-// ADMIN BUTTON
-
 if(role === "admin"){
 
 document.getElementById("liveTrackingBtn").style.display =
@@ -360,12 +354,10 @@ document.getElementById("liveTrackingBtn").style.display =
 // ===============================
 
 let allData = [];
-
 let currentDate = new Date();
-
 let isSubmitting = false;
-
 let trackingInterval = null;
+let selectedDate = getDate(new Date());
 
 // ===============================
 // DATE FORMAT
@@ -447,6 +439,10 @@ liveModal.style.display = "none";
 // PUNCH IN
 // ===============================
 
+// ===============================
+// PUNCH IN
+// ===============================
+
 async function submitAttendance(){
 
 if(isSubmitting) return;
@@ -455,11 +451,16 @@ isSubmitting = true;
 
 let today = getDate(new Date());
 
-let exist = allData.find(
-x => x.name === user && x.date === today
-);
+let docId = user + "_" + today;
 
-if(exist){
+try{
+
+let checkDoc =
+await db.collection("attendance")
+.doc(docId)
+.get();
+
+if(checkDoc.exists){
 
 alert("Already Marked");
 
@@ -475,25 +476,20 @@ async p=>{
 
 try{
 
-await db.collection("attendance").add({
+await db.collection("attendance")
+.doc(docId)
+.set({
 
 name:user,
-
 date:today,
-
 place:manualPlace.value,
-
 lat:p.coords.latitude,
-
 lon:p.coords.longitude,
-
 status:"online",
-
 timestamp:new Date()
 
 });
 
-// START TRACKING
 startLiveTracking();
 
 alert("Punch In Success ✅");
@@ -507,21 +503,50 @@ catch(e){
 
 console.log(e);
 
-alert("Error Saving");
+alert("Save Error");
 
 }
 
 isSubmitting = false;
 
+},
+
+err=>{
+
+console.log(err);
+
+alert("Location Error");
+
+isSubmitting = false;
+
+},
+
+{
+enableHighAccuracy:true
 }
 
 );
 
 }
+catch(e){
+
+console.log(e);
+
+isSubmitting = false;
+
+}
+
+}
+// ===============================
+// LIVE TRACKING
+// ===============================
 
 // ===============================
 // LIVE TRACKING
 // ===============================
+
+let lastLat = null;
+let lastLon = null;
 
 function startLiveTracking(){
 
@@ -533,30 +558,92 @@ clearInterval(trackingInterval);
 
 trackingInterval = setInterval(()=>{
 
-navigator.geolocation.getCurrentPosition(async p=>{
+navigator.geolocation.getCurrentPosition(
 
+async p=>{
+
+let lat = p.coords.latitude;
+let lon = p.coords.longitude;
+
+// FIRST TIME
+if(lastLat === null){
+
+lastLat = lat;
+lastLon = lon;
+
+}
+
+// DISTANCE CHECK
+let moved =
+Math.abs(lat - lastLat) > 0.0001 ||
+Math.abs(lon - lastLon) > 0.0001;
+
+// ONLY SAVE IF MOVED
+if(moved){
+
+try{
+
+// LIVE LOCATION
 await db.collection("liveTracking")
 .doc(user)
 .set({
 
 name:user,
-
-lat:p.coords.latitude,
-
-lon:p.coords.longitude,
-
+lat:lat,
+lon:lon,
 updated:new Date(),
-
 status:"online"
 
 });
 
+// HISTORY SAVE
+await db.collection("trackingHistory")
+.add({
+
+name:user,
+lat:lat,
+lon:lon,
+time:new Date(),
+date:getDate(new Date())
+
 });
+
+// UPDATE LAST LOCATION
+lastLat = lat;
+lastLon = lon;
+
+console.log("Moved -> Saved");
+
+}
+catch(e){
+
+console.log(e);
+
+}
+
+}else{
+
+console.log("No Movement");
+
+}
+
+},
+
+err=>{
+
+console.log(err);
+
+},
+
+{
+enableHighAccuracy:true
+}
+
+);
 
 },10000);
 
 }
-
 // ===============================
 // PUNCH OUT
 // ===============================
@@ -571,19 +658,15 @@ clearInterval(trackingInterval);
 
 await db.collection("liveTracking")
 .doc(user)
-.set({
-
-name:user,
-
-status:"offline",
-
-updated:new Date()
-
-});
+.delete();
 
 alert("Punch Out Success");
 
 }
+
+// ===============================
+// LIVE USERS
+// ===============================
 
 // ===============================
 // LIVE USERS
@@ -601,14 +684,35 @@ return;
 
 liveModal.style.display = "flex";
 
-let snap =
-await db.collection("liveTracking").get();
+let today = getDate(new Date());
+
+// TODAY ATTENDANCE
+let attendanceSnap =
+await db.collection("attendance")
+.where("date","==",today)
+.get();
+
+let todayUsers = [];
+
+attendanceSnap.forEach(doc=>{
+
+todayUsers.push(doc.data().name);
+
+});
+
+// LIVE TRACKING
+let liveSnap =
+await db.collection("liveTracking")
+.get();
 
 let html = "";
 
-snap.forEach(doc=>{
+liveSnap.forEach(doc=>{
 
 let x = doc.data();
+
+// ONLY TODAY USERS
+if(todayUsers.includes(x.name)){
 
 html += `
 
@@ -616,8 +720,8 @@ html += `
 
 <h3>👷 ${x.name}</h3>
 
-<div class="status ${x.status==='online'?'online':'offline'}">
-${x.status}
+<div class="status online">
+ONLINE
 </div>
 
 <br>
@@ -630,17 +734,86 @@ onclick="openMap('${x.lat}','${x.lon}')">
 
 </button>
 
+<button
+class="map-btn"
+onclick="showPlayback('${x.name}')">
+
+🛣 Playback
+
+</button>
+
 </div>
 
 `;
 
+}
+
 });
 
 document.getElementById("liveUsersList").innerHTML =
-html || "No Live Users";
+html || "No Live Users Today";
+
+}
+// ===============================
+// PLAYBACK
+// ===============================
+
+// ===============================
+// PLAYBACK
+// ===============================
+
+// ===============================
+// PLAYBACK
+// ===============================
+
+async function showPlayback(name){
+
+let snap = await db.collection("trackingHistory")
+.where("name","==",name)
+.where("date","==",selectedDate)
+.get();
+
+let points = [];
+
+snap.forEach(doc=>{
+
+points.push(doc.data());
+
+});
+
+if(points.length === 0){
+
+alert("No Playback Data");
+
+return;
 
 }
 
+// SORT BY TIME
+
+points.sort((a,b)=>{
+
+return new Date(a.time.seconds*1000) -
+new Date(b.time.seconds*1000);
+
+});
+
+// START POINT
+let first = points[0];
+
+// END POINT
+let last = points[points.length-1];
+
+// GOOGLE ROUTE
+window.open(
+
+`https://www.google.com/maps/dir/${first.lat},${first.lon}/${last.lat},${last.lon}`,
+
+"_blank"
+
+);
+
+}
 // ===============================
 // LOAD DATA
 // ===============================
@@ -731,11 +904,12 @@ temp.setDate(temp.getDate()+1);
 
 function showDay(date){
 
+selectedDate = date;
+
 let list =
 role === "admin"
 ? allData.filter(x => x.date === date)
 : allData.filter(x => x.date === date && x.name === user);
-
 if(list.length===0){
 
 engineerList.innerHTML =
@@ -888,7 +1062,6 @@ renderCalendar();
 function downloadCSV(){
 
 let from = fromDate.value;
-
 let to = toDate.value;
 
 if(!from || !to){
@@ -943,10 +1116,13 @@ a.click();
 // ===============================
 
 function logout(){
-  localStorage.removeItem("user");
-  localStorage.removeItem("role");
-  sessionStorage.clear();
-  window.location.replace("login.html");
+
+localStorage.removeItem("user");
+localStorage.removeItem("role");
+sessionStorage.clear();
+
+window.location.replace("login.html");
+
 }
 
 // ===============================
@@ -956,6 +1132,5 @@ function logout(){
 window.onload = loadData;
 
 </script>
-
 </body>
 </html>
