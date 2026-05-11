@@ -350,22 +350,22 @@ grid-template-columns:repeat(4,1fr);
 
 <div class="form-card">
 <label>RG No.</label>
-<input id="rgno">
+<input id="rgno" required>
 </div>
 
 <div class="form-card">
 <label>Asset Code</label>
-<input id="assetcode">
+<input id="assetcode" required>
 </div>
 
 <div class="form-card">
 <label>IMEI No.</label>
-<input id="imei">
+<input id="imei" required>
 </div>
 
 <div class="form-card">
 <label>Sensor No.</label>
-<input id="gpsSensorNo">
+<input id="gpsSensorNo" required>
 </div>
 
 <div class="form-card full">
@@ -375,6 +375,7 @@ grid-template-columns:repeat(4,1fr);
 <input
 type="file"
 id="gpsPhoto"
+required
 accept="image/*"
 onchange="handleFile(this)">
 <div id="gpsPhotoStatus"
@@ -397,9 +398,9 @@ style="margin-top:8px;font-size:13px;color:#fff;">
 
 <label>Installation Type</label>
 
-<select id="installationType">
+<select id="installationType" required>
 
-<option value="">Select</option>
+<option value="">Select </option>
 
 <option>New Installation</option>
 
@@ -410,24 +411,24 @@ style="margin-top:8px;font-size:13px;color:#fff;">
 </select>
 
 </div>
-  <div class="form-card">
+<div class="form-card">
 <label>Indus ID</label>
-<input id="Indus ID">
+<input id="indusId" required>
 </div>
 
 <div class="form-card">
 <label>Used Wire</label>
-<input id="usedWire">
+<input id="usedWire" required>
 </div>
 
 <div class="form-card">
 <label>Sensor No.</label>
-<input id="sensorNo">
+<input id="sensorNo" required>
 </div>
 
 <div class="form-card">
 
-<label>Installation Video</label>
+<label>Installation Video </label>
 
 <button
 type="button"
@@ -444,9 +445,6 @@ onclick="openVideoUploader()">
 style="margin-top:8px;font-size:13px;color:#fff;">
 No Video Uploaded
 </div>
-<div id="videoStatus"
-style="margin-top:8px;font-size:13px;color:#fff;">
-</div>
 
 </div>
 
@@ -457,6 +455,7 @@ style="margin-top:8px;font-size:13px;color:#fff;">
 <input
 type="file"
 id="reportPhoto"
+required
 accept="image/*"
 onchange="handleFile(this)">
 <div id="reportPhotoStatus"
@@ -814,9 +813,98 @@ document.getElementById("videoStatus").innerHTML =
 });
 
 };
+
+
 /* SUBMIT */
 
 window.submitWorking = async function(){
+
+/* VALIDATION */
+
+let type =
+document.getElementById("type").value;
+
+if(!document.getElementById("date").value){
+alert("Select Date");
+return;
+}
+
+if(!document.getElementById("name").value){
+alert("Enter Engineer Name");
+return;
+}
+
+if(!type){
+alert("Select Type");
+return;
+}
+
+/* GPS */
+
+if(type==="GPS"){
+
+if(!document.getElementById("rgno").value){
+alert("Enter RG No.");
+return;
+}
+
+if(!document.getElementById("assetcode").value){
+alert("Enter Asset Code");
+return;
+}
+
+if(!document.getElementById("imei").value){
+alert("Enter IMEI No.");
+return;
+}
+
+if(!document.getElementById("gpsSensorNo").value){
+alert("Enter Sensor No.");
+return;
+}
+
+if(!document.getElementById("gpsPhoto").files[0]){
+alert("Upload Installation Photo");
+return;
+}
+
+}
+
+/* SENSOR */
+
+if(type==="Sensor"){
+
+if(!document.getElementById("installationType").value){
+alert("Select Installation Type");
+return;
+}
+
+if(!document.getElementById("indusId").value){
+alert("Enter Indus ID");
+return;
+}
+
+if(!document.getElementById("usedWire").value){
+alert("Enter Used Wire");
+return;
+}
+
+if(!document.getElementById("sensorNo").value){
+alert("Enter Sensor No.");
+return;
+}
+
+if(!document.getElementById("videoLink").value){
+alert("Upload Video");
+return;
+}
+
+if(!document.getElementById("reportPhoto").files[0]){
+alert("Upload Reports Photo");
+return;
+}
+
+}
 
 let btn =
 document.getElementById("submitBtn");
@@ -895,6 +983,9 @@ document.getElementById("usedWire").value;
 
 saveData.sensorNo =
 document.getElementById("sensorNo").value;
+
+saveData.indusId =
+document.getElementById("indusId").value;
 
 /* VIDEO LINK */
 
@@ -1123,15 +1214,33 @@ html += `
 
 <div class="report-card">
 
+
+<div style="
+display:flex;
+justify-content:space-between;
+align-items:center;
+margin-bottom:10px;
+">
+
+<h3>👤 ${x.name}</h3>
+
 ${isAdmin ? `
 <button
-class="delete-btn"
-onclick="deleteEntry('${x.id}')">
-🗑
+onclick="deleteEntry('${x.id}')"
+style="
+background:red;
+color:white;
+border:none;
+padding:8px 12px;
+border-radius:10px;
+cursor:pointer;
+font-weight:bold;
+">
+🗑 Delete
 </button>
 ` : ""}
 
-<h3>👤 ${x.name}</h3>
+</div>
 
 <p>📌 Type: ${x.type}</p>
 
@@ -1189,6 +1298,9 @@ ${x.usedWire || ""}</p>
 
 <p>🔢 Sensor No:
 ${x.sensorNo || ""}</p>
+
+<p>🔢 Indus Id:
+${x.indusId || ""}</p>
 
 `;
 
