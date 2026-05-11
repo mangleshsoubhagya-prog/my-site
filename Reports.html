@@ -377,7 +377,8 @@ type="file"
 id="gpsPhoto"
 required
 accept="image/*"
-onchange="handleFile(this)">
+multiple
+onchange="handleFiles(this)">
 <div id="gpsPhotoStatus"
 style="margin-top:8px;font-size:13px;color:#fff;">
 </div>
@@ -457,7 +458,8 @@ type="file"
 id="reportPhoto"
 required
 accept="image/*"
-onchange="handleFile(this)">
+multiple
+onchange="handleFiles(this)">
 <div id="reportPhotoStatus"
 style="margin-top:8px;font-size:13px;color:#fff;">
 </div>
@@ -631,37 +633,56 @@ type==="Sensor" ? "block" : "none";
 
 /* FILE HANDLE */
 
-window.handleFile = async function(input){
+/* MULTIPLE FILE HANDLE */
 
-let file = input.files[0];
+window.handleFiles = async function(input){
 
-if(!file) return;
+let files = Array.from(input.files);
+
+if(files.length < 1){
+
+alert("Minimum 1 Photo Required");
+input.value = "";
+return;
+
+}
+
+if(files.length > 5){
+
+alert("Maximum 5 Photos Allowed");
+input.value = "";
+return;
+
+}
 
 document.getElementById("uploadStatus").innerHTML =
-"⏳ Processing File...";
+"⏳ Processing Photos...";
+
+let compressedFiles = [];
+
+for(let file of files){
 
 if(file.type.startsWith("image/")){
 
 let compressed =
 await compressImage(file);
 
-input.compressedFile =
-compressed;
+compressedFiles.push(compressed);
+
+}else{
+
+compressedFiles.push(file);
 
 }
 
-else{
-
-input.compressedFile =
-file;
-
 }
+
+input.compressedFiles = compressedFiles;
 
 document.getElementById("uploadStatus").innerHTML =
-"✅ File Ready";
+`✅ ${compressedFiles.length} Photos Ready`;
 
 };
-
 /* IMAGE COMPRESS */
 
 async function compressImage(file){
@@ -954,21 +975,26 @@ document.getElementById("gpsSensorNo").value;
 let photo =
 document.getElementById("gpsPhoto");
 
-if(photo.files[0]){
+if(photo.files.length > 0){
 
 document.getElementById("gpsPhotoStatus").innerHTML =
-"⏳ Uploading Photo...";
+"⏳ Uploading Photos...";
 
-saveData.photo =
-await uploadToCloudinary(
-photo.compressedFile
-);
+saveData.photos = [];
 
-document.getElementById("gpsPhotoStatus").innerHTML =
-"✅ Photo Uploaded";
+for(let file of photo.compressedFiles){
+
+let url =
+await uploadToCloudinary(file);
+
+saveData.photos.push(url);
 
 }
 
+document.getElementById("gpsPhotoStatus").innerHTML =
+"✅ Photos Uploaded";
+
+}
 }
 
 /* SENSOR */
@@ -997,18 +1023,24 @@ document.getElementById("videoLink").value || "";
 let photo =
 document.getElementById("reportPhoto");
 
-if(photo.files[0]){
+if(photo.files.length > 0){
 
 document.getElementById("reportPhotoStatus").innerHTML =
-"⏳ Uploading Photo...";
+"⏳ Uploading Photos...";
 
-saveData.photo =
-await uploadToCloudinary(
-photo.compressedFile
-);
+saveData.photos = [];
+
+for(let file of photo.compressedFiles){
+
+let url =
+await uploadToCloudinary(file);
+
+saveData.photos.push(url);
+
+}
 
 document.getElementById("reportPhotoStatus").innerHTML =
-"✅ Photo Uploaded";
+"✅ Photos Uploaded";
 
 }
 
@@ -1260,18 +1292,20 @@ html += `
 
 `;
 
-if(x.photo){
+if(x.photos && x.photos.length){
+
+x.photos.forEach(photo=>{
 
 html += `
 
 <img
-src="${x.photo}"
+src="${photo}"
 class="media">
 
 <br><br>
 
 <a
-href="${x.photo}"
+href="${photo}"
 target="_blank">
 
 <button class="submit">
@@ -1280,10 +1314,13 @@ target="_blank">
 
 </a>
 
+<br><br>
+
 `;
 
-}
+});
 
+}
 }
 
 if(x.type==="Sensor"){
