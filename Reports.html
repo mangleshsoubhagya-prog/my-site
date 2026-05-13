@@ -1079,7 +1079,8 @@ btn.innerHTML = "Submit";
 /* RESET */
 
 window.resetForm = function(){
-
+document.getElementById("gpsPhoto").compressedFiles = [];
+document.getElementById("reportPhoto").compressedFiles = [];
 document.querySelectorAll("input").forEach(x=>{
 
 if(x.type!=="date"){
@@ -1371,18 +1372,20 @@ target="_blank">
 
 }
 
-if(x.photo){
+if(x.photos && x.photos.length){
+
+x.photos.forEach(photo=>{
 
 html += `
 
 <img
-src="${x.photo}"
+src="${photo}"
 class="media">
 
 <br><br>
 
 <a
-href="${x.photo}"
+href="${photo}"
 target="_blank">
 
 <button class="submit">
@@ -1391,10 +1394,13 @@ target="_blank">
 
 </a>
 
+<br><br>
+
 `;
 
-}
+});
 
+}
 }
 
 html += `</div>`;
