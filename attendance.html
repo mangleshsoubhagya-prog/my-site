@@ -173,7 +173,12 @@ gap:10px;
 }
 
 </style>
+<link
+rel="stylesheet"
+href="https://unpkg.com/leaflet/dist/leaflet.css"
+/>
 
+<script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
 </head>
 
 <body>
@@ -432,6 +437,12 @@ downloadModal.style.display = "none";
 function closeLiveModal(){
 
 liveModal.style.display = "none";
+
+}
+
+function closePlayback(){
+
+playbackModal.style.display = "none";
 
 }
 
@@ -766,7 +777,13 @@ html || "No Live Users Today";
 // PLAYBACK
 // ===============================
 
+let playbackMap = null;
+let playbackMarker = null;
+let playbackLine = null;
+
 async function showPlayback(name){
+
+playbackModal.style.display = "flex";
 
 let snap = await db.collection("trackingHistory")
 .where("name","==",name)
@@ -789,7 +806,7 @@ return;
 
 }
 
-// SORT BY TIME
+// SORT
 
 points.sort((a,b)=>{
 
@@ -798,22 +815,89 @@ new Date(b.time.seconds*1000);
 
 });
 
-// START POINT
-let first = points[0];
+// CLEAR OLD MAP
 
-// END POINT
-let last = points[points.length-1];
+if(playbackMap){
 
-// GOOGLE ROUTE
-window.open(
-
-`https://www.google.com/maps/dir/${first.lat},${first.lon}/${last.lat},${last.lon}`,
-
-"_blank"
-
-);
+playbackMap.remove();
 
 }
+
+// CREATE MAP
+
+playbackMap = L.map("playbackMap").setView(
+[points[0].lat, points[0].lon],
+15
+);
+
+// TILE
+
+L.tileLayer(
+'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
+{
+maxZoom: 19
+}
+).addTo(playbackMap);
+
+// ROUTE LINE
+
+let latlngs = points.map(p=>[
+p.lat,
+p.lon
+]);
+
+playbackLine = L.polyline(
+latlngs,
+{
+color:'blue',
+weight:5
+}
+).addTo(playbackMap);
+
+playbackMap.fitBounds(
+playbackLine.getBounds()
+);
+setTimeout(()=>{
+
+playbackMap.invalidateSize();
+
+},300);
+// MOVING MARKER
+
+playbackMarker = L.marker(
+[points[0].lat, points[0].lon]
+).addTo(playbackMap);
+
+// ANIMATION
+
+let i = 0;
+
+let interval = setInterval(()=>{
+
+if(i >= points.length){
+
+clearInterval(interval);
+
+return;
+
+}
+
+let p = points[i];
+
+playbackMarker.setLatLng(
+[p.lat,p.lon]
+);
+
+playbackMap.panTo(
+[p.lat,p.lon]
+);
+
+i++;
+
+},1000);
+
+}
+
 // ===============================
 // LOAD DATA
 // ===============================
@@ -1132,5 +1216,31 @@ window.location.replace("login.html");
 window.onload = loadData;
 
 </script>
+<!-- PLAYBACK MODAL -->
+
+<div id="playbackModal" class="modal">
+
+<div class="modal-box" style="max-width:900px;">
+
+<h3>🛣 Playback Route</h3>
+
+<div
+id="playbackMap"
+style="
+height:500px;
+border-radius:15px;
+margin-top:10px;
+">
+</div>
+
+<br>
+
+<button onclick="closePlayback()">
+Close
+</button>
+
+</div>
+
+</div>
 </body>
 </html>
