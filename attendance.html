@@ -2,12 +2,19 @@
 <html>
 <head>
 
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
 
-<meta name="viewport" content="width=device-width, initial-scale=1">
-
 <link href="https://fonts.googleapis.com/css2?family=Poppins&display=swap" rel="stylesheet">
+
+<link
+rel="stylesheet"
+href="https://unpkg.com/leaflet/dist/leaflet.css"
+/>
+
+<script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
 
 <style>
 
@@ -115,23 +122,12 @@ background:rgba(255,255,255,0.08);
 padding:12px;
 margin:10px 0;
 border-radius:15px;
-transition:0.3s;
-}
-
-.user-card:hover{
-transform:scale(1.02);
-background:rgba(255,255,255,0.12);
 }
 
 .map-btn{
-margin-top:10px;
 background:#00c853;
 color:white;
-}
-
-.live-btn{
-background:#ff9800;
-color:white;
+margin-top:10px;
 }
 
 .delete-btn{
@@ -140,23 +136,27 @@ color:white;
 margin-top:10px;
 }
 
-.status{
-padding:5px 10px;
-border-radius:20px;
-font-size:12px;
-font-weight:bold;
-display:inline-block;
-margin-top:5px;
+.live-btn{
+background:#ff9800;
+color:white;
 }
 
 .online{
 background:#00e676;
 color:black;
+padding:5px 10px;
+border-radius:20px;
+display:inline-block;
+font-size:12px;
+font-weight:bold;
 }
 
-.offline{
-background:#ff1744;
-color:white;
+.salary-box{
+background:#0f172a;
+padding:12px;
+border-radius:12px;
+line-height:2;
+margin-top:10px;
 }
 
 @media(max-width:700px){
@@ -173,12 +173,7 @@ gap:10px;
 }
 
 </style>
-<link
-rel="stylesheet"
-href="https://unpkg.com/leaflet/dist/leaflet.css"
-/>
 
-<script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
 </head>
 
 <body>
@@ -258,7 +253,7 @@ Click any date...
 
 <input id="manualPlace" placeholder="Enter Place">
 
-<input id="autoLocation" readonly placeholder="Fetching GPS...">
+<input id="autoLocation" readonly>
 
 <button onclick="submitAttendance()">
 Submit
@@ -278,7 +273,7 @@ Close
 
 <div class="modal-box">
 
-<h3>📥 Download Data</h3>
+<h3>📥 Download CSV</h3>
 
 <input type="date" id="fromDate">
 
@@ -296,19 +291,46 @@ Close
 
 </div>
 
-<!-- LIVE TRACKING MODAL -->
+<!-- LIVE MODAL -->
 
 <div id="liveModal" class="modal">
 
 <div class="modal-box">
 
-<h3>📡 Live Tracking</h3>
+<h3>📡 Live Users</h3>
 
 <div id="liveUsersList">
 Loading...
 </div>
 
 <button onclick="closeLiveModal()">
+Close
+</button>
+
+</div>
+
+</div>
+
+<!-- PLAYBACK MODAL -->
+
+<div id="playbackModal" class="modal">
+
+<div class="modal-box" style="max-width:900px;">
+
+<h3>🛣 Playback Route</h3>
+
+<div
+id="playbackMap"
+style="
+height:500px;
+border-radius:15px;
+margin-top:10px;
+">
+</div>
+
+<br>
+
+<button onclick="closePlayback()">
 Close
 </button>
 
@@ -357,15 +379,28 @@ document.getElementById("liveTrackingBtn").style.display =
 }
 
 // ===============================
+// SALARY
+// ===============================
+
+let monthlySalaryMap = {
+
+"Manglesh":20000,
+"Nityanand":13000,
+"Arvind":13000,
+"Alok":15000,
+"Rajan":13000
+
+};
+
+// ===============================
 
 let allData = [];
 let currentDate = new Date();
-let isSubmitting = false;
 let trackingInterval = null;
-let selectedDate = getDate(new Date());
+let selectedDate = "";
 
 // ===============================
-// DATE FORMAT
+// DATE
 // ===============================
 
 function getDate(d){
@@ -379,17 +414,121 @@ String(x.getDate()).padStart(2,'0');
 }
 
 // ===============================
-// DASHBOARD
+// MONTH RANGE
 // ===============================
 
-function goDashboard(){
+function getMonthRange(){
 
-window.location.href = "dashboard.html";
+let base = new Date(currentDate);
+
+let start =
+base.getDate() >= 26
+?
+new Date(base.getFullYear(),base.getMonth(),26)
+:
+new Date(base.getFullYear(),base.getMonth()-1,26);
+
+let end =
+new Date(start.getFullYear(),start.getMonth()+1,25);
+
+return {start,end};
 
 }
 
 // ===============================
-// MODALS
+// SALARY DATA
+// ===============================
+
+function getSalaryMonthData(name){
+
+let {start,end} = getMonthRange();
+
+let startDate = getDate(start);
+let endDate = getDate(end);
+
+// ======================
+// UNIQUE ATTENDANCE
+// ======================
+
+let uniqueDates = [];
+
+// LOOP ALL DATA
+
+allData.forEach(x=>{
+
+if(
+x.name === name &&
+x.date >= startDate &&
+x.date <= endDate
+){
+
+// DUPLICATE REMOVE
+
+if(!uniqueDates.includes(x.date)){
+
+uniqueDates.push(x.date);
+
+}
+
+}
+
+});
+
+// FINAL ATTENDANCE COUNT
+
+let attendance = uniqueDates.length;
+
+// ======================
+// TOTAL DAYS
+// ======================
+
+let totalDays = 30;
+
+// ======================
+// MONTHLY SALARY
+// ======================
+
+let monthlySalary =
+monthlySalaryMap[name] || 13000;
+
+// ======================
+// PER DAY SALARY
+// ======================
+
+let perDay =
+monthlySalary / totalDays;
+
+// ======================
+// EARNED SALARY
+// ======================
+
+let earned =
+attendance * perDay;
+
+// ======================
+
+return {
+
+attendance,
+
+monthlySalary:
+monthlySalary.toFixed(0),
+
+perDay:
+perDay.toFixed(0),
+
+earned:
+earned.toFixed(0),
+
+range:
+`${startDate} → ${endDate}`
+
+};
+
+}
+
+// ===============================
+// MODAL
 // ===============================
 
 function openAttendance(){
@@ -402,13 +541,6 @@ p=>{
 
 autoLocation.value =
 p.coords.latitude + "," + p.coords.longitude;
-
-},
-
-()=>{
-
-autoLocation.value =
-"Location Permission Denied";
 
 }
 
@@ -447,35 +579,23 @@ playbackModal.style.display = "none";
 }
 
 // ===============================
-// PUNCH IN
-// ===============================
-
-// ===============================
-// PUNCH IN
+// ATTENDANCE
 // ===============================
 
 async function submitAttendance(){
-
-if(isSubmitting) return;
-
-isSubmitting = true;
 
 let today = getDate(new Date());
 
 let docId = user + "_" + today;
 
-try{
-
-let checkDoc =
+let check =
 await db.collection("attendance")
 .doc(docId)
 .get();
 
-if(checkDoc.exists){
+if(check.exists){
 
 alert("Already Marked");
-
-isSubmitting = false;
 
 return;
 
@@ -484,8 +604,6 @@ return;
 navigator.geolocation.getCurrentPosition(
 
 async p=>{
-
-try{
 
 await db.collection("attendance")
 .doc(docId)
@@ -496,68 +614,27 @@ date:today,
 place:manualPlace.value,
 lat:p.coords.latitude,
 lon:p.coords.longitude,
-status:"online",
 timestamp:new Date()
 
 });
 
-startLiveTracking();
-
-alert("Punch In Success ✅");
+alert("Attendance Marked");
 
 closeAttendance();
 
 loadData();
 
-}
-catch(e){
+startLiveTracking();
 
-console.log(e);
-
-alert("Save Error");
-
-}
-
-isSubmitting = false;
-
-},
-
-err=>{
-
-console.log(err);
-
-alert("Location Error");
-
-isSubmitting = false;
-
-},
-
-{
-enableHighAccuracy:true
 }
 
 );
 
 }
-catch(e){
-
-console.log(e);
-
-isSubmitting = false;
-
-}
-
-}
-// ===============================
-// LIVE TRACKING
-// ===============================
 
 // ===============================
 // LIVE TRACKING
 // ===============================
-
-let lastLat = null;
-let lastLon = null;
 
 function startLiveTracking(){
 
@@ -573,81 +650,28 @@ navigator.geolocation.getCurrentPosition(
 
 async p=>{
 
-let lat = p.coords.latitude;
-let lon = p.coords.longitude;
-
-// FIRST TIME
-if(lastLat === null){
-
-lastLat = lat;
-lastLon = lon;
-
-}
-
-// DISTANCE CHECK
-let moved =
-Math.abs(lat - lastLat) > 0.0001 ||
-Math.abs(lon - lastLon) > 0.0001;
-
-// ONLY SAVE IF MOVED
-if(moved){
-
-try{
-
-// LIVE LOCATION
 await db.collection("liveTracking")
 .doc(user)
 .set({
 
 name:user,
-lat:lat,
-lon:lon,
-updated:new Date(),
-status:"online"
+lat:p.coords.latitude,
+lon:p.coords.longitude,
+updated:new Date()
 
 });
 
-// HISTORY SAVE
 await db.collection("trackingHistory")
 .add({
 
 name:user,
-lat:lat,
-lon:lon,
-time:new Date(),
-date:getDate(new Date())
+lat:p.coords.latitude,
+lon:p.coords.longitude,
+date:getDate(new Date()),
+time:new Date()
 
 });
 
-// UPDATE LAST LOCATION
-lastLat = lat;
-lastLon = lon;
-
-console.log("Moved -> Saved");
-
-}
-catch(e){
-
-console.log(e);
-
-}
-
-}else{
-
-console.log("No Movement");
-
-}
-
-},
-
-err=>{
-
-console.log(err);
-
-},
-
-{
-enableHighAccuracy:true
 }
 
 );
@@ -655,6 +679,7 @@ enableHighAccuracy:true
 },10000);
 
 }
+
 // ===============================
 // PUNCH OUT
 // ===============================
@@ -679,63 +704,32 @@ alert("Punch Out Success");
 // LIVE USERS
 // ===============================
 
-// ===============================
-// LIVE USERS
-// ===============================
-
 async function showLiveUsers(){
 
-if(role !== "admin"){
-
-alert("Admin Only");
-
-return;
-
-}
+if(role!=="admin") return;
 
 liveModal.style.display = "flex";
 
-let today = getDate(new Date());
-
-// TODAY ATTENDANCE
-let attendanceSnap =
-await db.collection("attendance")
-.where("date","==",today)
-.get();
-
-let todayUsers = [];
-
-attendanceSnap.forEach(doc=>{
-
-todayUsers.push(doc.data().name);
-
-});
-
-// LIVE TRACKING
-let liveSnap =
-await db.collection("liveTracking")
-.get();
+let snap =
+await db.collection("liveTracking").get();
 
 let html = "";
 
-liveSnap.forEach(doc=>{
+snap.forEach(doc=>{
 
 let x = doc.data();
-
-// ONLY TODAY USERS
-if(todayUsers.includes(x.name)){
 
 html += `
 
 <div class="user-card">
 
-<h3>👷 ${x.name}</h3>
+<h3>${x.name}</h3>
 
-<div class="status online">
+<div class="online">
 ONLINE
 </div>
 
-<br>
+<br><br>
 
 <button
 class="live-btn"
@@ -757,37 +751,26 @@ onclick="showPlayback('${x.name}')">
 
 `;
 
-}
-
 });
 
-document.getElementById("liveUsersList").innerHTML =
-html || "No Live Users Today";
+liveUsersList.innerHTML =
+html || "No Live Users";
 
 }
-// ===============================
-// PLAYBACK
-// ===============================
-
-// ===============================
-// PLAYBACK
-// ===============================
 
 // ===============================
 // PLAYBACK
 // ===============================
 
 let playbackMap = null;
-let playbackMarker = null;
-let playbackLine = null;
 
 async function showPlayback(name){
 
 playbackModal.style.display = "flex";
 
-let snap = await db.collection("trackingHistory")
+let snap =
+await db.collection("trackingHistory")
 .where("name","==",name)
-.where("date","==",selectedDate)
 .get();
 
 let points = [];
@@ -798,15 +781,13 @@ points.push(doc.data());
 
 });
 
-if(points.length === 0){
+if(points.length===0){
 
-alert("No Playback Data");
+alert("No Data");
 
 return;
 
 }
-
-// SORT
 
 points.sort((a,b)=>{
 
@@ -815,86 +796,44 @@ new Date(b.time.seconds*1000);
 
 });
 
-// CLEAR OLD MAP
-
 if(playbackMap){
 
 playbackMap.remove();
 
 }
 
-// CREATE MAP
-
-playbackMap = L.map("playbackMap").setView(
-[points[0].lat, points[0].lon],
+playbackMap =
+L.map("playbackMap").setView(
+[points[0].lat,points[0].lon],
 15
 );
 
-// TILE
-
 L.tileLayer(
-'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
-{
-maxZoom: 19
-}
+'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png'
 ).addTo(playbackMap);
 
-// ROUTE LINE
+let latlngs =
+points.map(p=>[p.lat,p.lon]);
 
-let latlngs = points.map(p=>[
-p.lat,
-p.lon
-]);
-
-playbackLine = L.polyline(
-latlngs,
-{
+let line =
+L.polyline(latlngs,{
 color:'blue',
 weight:5
-}
-).addTo(playbackMap);
+}).addTo(playbackMap);
 
 playbackMap.fitBounds(
-playbackLine.getBounds()
+line.getBounds()
 );
+
+L.marker(
+[points[0].lat,points[0].lon]
+).addTo(playbackMap);
+
 setTimeout(()=>{
 
 playbackMap.invalidateSize();
 
 },300);
-// MOVING MARKER
-
-playbackMarker = L.marker(
-[points[0].lat, points[0].lon]
-).addTo(playbackMap);
-
-// ANIMATION
-
-let i = 0;
-
-let interval = setInterval(()=>{
-
-if(i >= points.length){
-
-clearInterval(interval);
-
-return;
-
-}
-
-let p = points[i];
-
-playbackMarker.setLatLng(
-[p.lat,p.lon]
-);
-
-playbackMap.panTo(
-[p.lat,p.lon]
-);
-
-i++;
-
-},1000);
 
 }
 
@@ -925,35 +864,29 @@ function renderCalendar(){
 
 calendarGrid.innerHTML = "";
 
-let base = new Date(currentDate);
-
-let start =
-base.getDate() >= 26
-?
-new Date(base.getFullYear(),base.getMonth(),26)
-:
-new Date(base.getFullYear(),base.getMonth()-1,26);
-
-let end =
-new Date(start.getFullYear(),start.getMonth()+1,25);
+let {start,end} =
+getMonthRange();
 
 monthLabel.innerText =
-start.toDateString() + " → " +
-end.toDateString();
+getDate(start) + " → " + getDate(end);
 
 let temp = new Date(start);
 
-while(temp <= end){
+while(temp<=end){
 
 let full = getDate(temp);
 
 let found =
-role === "admin"
-? allData.some(x => x.date === full)
-: allData.some(x => x.date === full && x.name === user);
+role==="admin"
+?
+allData.some(x=>x.date===full)
+:
+allData.some(
+x=>x.date===full && x.name===user
+);
 
 let today =
-getDate(new Date()) === full;
+getDate(new Date())===full;
 
 calendarGrid.innerHTML += `
 
@@ -968,12 +901,13 @@ ${temp.getDate()}
 
 <small>
 ${temp.toLocaleDateString(
-"en-IN",
+'en-IN',
 {weekday:'short'}
 )}
 </small>
 
 </div>
+
 `;
 
 temp.setDate(temp.getDate()+1);
@@ -991,9 +925,14 @@ function showDay(date){
 selectedDate = date;
 
 let list =
-role === "admin"
-? allData.filter(x => x.date === date)
-: allData.filter(x => x.date === date && x.name === user);
+role==="admin"
+?
+allData.filter(x=>x.date===date)
+:
+allData.filter(
+x=>x.date===date && x.name===user
+);
+
 if(list.length===0){
 
 engineerList.innerHTML =
@@ -1011,17 +950,51 @@ let unique =
 Object.values(users);
 
 engineerList.innerHTML =
-unique.map(x=>`
+unique.map(x=>{
+
+let s =
+getSalaryMonthData(x.name);
+
+return `
 
 <div class="user-card">
 
-<div style="font-size:18px;font-weight:bold;">
-👷 ${x.name}
-</div>
+<h3>👷 ${x.name}</h3>
 
-<div style="margin-top:5px;">
+<div>
 📍 ${x.place || "No Place"}
 </div>
+
+<div class="salary-box">
+
+📅 Salary Month :
+<b>${s.range}</b>
+
+<br>
+
+✅ Attendance :
+<b>${s.attendance} Days</b>
+
+<br>
+
+💵 Monthly Salary :
+<b>₹${s.monthlySalary}</b>
+
+<br>
+
+📆 Per Day Salary :
+<b>₹${s.perDay}</b>
+
+<br>
+
+🏦 Earned Salary :
+<b style="color:#00ff95;">
+₹${s.earned}
+</b>
+
+</div>
+
+<br>
 
 <button
 class="map-btn"
@@ -1032,81 +1005,57 @@ onclick="openMap('${x.lat}','${x.lon}')">
 </button>
 
 ${
-role === "admin"
+role==="admin"
 ?
-
-`<button
+`
+<button
 class="delete-btn"
 onclick="deleteAttendance('${x.id}')">
 
-🗑 Delete Attendance
+🗑 Delete
 
-</button>`
-
+</button>
+`
 :
-
 ""
 }
 
 </div>
 
-`).join("");
+`;
+
+}).join("");
 
 }
 
 // ===============================
-// DELETE ATTENDANCE
+// DELETE
 // ===============================
 
 async function deleteAttendance(id){
 
-if(role !== "admin"){
-
-alert("Only Admin Can Delete");
-
-return;
-
-}
+if(role!=="admin") return;
 
 let ok =
 confirm("Delete Attendance ?");
 
 if(!ok) return;
 
-try{
-
 await db.collection("attendance")
 .doc(id)
 .delete();
 
-alert("Deleted ✅");
+alert("Deleted");
 
 loadData();
 
 }
-catch(e){
-
-console.log(e);
-
-alert("Delete Failed");
-
-}
-
-}
 
 // ===============================
-// OPEN MAP
+// MAP
 // ===============================
 
 function openMap(lat,lon){
-
-if(!lat || !lon){
-
-alert("Location Not Found");
-
-return;
-
-}
 
 window.open(
 `https://www.google.com/maps?q=${lat},${lon}`,
@@ -1116,7 +1065,7 @@ window.open(
 }
 
 // ===============================
-// NAVIGATION
+// MONTH
 // ===============================
 
 function prevMonth(){
@@ -1161,14 +1110,6 @@ allData.filter(
 x=>x.date>=from && x.date<=to
 );
 
-if(filtered.length===0){
-
-alert("No Data");
-
-return;
-
-}
-
 let csv =
 "Name,Date,Place,Latitude,Longitude\n";
 
@@ -1196,51 +1137,34 @@ a.click();
 }
 
 // ===============================
+// DASHBOARD
+// ===============================
+
+function goDashboard(){
+
+window.location.href =
+"dashboard.html";
+
+}
+
+// ===============================
 // LOGOUT
 // ===============================
 
 function logout(){
 
-localStorage.removeItem("user");
-localStorage.removeItem("role");
-sessionStorage.clear();
+localStorage.clear();
 
-window.location.replace("login.html");
+window.location.href =
+"login.html";
 
 }
 
-// ===============================
-// START
 // ===============================
 
 window.onload = loadData;
 
 </script>
-<!-- PLAYBACK MODAL -->
 
-<div id="playbackModal" class="modal">
-
-<div class="modal-box" style="max-width:900px;">
-
-<h3>🛣 Playback Route</h3>
-
-<div
-id="playbackMap"
-style="
-height:500px;
-border-radius:15px;
-margin-top:10px;
-">
-</div>
-
-<br>
-
-<button onclick="closePlayback()">
-Close
-</button>
-
-</div>
-
-</div>
 </body>
 </html>
