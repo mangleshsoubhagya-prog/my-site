@@ -85,6 +85,11 @@ color:black;
 background:#ff4b2b;
 }
 
+.sunday{
+background:yellow !important;
+color:black !important;
+}
+
 .modal{
 display:none;
 position:fixed;
@@ -177,18 +182,17 @@ gap:10px;
 </head>
 
 <body>
-
 <div class="navbar">
 
 <h2>Bhavy Softech Solution</h2>
 
-<div>
-
-<span id="userName"></span>
+<div style="display:flex;align-items:center;gap:8px;">
 
 <button onclick="goDashboard()">
 🏠 Dashboard
 </button>
+
+<span id="userName"></span>
 
 <button onclick="logout()">
 Logout
@@ -216,7 +220,9 @@ Logout
 id="liveTrackingBtn"
 onclick="showLiveUsers()"
 style="display:none;background:#ff9800;color:white;">
+
 📡 Live Tracking
+
 </button>
 
 </div>
@@ -243,7 +249,7 @@ Click any date...
 
 </div>
 
-<!-- ATTENDANCE MODAL -->
+<!-- ATTENDANCE -->
 
 <div id="attendanceModal" class="modal">
 
@@ -267,7 +273,7 @@ Close
 
 </div>
 
-<!-- DOWNLOAD MODAL -->
+<!-- DOWNLOAD -->
 
 <div id="downloadModal" class="modal">
 
@@ -291,7 +297,7 @@ Close
 
 </div>
 
-<!-- LIVE MODAL -->
+<!-- LIVE -->
 
 <div id="liveModal" class="modal">
 
@@ -311,38 +317,15 @@ Close
 
 </div>
 
-<!-- PLAYBACK MODAL -->
-
-<div id="playbackModal" class="modal">
-
-<div class="modal-box" style="max-width:900px;">
-
-<h3>🛣 Playback Route</h3>
-
-<div
-id="playbackMap"
-style="
-height:500px;
-border-radius:15px;
-margin-top:10px;
-">
-</div>
-
-<br>
-
-<button onclick="closePlayback()">
-Close
-</button>
-
-</div>
-
-</div>
-
 <script>
 
-// ===============================
+function goDashboard(){
+
+window.location.href = "dashboard.html";
+
+}
+
 // FIREBASE
-// ===============================
 
 const firebaseConfig = {
 
@@ -358,9 +341,7 @@ firebase.initializeApp(firebaseConfig);
 
 const db = firebase.firestore();
 
-// ===============================
 // USER
-// ===============================
 
 let user =
 localStorage.getItem("user") || "Guest";
@@ -378,9 +359,7 @@ document.getElementById("liveTrackingBtn").style.display =
 
 }
 
-// ===============================
 // SALARY
-// ===============================
 
 let monthlySalaryMap = {
 
@@ -392,16 +371,11 @@ let monthlySalaryMap = {
 
 };
 
-// ===============================
-
 let allData = [];
 let currentDate = new Date();
 let trackingInterval = null;
-let selectedDate = "";
 
-// ===============================
 // DATE
-// ===============================
 
 function getDate(d){
 
@@ -413,9 +387,7 @@ String(x.getDate()).padStart(2,'0');
 
 }
 
-// ===============================
 // MONTH RANGE
-// ===============================
 
 function getMonthRange(){
 
@@ -435,9 +407,7 @@ return {start,end};
 
 }
 
-// ===============================
 // SALARY DATA
-// ===============================
 
 function getSalaryMonthData(name){
 
@@ -446,23 +416,21 @@ let {start,end} = getMonthRange();
 let startDate = getDate(start);
 let endDate = getDate(end);
 
-// ======================
-// UNIQUE ATTENDANCE
-// ======================
+// USER DATA
 
-let uniqueDates = [];
+let userData = allData.filter(x =>
 
-// LOOP ALL DATA
-
-allData.forEach(x=>{
-
-if(
 x.name === name &&
 x.date >= startDate &&
 x.date <= endDate
-){
 
-// DUPLICATE REMOVE
+);
+
+// UNIQUE DATES
+
+let uniqueDates = [];
+
+userData.forEach(x=>{
 
 if(!uniqueDates.includes(x.date)){
 
@@ -470,42 +438,187 @@ uniqueDates.push(x.date);
 
 }
 
-}
-
 });
 
-// FINAL ATTENDANCE COUNT
+uniqueDates.sort();
 
-let attendance = uniqueDates.length;
+// NO DATA
 
-// ======================
+if(uniqueDates.length === 0){
+
+return {
+
+attendance:0,
+monthlySalary:0,
+perDay:0,
+earned:0,
+range:`${startDate} → ${endDate}`,
+workingSunday:0,
+sundayCount:0,
+absent:0,
+totalDays:0
+
+};
+
+}
+
+// COUNTS
+
+let attendance = 0;
+let workingSunday = 0;
+let sundayCount = 0;
+let absent = 0;
+
+// NORMAL MARK COUNT
+
+attendance = uniqueDates.length;
+
+// DATE LOOP
+
+let joiningDate =
+new Date(uniqueDates[0] + "T00:00:00");
+
+let current =
+new Date();
+
+current.setHours(0,0,0,0);
+
+let tempDate =
+new Date(joiningDate);
+
+while(tempDate <= current){
+
+let isSunday =
+tempDate.getDay() === 0;
+
+if(isSunday){
+
+sundayCount++;
+
+let sunday =
+getDate(tempDate);
+
+let saturdayDate =
+new Date(tempDate);
+
+saturdayDate.setDate(
+saturdayDate.getDate()-1
+);
+
+let mondayDate =
+new Date(tempDate);
+
+mondayDate.setDate(
+mondayDate.getDate()+1
+);
+
+let saturday =
+getDate(saturdayDate);
+
+let monday =
+getDate(mondayDate);
+
+// CHECK MARKS
+
+let satMarked =
+uniqueDates.includes(saturday);
+
+let sunMarked =
+uniqueDates.includes(sunday);
+
+let monMarked =
+uniqueDates.includes(monday);
+
+// =====================
+// SUNDAY NO MARK
+// SAT + MON REQUIRED
+// =====================
+
+if(!sunMarked && satMarked && monMarked){
+
+attendance++;
+
+}
+
+// =====================
+// SUNDAY MARK
+// EXTRA COUNT
+// =====================
+
+if(sunMarked){
+
+workingSunday++;
+
+attendance++;
+
+}
+
+}
+
+tempDate.setDate(
+tempDate.getDate()+1
+);
+
+}
+
+// ABSENT
+
+let totalNormalDays = 0;
+
+tempDate =
+new Date(joiningDate);
+
+while(tempDate <= current){
+
+if(tempDate.getDay() !== 0){
+
+totalNormalDays++;
+
+}
+
+tempDate.setDate(
+tempDate.getDate()+1
+);
+
+}
+
+absent =
+totalNormalDays -
+(uniqueDates.filter(x=>{
+
+let d =
+new Date(x + "T00:00:00");
+
+return d.getDay() !== 0;
+
+}).length);
+
+if(absent < 0){
+
+absent = 0;
+
+}
+
 // TOTAL DAYS
-// ======================
 
-let totalDays = 30;
+let totalDays =
+Math.floor(
+(end - start)
+/ (1000*60*60*24)
+) + 1;
 
-// ======================
-// MONTHLY SALARY
-// ======================
+// SALARY
 
 let monthlySalary =
 monthlySalaryMap[name] || 13000;
 
-// ======================
-// PER DAY SALARY
-// ======================
-
 let perDay =
 monthlySalary / totalDays;
-
-// ======================
-// EARNED SALARY
-// ======================
 
 let earned =
 attendance * perDay;
 
-// ======================
+// RETURN
 
 return {
 
@@ -521,15 +634,20 @@ earned:
 earned.toFixed(0),
 
 range:
-`${startDate} → ${endDate}`
+`${startDate} → ${endDate}`,
+
+workingSunday,
+
+sundayCount,
+
+absent,
+
+totalDays
 
 };
 
 }
-
-// ===============================
-// MODAL
-// ===============================
+// MODALS
 
 function openAttendance(){
 
@@ -572,21 +690,15 @@ liveModal.style.display = "none";
 
 }
 
-function closePlayback(){
-
-playbackModal.style.display = "none";
-
-}
-
-// ===============================
 // ATTENDANCE
-// ===============================
 
 async function submitAttendance(){
 
-let today = getDate(new Date());
+let today =
+getDate(new Date());
 
-let docId = user + "_" + today;
+let docId =
+user + "_" + today;
 
 let check =
 await db.collection("attendance")
@@ -632,9 +744,7 @@ startLiveTracking();
 
 }
 
-// ===============================
 // LIVE TRACKING
-// ===============================
 
 function startLiveTracking(){
 
@@ -661,17 +771,6 @@ updated:new Date()
 
 });
 
-await db.collection("trackingHistory")
-.add({
-
-name:user,
-lat:p.coords.latitude,
-lon:p.coords.longitude,
-date:getDate(new Date()),
-time:new Date()
-
-});
-
 }
 
 );
@@ -680,9 +779,7 @@ time:new Date()
 
 }
 
-// ===============================
 // PUNCH OUT
-// ===============================
 
 async function punchOut(){
 
@@ -700,13 +797,11 @@ alert("Punch Out Success");
 
 }
 
-// ===============================
 // LIVE USERS
-// ===============================
 
 async function showLiveUsers(){
 
-if(role!=="admin") return;
+if(role !== "admin") return;
 
 liveModal.style.display = "flex";
 
@@ -739,14 +834,6 @@ onclick="openMap('${x.lat}','${x.lon}')">
 
 </button>
 
-<button
-class="map-btn"
-onclick="showPlayback('${x.name}')">
-
-🛣 Playback
-
-</button>
-
 </div>
 
 `;
@@ -758,88 +845,7 @@ html || "No Live Users";
 
 }
 
-// ===============================
-// PLAYBACK
-// ===============================
-
-let playbackMap = null;
-
-async function showPlayback(name){
-
-playbackModal.style.display = "flex";
-
-let snap =
-await db.collection("trackingHistory")
-.where("name","==",name)
-.get();
-
-let points = [];
-
-snap.forEach(doc=>{
-
-points.push(doc.data());
-
-});
-
-if(points.length===0){
-
-alert("No Data");
-
-return;
-
-}
-
-points.sort((a,b)=>{
-
-return new Date(a.time.seconds*1000) -
-new Date(b.time.seconds*1000);
-
-});
-
-if(playbackMap){
-
-playbackMap.remove();
-
-}
-
-playbackMap =
-L.map("playbackMap").setView(
-[points[0].lat,points[0].lon],
-15
-);
-
-L.tileLayer(
-'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png'
-).addTo(playbackMap);
-
-let latlngs =
-points.map(p=>[p.lat,p.lon]);
-
-let line =
-L.polyline(latlngs,{
-color:'blue',
-weight:5
-}).addTo(playbackMap);
-
-playbackMap.fitBounds(
-line.getBounds()
-);
-
-L.marker(
-[points[0].lat,points[0].lon]
-).addTo(playbackMap);
-
-setTimeout(()=>{
-
-playbackMap.invalidateSize();
-
-},300);
-
-}
-
-// ===============================
 // LOAD DATA
-// ===============================
 
 async function loadData(){
 
@@ -848,8 +854,10 @@ await db.collection("attendance").get();
 
 allData =
 snap.docs.map(d=>({
+
 id:d.id,
 ...d.data()
+
 }));
 
 renderCalendar();
@@ -872,9 +880,11 @@ getDate(start) + " → " + getDate(end);
 
 let temp = new Date(start);
 
-while(temp<=end){
+while(temp <= end){
 
 let full = getDate(temp);
+
+// USER ATTENDANCE CHECK
 
 let found =
 role==="admin"
@@ -882,16 +892,70 @@ role==="admin"
 allData.some(x=>x.date===full)
 :
 allData.some(
-x=>x.date===full && x.name===user
+x=>x.date===full &&
+x.name===user
 );
+
+// TODAY
 
 let today =
 getDate(new Date())===full;
 
+// SUNDAY CHECK
+
+let isSunday =
+temp.getDay() === 0;
+
+// ==========================
+// COLOR LOGIC
+// ==========================
+
+let className = "day";
+
+// TODAY BORDER
+
+if(today){
+
+className += " today";
+
+}
+
+// ==========================
+// SUNDAY LOGIC
+// ==========================
+
+// Sunday + Attendance = GREEN
+
+if(isSunday && found){
+
+className += " p";
+
+// Sunday + No Attendance = YELLOW
+
+}else if(isSunday && !found){
+
+className += " sunday";
+
+// Normal Present = GREEN
+
+}else if(found){
+
+className += " p";
+
+// Normal Absent = RED
+
+}else{
+
+className += " a";
+
+}
+
+// ==========================
+
 calendarGrid.innerHTML += `
 
 <div
-class="day ${found?'p':'a'} ${today?'today':''}"
+class="${className}"
 onclick="showDay('${full}')"
 >
 
@@ -910,19 +974,17 @@ ${temp.toLocaleDateString(
 
 `;
 
-temp.setDate(temp.getDate()+1);
+temp.setDate(
+temp.getDate()+1
+);
 
 }
 
 }
 
-// ===============================
 // SHOW DAY
-// ===============================
 
 function showDay(date){
-
-selectedDate = date;
 
 let list =
 role==="admin"
@@ -930,7 +992,8 @@ role==="admin"
 allData.filter(x=>x.date===date)
 :
 allData.filter(
-x=>x.date===date && x.name===user
+x=>x.date===date &&
+x.name===user
 );
 
 if(list.length===0){
@@ -944,7 +1007,11 @@ return;
 
 let users = {};
 
-list.forEach(x=>users[x.name]=x);
+list.forEach(x=>{
+
+users[x.name] = x;
+
+});
 
 let unique =
 Object.values(users);
@@ -974,6 +1041,20 @@ return `
 
 ✅ Attendance :
 <b>${s.attendance} Days</b>
+
+<br>
+
+🟨 Sundays :
+<b style="color:yellow;">
+${s.workingSunday}/${s.sundayCount}
+</b>
+
+<br>
+
+❌ Absent :
+<b style="color:red;">
+${s.absent} Days
+</b>
 
 <br>
 
@@ -1028,9 +1109,7 @@ onclick="deleteAttendance('${x.id}')">
 
 }
 
-// ===============================
 // DELETE
-// ===============================
 
 async function deleteAttendance(id){
 
@@ -1051,9 +1130,7 @@ loadData();
 
 }
 
-// ===============================
 // MAP
-// ===============================
 
 function openMap(lat,lon){
 
@@ -1064,9 +1141,7 @@ window.open(
 
 }
 
-// ===============================
 // MONTH
-// ===============================
 
 function prevMonth(){
 
@@ -1088,9 +1163,7 @@ renderCalendar();
 
 }
 
-// ===============================
-// DOWNLOAD CSV
-// ===============================
+// CSV
 
 function downloadCSV(){
 
@@ -1107,7 +1180,8 @@ return;
 
 let filtered =
 allData.filter(
-x=>x.date>=from && x.date<=to
+x=>x.date>=from &&
+x.date<=to
 );
 
 let csv =
@@ -1136,20 +1210,7 @@ a.click();
 
 }
 
-// ===============================
-// DASHBOARD
-// ===============================
-
-function goDashboard(){
-
-window.location.href =
-"dashboard.html";
-
-}
-
-// ===============================
 // LOGOUT
-// ===============================
 
 function logout(){
 
@@ -1159,8 +1220,6 @@ window.location.href =
 "login.html";
 
 }
-
-// ===============================
 
 window.onload = loadData;
 
