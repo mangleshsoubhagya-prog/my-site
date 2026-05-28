@@ -823,10 +823,18 @@ return data.secure_url;
 }
 
 /* VIDEO UPLOADER */
+/* VIDEO UPLOADER FINAL FIX */
 
-window.openVideoUploader = function(){
+window.openVideoUploader = function () {
 
-cloudinary.openUploadWidget({
+if(typeof cloudinary === "undefined"){
+
+alert("Cloudinary Not Loaded");
+return;
+
+}
+
+cloudinary.createUploadWidget({
 
 cloudName: CLOUD_NAME,
 
@@ -834,16 +842,11 @@ uploadPreset: UPLOAD_PRESET,
 
 resourceType: "video",
 
-sources: [
-"local",
-"camera"
-],
+sources: ["local","camera"],
 
 multiple: false,
 
 maxFiles: 1,
-
-maxFileSize: 50000000,
 
 clientAllowedFormats: [
 "mp4",
@@ -853,41 +856,26 @@ clientAllowedFormats: [
 "webm"
 ],
 
-folder: "reports_videos",
+maxFileSize: 50000000,
 
-cropping: false,
+folder: "reports_videos",
 
 showAdvancedOptions: false,
 
-googleApiKey: undefined,
+cropping: false,
 
-styles: {
-palette: {
-window: "#111827",
-sourceBg: "#1f2937",
-windowBorder: "#90a0b3",
-tabIcon: "#22c55e",
-inactiveTabIcon: "#94a3b8",
-menuIcons: "#22c55e",
-link: "#22c55e",
-action: "#22c55e",
-inProgress: "#22c55e",
-complete: "#22c55e",
-error: "#ef4444",
-textDark: "#ffffff",
-textLight: "#ffffff"
-}
-}
+singleUploadAutoClose: true
 
 },
 
-function(error, result){
+(error,result)=>{
 
-console.log(error, result);
+console.log("ERROR:",error);
+console.log("RESULT:",result);
 
 if(error){
 
-alert("❌ Video Upload Failed");
+alert("❌ Upload Failed");
 
 document.getElementById("videoStatus").innerHTML =
 "❌ Upload Failed";
@@ -904,7 +892,8 @@ document.getElementById("videoLink").value =
 videoUrl;
 
 document.getElementById("videoStatus").innerHTML = `
-✅ Video Uploaded
+
+✅ Video Uploaded Successfully
 
 <br><br>
 
@@ -918,11 +907,16 @@ border-radius:12px;
 background:black;
 ">
 </video>
+
 `;
+
+alert("✅ Video Uploaded");
 
 }
 
-});
+}
+
+).open();
 
 };
 /* SUBMIT */
