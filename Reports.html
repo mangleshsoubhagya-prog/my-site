@@ -828,9 +828,9 @@ window.openVideoUploader = function(){
 
 cloudinary.openUploadWidget({
 
-cloudName: "dhs6u2y6l",
+cloudName: CLOUD_NAME,
 
-uploadPreset: "expense_upload",
+uploadPreset: UPLOAD_PRESET,
 
 resourceType: "video",
 
@@ -840,7 +840,14 @@ multiple: false,
 
 maxFiles: 1,
 
-clientAllowedFormats: ["mp4","mov","avi","mkv"],
+maxFileSize: 50000000,
+
+clientAllowedFormats: [
+"mp4",
+"mov",
+"avi",
+"mkv"
+],
 
 folder: "reports_videos"
 
@@ -848,7 +855,21 @@ folder: "reports_videos"
 
 function(error, result){
 
-if(!error && result && result.event === "success"){
+console.log("ERROR =", error);
+console.log("RESULT =", result);
+
+if(error){
+
+alert("❌ Video Upload Failed");
+
+document.getElementById("videoStatus").innerHTML =
+"❌ Upload Failed";
+
+return;
+
+}
+
+if(result && result.event === "success"){
 
 let videoUrl = result.info.secure_url;
 
@@ -856,26 +877,31 @@ document.getElementById("videoLink").value =
 videoUrl;
 
 document.getElementById("videoStatus").innerHTML =
-"✅ Video Uploaded Successfully";
+`
+✅ Video Uploaded Successfully
+
+<br><br>
+
+<video
+src="${videoUrl}"
+controls
+style="
+width:100%;
+max-height:250px;
+border-radius:12px;
+margin-top:10px;
+background:black;
+">
+</video>
+`;
 
 console.log(videoUrl);
 
 }
 
-if(error){
+}); // YE MISSING THA
 
-console.log(error);
-
-document.getElementById("videoStatus").innerHTML =
-"❌ Upload Failed";
-
-}
-
-});
-
-};
-
-
+}; // YE BHI MISSING THA
 /* SUBMIT */
 
 window.submitWorking = async function(){
@@ -1022,7 +1048,10 @@ document.getElementById("gpsPhotoStatus").innerHTML =
 
 saveData.photos = [];
 
-for(let file of photo.compressedFiles){
+let filesToUpload =
+photo.compressedFiles || Array.from(photo.files);
+
+for(let file of filesToUpload){
 
 let url =
 await uploadToCloudinary(file);
@@ -1070,7 +1099,10 @@ document.getElementById("reportPhotoStatus").innerHTML =
 
 saveData.photos = [];
 
-for(let file of photo.compressedFiles){
+let filesToUpload =
+photo.compressedFiles || Array.from(photo.files);
+
+for(let file of filesToUpload){
 
 let url =
 await uploadToCloudinary(file);
@@ -1734,6 +1766,7 @@ renderCalendar();
 loadData();
 
 </script>
-<script src="https://upload-widget.cloudinary.com/global/all.js"></script>
 </body>
+<script src="https://upload-widget.cloudinary.com/global/all.js"></script>
+
 </html>
