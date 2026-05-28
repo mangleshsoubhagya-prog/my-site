@@ -834,7 +834,10 @@ uploadPreset: UPLOAD_PRESET,
 
 resourceType: "video",
 
-sources: ["local"],
+sources: [
+"local",
+"camera"
+],
 
 multiple: false,
 
@@ -846,17 +849,41 @@ clientAllowedFormats: [
 "mp4",
 "mov",
 "avi",
-"mkv"
+"mkv",
+"webm"
 ],
 
-folder: "reports_videos"
+folder: "reports_videos",
+
+cropping: false,
+
+showAdvancedOptions: false,
+
+googleApiKey: undefined,
+
+styles: {
+palette: {
+window: "#111827",
+sourceBg: "#1f2937",
+windowBorder: "#90a0b3",
+tabIcon: "#22c55e",
+inactiveTabIcon: "#94a3b8",
+menuIcons: "#22c55e",
+link: "#22c55e",
+action: "#22c55e",
+inProgress: "#22c55e",
+complete: "#22c55e",
+error: "#ef4444",
+textDark: "#ffffff",
+textLight: "#ffffff"
+}
+}
 
 },
 
 function(error, result){
 
-console.log("ERROR =", error);
-console.log("RESULT =", result);
+console.log(error, result);
 
 if(error){
 
@@ -876,9 +903,8 @@ let videoUrl = result.info.secure_url;
 document.getElementById("videoLink").value =
 videoUrl;
 
-document.getElementById("videoStatus").innerHTML =
-`
-✅ Video Uploaded Successfully
+document.getElementById("videoStatus").innerHTML = `
+✅ Video Uploaded
 
 <br><br>
 
@@ -889,19 +915,16 @@ style="
 width:100%;
 max-height:250px;
 border-radius:12px;
-margin-top:10px;
 background:black;
 ">
 </video>
 `;
 
-console.log(videoUrl);
-
 }
 
-}); // YE MISSING THA
+});
 
-}; // YE BHI MISSING THA
+};
 /* SUBMIT */
 
 window.submitWorking = async function(){
@@ -1766,7 +1789,8 @@ renderCalendar();
 loadData();
 
 </script>
-</body>
 <script src="https://upload-widget.cloudinary.com/global/all.js"></script>
+
+</body>
 
 </html>
