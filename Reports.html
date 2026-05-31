@@ -276,6 +276,10 @@ grid-template-columns:repeat(4,1fr);
 
 <div style="display:flex;gap:10px;">
 
+<button onclick="refreshData()">
+🔄 Refresh
+</button>
+
 <button onclick="openDownloadOptions()">
 ⬇ Download
 </button>
@@ -594,6 +598,8 @@ const db = getFirestore(app);
 const CLOUD_NAME = "dhs6u2y6l";
 const UPLOAD_PRESET = "expense_upload";
 
+window.uploadedVideos = [];
+
 window.currentDate = new Date();
 window.allData = [];
 
@@ -617,7 +623,28 @@ window.location.href =
 "dashboard.html";
 
 };
+window.refreshData = async function(){
 
+let btns = document.querySelectorAll(".navbar button");
+
+btns.forEach(btn => btn.disabled = true);
+
+try{
+
+await loadData();
+
+alert("✅ Data Refreshed");
+
+}
+catch(e){
+
+alert("❌ Refresh Failed");
+
+}
+
+btns.forEach(btn => btn.disabled = false);
+
+};
 /* DATE */
 
 window.fixDate = function(d){
@@ -641,8 +668,7 @@ document.getElementById("formSection").style.display =
 document.getElementById("viewSection").style.display =
 "none";
 
-document.getElementById("date").value =
-fixDate(new Date());
+document.getElementById("date").value = "";
 
 document.getElementById("name").value =
 currentUser;
@@ -888,13 +914,22 @@ if(result && result.event === "success"){
 
 let videoUrl = result.info.secure_url;
 
+// Duplicate Check
+if(uploadedVideos.includes(videoUrl)){
+
+alert("❌ Ye video pehle upload ho chuka hai");
+
+return;
+
+}
+
+uploadedVideos.push(videoUrl);
+
 document.getElementById("videoLink").value =
 videoUrl;
 
 document.getElementById("videoStatus").innerHTML = `
-
 ✅ Video Uploaded Successfully
-
 <br><br>
 
 <video
@@ -907,13 +942,9 @@ border-radius:12px;
 background:black;
 ">
 </video>
-
 `;
 
-alert("✅ Video Uploaded");
-
 }
-
 }
 
 ).open();
@@ -1171,7 +1202,13 @@ window.resetForm = function(){
 document.getElementById("gpsPhoto").compressedFiles = [];
 document.getElementById("reportPhoto").compressedFiles = [];
 document.querySelectorAll("input").forEach(x=>{
+document.getElementById("type").value = "";
 
+document.getElementById("gpsFields").style.display =
+"none";
+
+document.getElementById("sensorFields").style.display =
+"none";
 if(x.type!=="date"){
 
 x.value="";
@@ -1379,6 +1416,8 @@ document.getElementById("viewSection").style.display =
 
 if(list.length===0){
 
+window.selectedDate = date;
+
 document.getElementById("viewSection").innerHTML =
 `
 <h3>No Reports</h3>
@@ -1386,7 +1425,7 @@ document.getElementById("viewSection").innerHTML =
 
 <button
 class="submit"
-onclick="openModal()">
+onclick="openModalForDate('${date}')">
 ➕ Add Entry
 </button>
 
@@ -1417,10 +1456,8 @@ flex-wrap:wrap;
 
 <button
 class="submit"
-onclick="openModal()">
-
+onclick="openModalForDate('${date}')">
 ➕ Add More
-
 </button>
 
 <button
@@ -1607,7 +1644,21 @@ document.getElementById("viewSection").innerHTML =
 html;
 
 };
+window.openModalForDate = function(date){
+document.getElementById("modal").style.display = "flex";
 
+document.getElementById("formSection").style.display =
+"block";
+
+document.getElementById("viewSection").style.display =
+"none";
+
+document.getElementById("date").value = date;
+
+document.getElementById("name").value =
+currentUser;
+
+};
 /* DELETE */
 
 window.deleteEntry = async function(id){
