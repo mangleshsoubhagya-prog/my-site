@@ -721,19 +721,15 @@ window.handleFiles = async function(input){
 let files = Array.from(input.files);
 
 if(files.length < 1){
-
 alert("Minimum 1 Photo Required");
 input.value = "";
 return;
-
 }
 
 if(files.length > 5){
-
 alert("Maximum 5 Photos Allowed");
 input.value = "";
 return;
-
 }
 
 document.getElementById("uploadStatus").innerHTML =
@@ -744,21 +740,18 @@ let compressedFiles = [];
 for(let file of files){
 
 if(file.type.startsWith("image/")){
-
-let compressed =
-await compressImage(file);
-
+let compressed = await compressImage(file);
 compressedFiles.push(compressed);
-
 }else{
-
 compressedFiles.push(file);
-
 }
 
 }
 
 input.compressedFiles = compressedFiles;
+
+// 🔥 IMPORTANT FIX
+input.setAttribute("data-ready", "true");
 
 document.getElementById("uploadStatus").innerHTML =
 `✅ ${compressedFiles.length} Photos Ready`;
@@ -1131,8 +1124,18 @@ document.getElementById("gpsPhotoStatus").innerHTML =
 
 saveData.photos = [];
 
-let filesToUpload =
-photo.compressedFiles || Array.from(photo.files);
+let filesToUpload = [];
+
+if (photo.compressedFiles && photo.compressedFiles.length > 0) {
+    filesToUpload = photo.compressedFiles;
+} 
+else if (photo.files && photo.files.length > 0) {
+    filesToUpload = Array.from(photo.files);
+} 
+else {
+    alert("No photo selected");
+    return;
+}
 
 for(let file of filesToUpload){
 
@@ -1181,8 +1184,18 @@ document.getElementById("reportPhotoStatus").innerHTML =
 
 saveData.photos = [];
 
-let filesToUpload =
-photo.compressedFiles || Array.from(photo.files);
+let filesToUpload = [];
+
+if(photo.compressedFiles && photo.compressedFiles.length){
+    filesToUpload = photo.compressedFiles;
+}
+else if(photo.files && photo.files.length){
+    filesToUpload = Array.from(photo.files);
+}
+else{
+    alert("No photo selected");
+    return;
+}
 
 for(let file of filesToUpload){
 
