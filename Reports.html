@@ -1563,9 +1563,7 @@ x.photos.forEach(photo=>{
 
 html += `
 
-<img
-src="${photo}"
-class="media">
+<img src="${photo}" class="media" onclick="openMedia('${photo}')">
 
 <br><br>
 
@@ -1610,10 +1608,7 @@ if(x.video){
 
 html += `
 
-<video
-src="${x.video}"
-controls
-class="media"
+<video src="${x.video}" controls class="media" onclick="openMedia('${x.video}')"></video>
 style="
 max-height:500px;
 object-fit:contain;
@@ -1642,9 +1637,7 @@ x.photos.forEach(photo=>{
 
 html += `
 
-<img
-src="${photo}"
-class="media">
+<img src="${photo}" class="media" onclick="openMedia('${photo}')">
 
 <br><br>
 
