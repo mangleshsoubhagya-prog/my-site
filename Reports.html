@@ -435,16 +435,25 @@ style="margin-top:8px;font-size:13px;color:#fff;">
 
 <label>Installation Video </label>
 
-<button
-type="button"
-class="submit"
-onclick="openVideoUploader()">
-
+<button type="button" class="submit"
+onclick="document.getElementById('videoFile').click()">
 📤 Upload Video
-
 </button>
 
 <input type="hidden" id="videoLink">
+<div style="margin-top:10px;">
+
+  <div id="videoProgressContainer"
+       style="width:100%;height:10px;background:#111827;border-radius:10px;overflow:hidden;display:none;">
+    <div id="videoProgressBar"
+         style="height:10px;width:0%;background:linear-gradient(135deg,#00c6ff,#0072ff);"></div>
+  </div>
+
+  <div id="videoPercent"
+       style="margin-top:5px;font-size:13px;color:#fff;"></div>
+
+</div>
+
 
 <div id="videoStatus"
 style="margin-top:8px;font-size:13px;color:#fff;">
@@ -456,6 +465,12 @@ No Video Uploaded
 <div class="form-card full">
 
 <label>Reports Photo</label>
+
+<input type="file"
+id="videoFile"
+accept="video/*"
+style="display:none"
+onchange="uploadVideo(this)">
 
 <input
 type="file"
@@ -603,8 +618,8 @@ window.uploadedVideos = [];
 window.currentDate = new Date();
 window.allData = [];
 
-window.currentUser =
-localStorage.getItem("user") || "Guest";
+const currentUser = localStorage.getItem("user") || "Guest";
+window.currentUser = currentUser;
 
 const ADMIN_USERS = [
 "Admin",
@@ -850,104 +865,124 @@ return data.secure_url;
 
 /* VIDEO UPLOADER */
 /* VIDEO UPLOADER FINAL FIX */
+window.uploadVideo = function(input){
 
-window.openVideoUploader = function () {
-
-if(typeof cloudinary === "undefined"){
-
-alert("Cloudinary Not Loaded");
+let file = input.files[0];
+if(!file){
+alert("No video selected");
 return;
+}
+
+let progressContainer = document.getElementById("videoProgressContainer");
+let progressBar = document.getElementById("videoProgressBar");
+let percentText = document.getElementById("videoPercent");
+let status = document.getElementById("videoStatus");
+
+progressContainer.style.display = "block";
+progressBar.style.width = "0%";
+percentText.innerText = "0%";
+status.innerHTML = "⏳ Uploading...";
+
+let formData = new FormData();
+formData.append("file", file);
+formData.append("upload_preset", UPLOAD_PRESET);
+
+let xhr = new XMLHttpRequest();
+
+xhr.open(
+  "POST",
+  `https://api.cloudinary.com/v1_1/${CLOUD_NAME}/video/upload`
+);
+
+// PROGRESS BAR
+xhr.upload.onprogress = function(e){
+
+if(e.lengthComputable){
+
+let percent = Math.round((e.loaded / e.total) * 100);
+
+progressBar.style.width = percent + "%";
+percentText.innerText = percent + "% Uploaded";
 
 }
 
-cloudinary.createUploadWidget({
+};
 
-cloudName: CLOUD_NAME,
+// SUCCESS
+xhr.onload = function(){
 
-uploadPreset: UPLOAD_PRESET,
+let data = JSON.parse(xhr.responseText);
 
-resourceType: "video",
+if(data.secure_url){
 
-sources: ["local","camera"],
+window.tempVideo = {
+url: data.secure_url,
+public_id: data.public_id
+};
 
-multiple: false,
+document.getElementById("videoLink").value = data.secure_url;
 
-maxFiles: 1,
+// PREVIEW
+status.innerHTML = `
+<video src="${data.secure_url}" controls
+style="width:100%;margin-top:10px;border-radius:10px;"></video>
 
-clientAllowedFormats: [
-"mp4",
-"mov",
-"avi",
-"mkv",
-"webm"
-],
+<br>
 
-maxFileSize: 50000000,
-
-folder: "reports_videos",
-
-showAdvancedOptions: false,
-
-cropping: false,
-
-singleUploadAutoClose: true
-
-},
-
-(error,result)=>{
-
-console.log("ERROR:",error);
-console.log("RESULT:",result);
-
-if(error){
-
-alert("❌ Upload Failed");
-
-document.getElementById("videoStatus").innerHTML =
-"❌ Upload Failed";
-
-return;
-
-}
-
-if(result && result.event === "success"){
-
-let videoUrl = result.info.secure_url;
-
-// Duplicate Check
-if(uploadedVideos.includes(videoUrl)){
-
-alert("❌ Ye video pehle upload ho chuka hai");
-
-return;
-
-}
-
-uploadedVideos.push(videoUrl);
-
-document.getElementById("videoLink").value =
-videoUrl;
-
-document.getElementById("videoStatus").innerHTML = `
-✅ Video Uploaded Successfully
-<br><br>
-
-<video
-src="${videoUrl}"
-controls
-style="
-width:100%;
-max-height:250px;
-border-radius:12px;
-background:black;
-">
-</video>
+<button type="button" class="close"
+onclick="removeVideo()" style="margin-top:10px;">
+❌ Remove Video
+</button>
 `;
 
-}
+progressBar.style.width = "100%";
+percentText.innerText = "Upload Complete";
+
+}else{
+status.innerHTML = "❌ Upload Failed";
 }
 
-).open();
+};
+
+// ERROR
+xhr.onerror = function(){
+status.innerHTML = "❌ Upload Failed";
+alert("Video upload failed");
+};
+
+xhr.send(formData);
+
+};
+
+window.removeVideo = function(){
+
+window.tempVideo = null;
+
+document.getElementById("videoFile").value = "";
+document.getElementById("videoLink").value = "";
+
+document.getElementById("videoStatus").innerHTML =
+"No Video Uploaded";
+
+document.getElementById("videoProgressContainer").style.display = "none";
+document.getElementById("videoProgressBar").style.width = "0%";
+document.getElementById("videoPercent").innerText = "";
+
+};
+window.closeModal = function(){
+
+document.getElementById("modal").style.display = "none";
+
+// CLEAN VIDEO TEMP DATA
+window.tempVideo = null;
+
+document.getElementById("videoFile").value = "";
+document.getElementById("videoLink").value = "";
+document.getElementById("videoStatus").innerHTML = "No Video Uploaded";
+
+document.getElementById("videoProgressContainer").style.display = "none";
+document.getElementById("videoProgressBar").style.width = "0%";
+document.getElementById("videoPercent").innerText = "";
 
 };
 /* SUBMIT */
@@ -1132,8 +1167,7 @@ document.getElementById("indusId").value;
 
 /* VIDEO LINK */
 
-saveData.video =
-document.getElementById("videoLink").value || "";
+saveData.video = window.tempVideo ? window.tempVideo.url : "";
 
 /* PHOTO */
 
@@ -1199,38 +1233,36 @@ btn.innerHTML = "Submit";
 /* RESET */
 
 window.resetForm = function(){
-document.getElementById("gpsPhoto").compressedFiles = [];
-document.getElementById("reportPhoto").compressedFiles = [];
-document.querySelectorAll("input").forEach(x=>{
+
 document.getElementById("type").value = "";
 
-document.getElementById("gpsFields").style.display =
-"none";
+document.getElementById("gpsFields").style.display = "none";
+document.getElementById("sensorFields").style.display = "none";
 
-document.getElementById("sensorFields").style.display =
-"none";
-if(x.type!=="date"){
-
-x.value="";
-
+document.querySelectorAll("input").forEach(x=>{
+if(x.type !== "date"){
+x.value = "";
 }
-
 });
 
-document.getElementById("videoStatus").innerHTML =
-"No Video Uploaded";
+document.getElementById("gpsPhoto").value = "";
+document.getElementById("reportPhoto").value = "";
+document.getElementById("videoFile").value = "";
 
-document.getElementById("gpsPhotoStatus").innerHTML =
-"";
+// CLEAR TEMP VIDEO
+window.tempVideo = null;
 
-document.getElementById("reportPhotoStatus").innerHTML =
-"";
+// CLEAR UI
+document.getElementById("videoStatus").innerHTML = "No Video Uploaded";
+document.getElementById("gpsPhotoStatus").innerHTML = "";
+document.getElementById("reportPhotoStatus").innerHTML = "";
+document.getElementById("uploadStatus").innerHTML = "";
 
-document.getElementById("uploadStatus").innerHTML =
-"";
+document.getElementById("videoProgressContainer").style.display = "none";
+document.getElementById("videoProgressBar").style.width = "0%";
+document.getElementById("videoPercent").innerText = "";
 
 };
-
 /* LOAD DATA */
 
 window.loadData = async function(){
