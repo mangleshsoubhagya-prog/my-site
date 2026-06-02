@@ -621,6 +621,11 @@ window.allData = [];
 const currentUser = localStorage.getItem("user") || "Guest";
 window.currentUser = currentUser;
 
+// LOGIN CHECK
+if(!localStorage.getItem("user")){
+    window.location.replace("login.html");
+}
+
 const ADMIN_USERS = [
 "Admin",
 "Manglesh",
@@ -1616,28 +1621,24 @@ ${x.sensorNo || ""}</p>
 ${x.indusId || ""}</p>
 
 `;
-
 if(x.video){
 
 html += `
 
-<video src="${x.video}" controls class="media" onclick="openMedia('${x.video}')"></video>
-style="
-max-height:500px;
-object-fit:contain;
-">
+<video
+src="${x.video}"
+controls
+class="media"
+style="max-height:500px;object-fit:contain;"
+onclick="openMedia('${x.video}')">
 </video>
 
 <br><br>
 
-<a
-href="${x.video}"
-target="_blank">
-
+<a href="${x.video}" target="_blank">
 <button class="submit">
 ⬇ Download Video
 </button>
-
 </a>
 
 `;
