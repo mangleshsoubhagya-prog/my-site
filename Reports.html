@@ -583,7 +583,8 @@ getDocs,
 query,
 orderBy,
 deleteDoc,
-doc
+doc,
+updateDoc
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
 /* FIREBASE */
@@ -1577,7 +1578,7 @@ html += `
 
 if(x.photos && x.photos.length){
 
-x.photos.forEach(photo=>{
+x.photos.forEach((photo,index)=>{
 
 html += `
 
@@ -1585,16 +1586,20 @@ html += `
 
 <br><br>
 
-<a
-href="${photo}"
-target="_blank">
-
-<button class="submit">
+<button
+class="submit"
+onclick="downloadFile('${photo}')">
 ⬇ Download Photo
 </button>
 
-</a>
-
+${isAdmin ? `
+<br><br>
+<button
+class="submit"
+onclick="changePhoto('${x.id}', ${index})">
+✏️ Change Photo
+</button>
+` : ""}
 <br><br>
 
 `;
@@ -1635,11 +1640,11 @@ onclick="openMedia('${x.video}')">
 
 <br><br>
 
-<a href="${x.video}" target="_blank">
-<button class="submit">
+<button
+class="submit"
+onclick="downloadFile('${x.video}')">
 ⬇ Download Video
 </button>
-</a>
 
 `;
 
@@ -1647,7 +1652,7 @@ onclick="openMedia('${x.video}')">
 
 if(x.photos && x.photos.length){
 
-x.photos.forEach(photo=>{
+x.photos.forEach((photo,index)=>{
 
 html += `
 
@@ -1655,15 +1660,20 @@ html += `
 
 <br><br>
 
-<a
-href="${photo}"
-target="_blank">
-
-<button class="submit">
+<button
+class="submit"
+onclick="downloadFile('${photo}')">
 ⬇ Download Photo
 </button>
 
-</a>
+${isAdmin ? `
+<br><br>
+<button
+class="submit"
+onclick="changePhoto('${x.id}', ${index})">
+✏️ Change Photo
+</button>
+` : ""}
 
 <br><br>
 
@@ -1855,6 +1865,73 @@ currentDate.getMonth()-1
 );
 
 renderCalendar();
+
+};
+window.downloadFile = function(url){
+
+const link = document.createElement("a");
+
+link.href = url.replace(
+"/upload/",
+"/upload/fl_attachment/"
+);
+
+link.target = "_self";
+
+document.body.appendChild(link);
+
+link.click();
+
+document.body.removeChild(link);
+
+};
+
+window.changePhoto = async function(reportId, photoIndex){
+
+const input = document.createElement("input");
+input.type = "file";
+input.accept = "image/*";
+
+input.onchange = async function(){
+
+const file = input.files[0];
+if(!file) return;
+
+try{
+
+alert("Uploading New Photo...");
+
+const newUrl = await uploadToCloudinary(file);
+
+const report = allData.find(x => x.id === reportId);
+
+if(!report || !report.photos) return;
+
+report.photos[photoIndex] = newUrl;
+
+await updateDoc(
+doc(db,"reports",reportId),
+{
+photos: report.photos
+}
+);
+
+alert("✅ Photo Updated");
+
+loadData();
+showDay(report.date);
+
+}
+catch(e){
+
+console.log(e);
+alert("❌ Update Failed");
+
+}
+
+};
+
+input.click();
 
 };
 
