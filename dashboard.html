@@ -473,7 +473,89 @@ function formatDate(date) {
     String(date.getMonth() + 1).padStart(2, "0") + "-" +
     String(date.getDate()).padStart(2, "0");
 }
+function getAttendanceCount(name){
 
+    let { start, end } = getSalaryMonthRange();
+
+    let startDate = formatDate(start);
+    let endDate = formatDate(end);
+
+    let userData = allAttendanceData.filter(x =>
+        x.name === name &&
+        x.date >= startDate &&
+        x.date <= endDate
+    );
+
+    let uniqueDates = [];
+
+    userData.forEach(x=>{
+        if(!uniqueDates.includes(x.date)){
+            uniqueDates.push(x.date);
+        }
+    });
+
+    uniqueDates.sort();
+
+    let attendance = uniqueDates.length;
+
+    let joiningDate =
+    uniqueDates.length
+    ? new Date(uniqueDates[0] + "T00:00:00")
+    : new Date();
+
+    let current = new Date(end);
+current.setHours(0,0,0,0);
+
+    let tempDate = new Date(joiningDate);
+
+    while(tempDate <= current){
+
+        if(tempDate.getDay() === 0){
+
+            let sunday = formatDate(tempDate);
+
+            let saturdayDate = new Date(tempDate);
+            saturdayDate.setDate(
+                saturdayDate.getDate()-1
+            );
+
+            let mondayDate = new Date(tempDate);
+            mondayDate.setDate(
+                mondayDate.getDate()+1
+            );
+
+            let saturday =
+            formatDate(saturdayDate);
+
+            let monday =
+            formatDate(mondayDate);
+
+            let satMarked =
+            uniqueDates.includes(saturday);
+
+            let sunMarked =
+            uniqueDates.includes(sunday);
+
+            let monMarked =
+            uniqueDates.includes(monday);
+
+            if(!sunMarked && satMarked && monMarked){
+                attendance++;
+            }
+
+            if(sunMarked){
+                attendance++;
+            }
+
+        }
+
+        tempDate.setDate(
+            tempDate.getDate()+1
+        );
+    }
+
+    return attendance;
+}
 // ---------------- SALARY SUMMARY ----------------
 function loadSalarySummary() {
 
@@ -499,7 +581,7 @@ let endDate = formatDate(end);
             x.date <= endDate
         );
         let attendance =
-        new Set(userData.map(x=>x.date)).size;
+getAttendanceCount(user);
 
         let salaryMap = {
             "Manglesh":20000,
@@ -547,14 +629,13 @@ if(selectedUser !== "all"){
 
   let startDate = formatDate(start);
   let endDate = formatDate(end);
-
-  let userData = allAttendanceData.filter(x =>
-    x.name === selectedUser &&
-    x.date >= startDate &&
-    x.date <= endDate
-  );
-
-  let attendance = new Set(userData.map(x => x.date)).size;
+  console.log(
+  "Selected User:",
+  selectedUser,
+  "Attendance:",
+  getAttendanceCount(selectedUser)
+);
+let attendance = getAttendanceCount(selectedUser);
 
   let salaryMap = {
     "Manglesh": 20000,
