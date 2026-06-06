@@ -1,6 +1,8 @@
 <!DOCTYPE html>
 <html>
 <head>
+  
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
@@ -271,7 +273,7 @@ box-shadow:0 10px 25px rgba(0,0,0,.15);
 
 <div id="dashboardSection">
 
-    <div style="display:flex;align-items:center;gap:10px;">
+    <!-- Profile -->
 
         <img
         id="profilePhoto"
@@ -290,34 +292,18 @@ box-shadow:0 10px 25px rgba(0,0,0,.15);
         id="photoInput"
         accept="image/*"
         style="display:none">
-
-        <div id="userName">User</div>
+<div id="userInfo"
+style="
+margin-top:10px;
+font-weight:600;
+color:#0f766e;
+">
+</div>
+      
 
     </div>
 
-</div>
-<div style="display:flex;align-items:center;gap:10px;">
-
-</div>
-
-
-  <!-- SUMMARY -->
-
-  <div id="attendanceSection" style="display:none">
-    <iframe src="attendance.html"
-    style="width:100%;height:90vh;border:none;"></iframe>
-</div>
-
-<div id="reportsSection" style="display:none">
-    <iframe src="Reports.html"
-    style="width:100%;height:90vh;border:none;"></iframe>
-</div>
-
-<div id="expenseSection" style="display:none">
-    <iframe src="expence.html"
-    style="width:100%;height:90vh;border:none;"></iframe>
-</div>
-
+    <!-- Attendance Summary -->
     <div class="summary">
         <h3>Attendance Summary</h3>
         <br>
@@ -329,19 +315,34 @@ box-shadow:0 10px 25px rgba(0,0,0,.15);
         <div id="salarySummary" style="margin-top:15px"></div>
     </div>
 
-
-</div>
-</div>
 </div>
 
+<!-- Attendance Page -->
+<div id="attendanceSection" style="display:none">
+    <iframe src="attendance.html"
+    style="width:100%;height:90vh;border:none;"></iframe>
+</div>
 
+<!-- Reports Page -->
+<div id="reportsSection" style="display:none">
+    <iframe src="Reports.html"
+    style="width:100%;height:90vh;border:none;"></iframe>
+</div>
+
+<!-- Expense Page -->
+<div id="expenseSection" style="display:none">
+    <iframe src="expence.html"
+    style="width:100%;height:90vh;border:none;"></iframe>
+</div>
+
+</div>
 </div>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
 
 <script>
-let userRole = "admin";
-
+  let currentUser = localStorage.getItem("user") || "";
+let userRole = localStorage.getItem("role") || "user";
 // ---------------- FIREBASE INIT ----------------
 const firebaseConfig = {
   apiKey: "AIzaSyAbjZrPfGx0UTBAW4HndPxf9mMhhmg513s",
@@ -350,7 +351,9 @@ const firebaseConfig = {
   storageBucket: "attendance-system-fc71c.appspot.com",
   appId: "1:57089003187:web:dc8864aa56701384d6aac6"
 };
-
+if(!localStorage.getItem("user")){
+   window.location.href = "login.html";
+}
 firebase.initializeApp(firebaseConfig);
 const db = firebase.firestore();
 function showSection(section){
@@ -371,6 +374,14 @@ let allAttendanceData = [];
 
 // ---------------- LOAD USERS ----------------
 async function loadUsers() {
+  let select = document.getElementById("userFilter");
+
+select.innerHTML = "";
+
+if(userRole === "admin"){
+   select.innerHTML =
+   '<option value="all">All Users</option>';
+}
   try {
     let snap = await db.collection("attendance").get();
 
@@ -412,62 +423,13 @@ function listenAttendance() {
       allAttendanceData.push(doc.data());
     });
 
-    updateCounts(allAttendanceData);
+  
 
     let user = document.getElementById("userFilter").value;
     if (user && user !== "all") {
       loadSalarySummary();
     }
   });
-}
-let projectChart;
-
-function drawProjectChart(pending,done,hold){
-
-const ctx=document.getElementById("projectChart");
-
-if(!ctx) return;
-
-if(projectChart){
-projectChart.destroy();
-}
-
-projectChart=new Chart(ctx,{
-type:"doughnut",
-data:{
-labels:["Pending","Done","Hold"],
-datasets:[{
-data:[pending,done,hold],
-backgroundColor:[
-"#f59e0b",
-"#22c55e",
-"#ef4444"
-]
-}]
-},
-options:{
-responsive:true,
-plugins:{
-legend:{
-position:"bottom"
-}
-}
-}
-});
-
-}
-// ---------------- PROJECT COUNTS ----------------
-function updateCounts(data) {
-  document.getElementById("totalProjects").innerText = data.length;
-
-  let pending = data.filter(i => i.status === "pending").length;
-  let done = data.filter(i => i.status === "done").length;
-  let hold = data.filter(i => i.status === "hold").length;
-
-  document.getElementById("pendingProjects").innerText = pending;
-  document.getElementById("doneProjects").innerText = done;
-  document.getElementById("holdProjects").innerText = hold;
-drawProjectChart(pending, done, hold);
 }
 
 // ---------------- MONTH RANGE ----------------
@@ -525,7 +487,10 @@ if(!selectedUser){
 }
 
 if(selectedUser === "all" && userRole === "admin"){
+let { start, end } = getSalaryMonthRange();
 
+let startDate = formatDate(start);
+let endDate = formatDate(end);
     let html = "";
 
     const users = [...new Set(allAttendanceData.map(x=>x.name))];
@@ -537,7 +502,6 @@ if(selectedUser === "all" && userRole === "admin"){
             x.date >= startDate &&
             x.date <= endDate
         );
-
         let attendance =
         new Set(userData.map(x=>x.date)).size;
 
@@ -582,7 +546,7 @@ if(selectedUser === "all" && userRole === "admin"){
 
     return;
 }
-
+if(selectedUser !== "all"){
   let { start, end } = getSalaryMonthRange();
 
   let startDate = formatDate(start);
@@ -649,7 +613,7 @@ Math.floor((end - start) / (1000 * 60 * 60 * 24)) + 1;
       </div>
     </div>
   `;
-}
+}}
 
 // ---------------- PROFILE PHOTO (FIXED) ----------------
 function initProfilePhoto() {
@@ -771,14 +735,25 @@ function handleImport() {
   }
 }
 // ---------------- INIT ----------------
-window.onload = async function () {
+window.onload = async function(){
 
-  await loadUsers();
-  listenAttendance();
-  initProfilePhoto();
+    await loadUsers();
 
-  document.getElementById("userFilter")
+    if(userRole === "admin"){
+        document.getElementById("userFilter").value = "all";
+    }
+
+    document.getElementById("userInfo").innerHTML =
+    "👤 " + currentUser + " (" + userRole + ")";
+
+    listenAttendance();
+    initProfilePhoto();
+
+    loadSalarySummary();
+
+    document.getElementById("userFilter")
     .addEventListener("change", loadSalarySummary);
+
 };
 function showPage(page){
 
