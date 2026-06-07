@@ -301,16 +301,49 @@ box-shadow:0 10px 25px rgba(0,0,0,.15);
     </div>
 
     <!-- Attendance Summary -->
-    <div class="summary">
-        <h3>Attendance Summary</h3>
-        <br>
+   <div class="summary">
+    <h3>Attendance Summary</h3>
 
-        <select id="userFilter">
-            <option value="all">All Users</option>
-        </select>
+    <div style="
+    display:flex;
+    justify-content:center;
+    align-items:center;
+    gap:15px;
+    margin:15px 0;
+    ">
 
-        <div id="salarySummary" style="margin-top:15px"></div>
+        <button onclick="prevMonth()"
+        style="
+        padding:8px 15px;
+        border:none;
+        border-radius:10px;
+        cursor:pointer;
+        ">
+        ⬅
+        </button>
+
+        <span id="monthLabel"
+        style="font-weight:600">
+        </span>
+
+        <button onclick="nextMonth()"
+        style="
+        padding:8px 15px;
+        border:none;
+        border-radius:10px;
+        cursor:pointer;
+        ">
+        ➡
+        </button>
+
     </div>
+
+    <select id="userFilter">
+        <option value="all">All Users</option>
+    </select>
+
+    <div id="salarySummary" style="margin-top:15px"></div>
+</div>
 
 </div>
 <!-- Attendance Page -->
@@ -367,7 +400,7 @@ this.classList.add("active");
 });
 // ---------------- GLOBAL DATA ----------------
 let allAttendanceData = [];
-
+let monthOffset = 0;
 // ---------------- LOAD USERS ----------------
 async function loadUsers() {
   let select = document.getElementById("userFilter");
@@ -431,42 +464,45 @@ function listenAttendance() {
 // ---------------- MONTH RANGE ----------------
  function getSalaryMonthRange() {
 
-  let today = new Date();
-  let start, end;
+    let today = new Date();
 
-  if (today.getDate() >= 26) {
+    // Offset month apply
+    today.setMonth(today.getMonth() + monthOffset);
 
-    start = new Date(
-      today.getFullYear(),
-      today.getMonth(),
-      26
-    );
+    let start, end;
 
-    end = new Date(
-      today.getFullYear(),
-      today.getMonth() + 1,
-      25
-    );
+    if (today.getDate() >= 26) {
 
-  } else {
+        start = new Date(
+            today.getFullYear(),
+            today.getMonth(),
+            26
+        );
 
-    start = new Date(
-      today.getFullYear(),
-      today.getMonth() - 1,
-      26
-    );
+        end = new Date(
+            today.getFullYear(),
+            today.getMonth() + 1,
+            25
+        );
 
-    end = new Date(
-      today.getFullYear(),
-      today.getMonth(),
-      25
-    );
+    } else {
 
-  }
+        start = new Date(
+            today.getFullYear(),
+            today.getMonth() - 1,
+            26
+        );
 
-  return { start, end };
+        end = new Date(
+            today.getFullYear(),
+            today.getMonth(),
+            25
+        );
+
+    }
+
+    return { start, end };
 }
-
 
 function formatDate(date) {
   return date.getFullYear() + "-" +
@@ -825,13 +861,37 @@ window.onload = async function(){
 
     listenAttendance();
     initProfilePhoto();
-
+    
+    updateMonthLabel();
     loadSalarySummary();
 
     document.getElementById("userFilter")
     .addEventListener("change", loadSalarySummary);
 
 };
+function updateMonthLabel(){
+
+    let {start,end} = getSalaryMonthRange();
+
+    document.getElementById("monthLabel").innerHTML =
+    formatDate(start) + " ➜ " + formatDate(end);
+}
+
+function prevMonth(){
+
+    monthOffset--;
+
+    updateMonthLabel();
+    loadSalarySummary();
+}
+
+function nextMonth(){
+
+    monthOffset++;
+
+    updateMonthLabel();
+    loadSalarySummary();
+}
 function showPage(page){
 
 const dashboard = document.getElementById("dashboardSection");
