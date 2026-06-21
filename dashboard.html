@@ -429,22 +429,6 @@ font-size:24px;
 .big-number{
 font-size:28px;
 }
-.topbar-glass{
-display:flex;
-justify-content:space-between;
-align-items:center;
-padding:25px;
-margin-bottom:25px;
-
-background:rgba(255,255,255,.12);
-backdrop-filter:blur(20px);
-
-border-radius:25px;
-
-border:1px solid rgba(255,255,255,.2);
-
-color:white;
-}
 
 .welcome-box h1{
 font-size:28px;
@@ -541,7 +525,22 @@ transform:translateX(-100%);
 width:100%;
 padding-left:90px;
 }
+.topbar-glass{
+display:flex;
+justify-content:space-between;
+align-items:center;
+padding:25px;
+margin-bottom:25px;
 
+background:rgba(255,255,255,.12);
+backdrop-filter:blur(20px);
+
+border-radius:25px;
+
+border:1px solid rgba(255,255,255,.2);
+
+color:white;
+}
 </style>
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
@@ -558,6 +557,7 @@ padding-left:90px;
 <a href="#" onclick="showPage('reports')">Reports</a>
 <a href="#" onclick="showPage('expense')">Expense</a>
 </div>
+<div id="userInfo"></div>
 <div class="main">
   <div id="dashboardSection">
 
@@ -600,8 +600,8 @@ padding-left:90px;
         </div>
 
         <div class="card">
-            <h3>💰 Salary</h3>
-            <div class="value">₹20K</div>
+          <h3>💰 Salary</h3>
+          <div class="value" id="salaryCard">₹0</div>
         </div>
 
         <div class="card">
@@ -767,7 +767,61 @@ if(userRole === "admin"){
 }
 
 // ---------------- LIVE FIREBASE UPDATE ----------------
+function updateDashboardCards(){
+
+    // Total Users
+    let users =
+    [...new Set(allAttendanceData.map(x => x.name))];
+
+    document.getElementById("totalUsers").innerText =
+    users.length;
+
+    // Present Today
+    let today =
+    new Date().toISOString().split("T")[0];
+
+    let presentUsers =
+    [...new Set(
+        allAttendanceData
+        .filter(x => x.date === today)
+        .map(x => x.name)
+    )];
+
+    document.getElementById("presentToday").innerText =
+    presentUsers.length;
+
+let totalSalary = 0;
+
+users.forEach(user=>{
+
+   let attendance = getAttendanceCount(user);
+
+   let salaryMap = {
+      "Manglesh":25000,
+      "Nityanand":13000,
+      "Arvind":13000,
+      "Alok":15000,
+      "Rajan":13000
+   };
+
+   let monthlySalary = salaryMap[user] || 13000;
+
+   let {start,end} = getSalaryMonthRange();
+
+   let totalDays =
+   Math.floor((end-start)/(1000*60*60*24))+1;
+
+   let perDay = monthlySalary / totalDays;
+
+   totalSalary += attendance * perDay;
+
+});
+
+document.getElementById("salaryCard").innerText =
+"₹" + Math.round(totalSalary);
+}
 function listenAttendance() {
+
   db.collection("attendance").onSnapshot(snapshot => {
 
     allAttendanceData = [];
@@ -776,13 +830,12 @@ function listenAttendance() {
       allAttendanceData.push(doc.data());
     });
 
-  
+    updateDashboardCards(); // ✅ ADD THIS
 
-    let user = document.getElementById("userFilter").value;
-    if (user && user !== "all") {
-      loadSalarySummary();
-    }
+    loadSalarySummary();    // ✅ ADD THIS
+
   });
+  
 }
 
 // ---------------- MONTH RANGE ----------------
@@ -1075,9 +1128,16 @@ async function initProfilePhoto() {
     console.log(e);
   }
 
-  img.onclick = () => {
-    document.getElementById("photoInput").click();
-  };
+  img.addEventListener("click", () => {
+
+    const input =
+    document.getElementById("photoInput");
+
+    if(input){
+        input.click();
+    }
+
+});
 
   document.getElementById("photoInput").onchange =
   async function(){
@@ -1270,18 +1330,19 @@ async function loadUserProfiles(){
 
   try{
 
-    let snap = await db.collection("users").get();
+   db.collection("users").onSnapshot(snap => {
 
-    snap.forEach(doc=>{
+  let html = "";
 
-      let data = doc.data();
+  snap.forEach(doc => {
 
-      let photo =
+    let data = doc.data();
+
+    let photo =
       data.profileImage ||
       "https://cdn-icons-png.flaticon.com/512/149/149071.png";
 
-      html += `
-
+    html += `
       <div style="
       display:flex;
       align-items:center;
@@ -1289,9 +1350,7 @@ async function loadUserProfiles(){
       padding:10px;
       border-bottom:1px solid #eee;
       ">
-
-        <img
-        src="${photo}"
+        <img src="${photo}"
         style="
         width:50px;
         height:50px;
@@ -1303,13 +1362,15 @@ async function loadUserProfiles(){
         <div>
           <b>${data.name || doc.id}</b>
         </div>
-
       </div>
+    `;
+  });
 
-      `;
+  document.getElementById("userList").innerHTML = html;
 
-    });
+});
 
+    
     document.getElementById("userList").innerHTML = html;
 
   }catch(err){
