@@ -393,28 +393,20 @@ text-align:center;
 
 @media(max-width:768px){
 
+.sidebar{
+width:260px;
+}
+
 .main{
-padding:12px;
+padding-left:10px;
+padding-top:80px;
 }
 
-.cards{
-grid-template-columns:1fr;
-}
-
-.card{
-padding:18px;
-}
-
-.big-number{
-font-size:34px;
-}
-
-.summary{
-padding:18px;
+#menuBtn{
+display:block;
 }
 
 }
-
 @media(max-width:480px){
 
 .sidebar h2{
@@ -541,6 +533,33 @@ border:1px solid rgba(255,255,255,.2);
 
 color:white;
 }
+@media(min-width:769px){
+
+.sidebar{
+transform:translateX(0) !important;
+}
+
+#menuBtn{
+display:none;
+}
+
+.main{
+padding-left:290px;
+}
+.dashboard-grid{
+display:grid;
+grid-template-columns:2fr 1fr;
+gap:20px;
+}
+
+@media(max-width:900px){
+
+.dashboard-grid{
+grid-template-columns:1fr;
+}
+
+}
+}
 </style>
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
@@ -550,7 +569,7 @@ color:white;
 </button>
 <div class="dashboard">
   
-<div class="sidebar hide">
+<div class="sidebar">
 <h2>Bhavy Softech</h2>
 <a href="#" onclick="showPage('dashboard')">Dashboard</a>
 <a href="#" onclick="showPage('attendance')">Attendance</a>
@@ -1434,10 +1453,19 @@ else if(page==="reports"){
 else if(page==="expense"){
     expense.style.display = "block";
 }
-
+if(window.innerWidth <= 768){
+document.querySelector(".sidebar").classList.add("hide");
+}
 window.scrollTo(0,0);
 
 }
+window.addEventListener("load",()=>{
+
+if(window.innerWidth <= 768){
+document.querySelector(".sidebar").classList.add("hide");
+}
+
+});
 </script>
 </body>
 </html>
