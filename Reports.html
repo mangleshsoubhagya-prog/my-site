@@ -842,13 +842,15 @@ window.handleCSV = function(input){
 const file = input.files[0];
 
 if(!file){
+
 document.getElementById("csvStatus").innerHTML =
-"No CSV Uploaded";
+"❌ No CSV Uploaded";
+
 return;
 }
 
 document.getElementById("csvStatus").innerHTML =
-"✅ " + file.name + " Selected";
+`✅ ${file.name} Uploaded`;
 
 };
 /* IMAGE COMPRESS */
@@ -1274,7 +1276,6 @@ document.getElementById("gpsPhotoStatus").innerHTML =
 }
 
 /* SENSOR */
-
 if(type==="Sensor"){
 
 saveData.installationType =
@@ -1288,6 +1289,9 @@ document.getElementById("sensorNo").value;
 
 saveData.indusId =
 document.getElementById("indusId").value;
+
+/* CSV */
+
 let csvFile =
 document.getElementById("csvFile").files[0];
 
@@ -1299,19 +1303,25 @@ document.getElementById("csvStatus").innerHTML =
 saveData.csvFile =
 await uploadRawFile(csvFile);
 
+saveData.csvFileName =
+csvFile.name;
+
 document.getElementById("csvStatus").innerHTML =
 "✅ CSV Uploaded";
 
 }
+
 /* VIDEO LINK */
 
-saveData.video = window.tempVideo ? window.tempVideo.url : "";
+saveData.video =
+window.tempVideo
+? window.tempVideo.url
+: "";
 
 /* PHOTO */
 
 let photo =
 document.getElementById("reportPhoto");
-
 if(photo.files.length > 0){
 
 document.getElementById("reportPhotoStatus").innerHTML =
@@ -1834,6 +1844,7 @@ onclick="changePhoto('${x.id}', ${index})">
 if(x.csvFile){
 
 html += `
+<p>📄 ${x.csvFileName || "CSV File"}</p>
 
 <br>
 
@@ -1896,7 +1907,8 @@ const csvUrl = await uploadRawFile(file);
 await updateDoc(
 doc(db,"reports",reportId),
 {
-csvFile: csvUrl
+csvFile: csvUrl,
+csvFileName: file.name
 }
 );
 
@@ -2200,7 +2212,7 @@ const blob =
 await response.blob();
 
 zip.file(
-`CSV_${i+1}.csv`,
+reports[i].csvFileName || `CSV_${i+1}.csv`,
 blob
 );
 
