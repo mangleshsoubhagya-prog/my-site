@@ -488,7 +488,22 @@ style="margin-top:8px;font-size:13px;color:#fff;">
 </div>
 
 </div>
+<div class="form-card full">
 
+<label>CSV Upload</label>
+
+<input
+type="file"
+id="csvFile"
+accept=".csv"
+onchange="handleCSV(this)">
+
+<div id="csvStatus"
+style="margin-top:8px;font-size:13px;color:#fff;">
+No CSV Uploaded
+</div>
+
+</div>
 <div class="full">
 
 <div id="uploadStatus"
@@ -532,43 +547,96 @@ Close
 
 <div class="modal" id="downloadModal">
 
+```
 <div class="modal-box" style="max-width:400px;">
 
-<div class="modal-title">
-📥 Download Reports
-</div>
+    <div class="modal-title">
+        📥 Download Reports
+    </div>
 
-<div class="button-group" style="flex-direction:column;">
+    <div class="button-group" style="flex-direction:column;">
 
-<button
-class="submit"
-onclick="downloadReportsByType('GPS')">
+        <button
+        class="submit"
+        onclick="downloadReportsByType('GPS')">
+            🛰 Download GPS Reports
+        </button>
 
-🛰 Download GPS Reports
+        <button
+        class="submit"
+        onclick="downloadReportsByType('Sensor')">
+            ⚙ Download Sensor Reports
+        </button>
 
-</button>
+        <button
+        class="submit"
+        onclick="openCsvDownloadModal()">
+            📦 Download CSV Files
+        </button>
 
-<button
-class="submit"
-onclick="downloadReportsByType('Sensor')">
+        <button
+        class="close"
+        onclick="closeDownloadModal()">
+            Close
+        </button>
 
-⚙ Download Sensor Reports
-
-</button>
-
-<button
-class="close"
-onclick="closeDownloadModal()">
-
-Close
-
-</button>
-
-</div>
-
-</div>
+    </div>
 
 </div>
+```
+
+</div>
+
+<!-- CSV DOWNLOAD POPUP -->
+
+<div class="modal" id="csvDownloadModal">
+
+```
+<div class="modal-box" style="max-width:450px;">
+
+    <div class="modal-title">
+        📦 Download CSV Files
+    </div>
+
+    <label>Select Type</label>
+
+    <select id="csvDownloadType">
+        <option value="">Select Type</option>
+        <option value="GPS">GPS</option>
+        <option value="Sensor">Sensor</option>
+    </select>
+
+    <br><br>
+
+    <label>Select Date</label>
+
+    <input
+    type="date"
+    id="csvDownloadDate">
+
+    <br><br>
+
+    <div class="button-group">
+
+        <button
+        class="submit"
+        onclick="downloadCsvZip()">
+            ⬇ Download CSV
+        </button>
+
+        <button
+        class="close"
+        onclick="closeCsvDownloadModal()">
+            Close
+        </button>
+
+    </div>
+
+</div>
+```
+
+</div>
+
 <script type="module">
 
 import {
@@ -736,7 +804,8 @@ if(files.length > 5){
 alert("Maximum 5 Photos Allowed");
 input.value = "";
 return;
-}
+
+};
 
 document.getElementById("uploadStatus").innerHTML =
 "⏳ Processing Photos...";
@@ -761,6 +830,20 @@ input.setAttribute("data-ready", "true");
 
 document.getElementById("uploadStatus").innerHTML =
 `✅ ${compressedFiles.length} Photos Ready`;
+
+};
+window.handleCSV = function(input){
+
+const file = input.files[0];
+
+if(!file){
+document.getElementById("csvStatus").innerHTML =
+"No CSV Uploaded";
+return;
+}
+
+document.getElementById("csvStatus").innerHTML =
+"✅ " + file.name + " Selected";
 
 };
 /* IMAGE COMPRESS */
@@ -830,17 +913,14 @@ reader.readAsDataURL(file);
 }
 
 /* CLOUDINARY IMAGE */
+/* CLOUDINARY IMAGE */
 
 async function uploadToCloudinary(file){
 
 let formData = new FormData();
 
 formData.append("file", file);
-
-formData.append(
-"upload_preset",
-UPLOAD_PRESET
-);
+formData.append("upload_preset", UPLOAD_PRESET);
 
 let response = await fetch(
 `https://api.cloudinary.com/v1_1/${CLOUD_NAME}/image/upload`,
@@ -853,15 +933,39 @@ body:formData
 let data = await response.json();
 
 if(data.error){
-
 throw data.error.message;
-
 }
 
 return data.secure_url;
 
 }
 
+/* CSV UPLOAD */
+
+async function uploadRawFile(file){
+
+let formData = new FormData();
+
+formData.append("file", file);
+formData.append("upload_preset", UPLOAD_PRESET);
+
+let response = await fetch(
+`https://api.cloudinary.com/v1_1/${CLOUD_NAME}/raw/upload`,
+{
+method:"POST",
+body:formData
+}
+);
+
+let data = await response.json();
+
+if(data.error){
+throw data.error.message;
+}
+
+return data.secure_url;
+
+}
 /* VIDEO UPLOADER */
 /* VIDEO UPLOADER FINAL FIX */
 window.uploadVideo = function(input){
@@ -1173,7 +1277,21 @@ document.getElementById("sensorNo").value;
 
 saveData.indusId =
 document.getElementById("indusId").value;
+let csvFile =
+document.getElementById("csvFile").files[0];
 
+if(csvFile){
+
+document.getElementById("csvStatus").innerHTML =
+"⏳ Uploading CSV...";
+
+saveData.csvFile =
+await uploadRawFile(csvFile);
+
+document.getElementById("csvStatus").innerHTML =
+"✅ CSV Uploaded";
+
+}
 /* VIDEO LINK */
 
 saveData.video = window.tempVideo ? window.tempVideo.url : "";
@@ -1541,6 +1659,8 @@ margin-bottom:10px;
 <h3>👤 ${x.name}</h3>
 
 ${isAdmin ? `
+<div style="display:flex;gap:8px;flex-wrap:wrap;">
+
 <button
 onclick="deleteEntry('${x.id}')"
 style="
@@ -1554,6 +1674,22 @@ font-weight:bold;
 ">
 🗑 Delete
 </button>
+
+<button
+onclick="replaceCSV('${x.id}')"
+style="
+background:#2563eb;
+color:white;
+border:none;
+padding:8px 12px;
+border-radius:10px;
+cursor:pointer;
+font-weight:bold;
+">
+📦 CSV Upload
+</button>
+
+</div>
 ` : ""}
 
 </div>
@@ -1683,6 +1819,24 @@ onclick="changePhoto('${x.id}', ${index})">
 
 }
 }
+if(x.csvFile){
+
+html += `
+
+<br>
+
+<button
+class="submit"
+onclick="downloadFile('${x.csvFile}')">
+📥 Download CSV
+</button>
+
+
+<br><br>
+
+`;
+
+}
 
 html += `</div>`;
 
@@ -1706,6 +1860,50 @@ document.getElementById("date").value = date;
 
 document.getElementById("name").value =
 currentUser;
+
+};
+window.replaceCSV = async function(reportId){
+
+const input = document.createElement("input");
+
+input.type = "file";
+input.accept = ".csv";
+
+input.onchange = async function(){
+
+const file = input.files[0];
+
+if(!file) return;
+
+try{
+
+alert("Uploading CSV...");
+
+const csvUrl = await uploadRawFile(file);
+
+await updateDoc(
+doc(db,"reports",reportId),
+{
+csvFile: csvUrl
+}
+);
+
+alert("✅ CSV Uploaded Successfully");
+
+loadData();
+
+}
+catch(e){
+
+console.log(e);
+
+alert("❌ CSV Upload Failed");
+
+}
+
+};
+
+input.click();
 
 };
 /* DELETE */
@@ -1762,7 +1960,13 @@ document.getElementById("downloadModal").style.display =
 "none";
 
 };
+window.openCsvDownloadModal = function(){
+    document.getElementById("csvDownloadModal").style.display = "flex";
+}
 
+window.closeCsvDownloadModal = function(){
+    document.getElementById("csvDownloadModal").style.display = "none";
+}
 /* DOWNLOAD CSV */
 
 window.downloadReportsByType = function(type){
@@ -1935,6 +2139,10 @@ input.click();
 
 };
 
+// =====================
+// इसके नीचे paste करना है
+// =====================
+
 window.nextMonth = function(){
 
 currentDate.setMonth(
@@ -1944,14 +2152,71 @@ currentDate.getMonth()+1
 renderCalendar();
 
 };
+window.downloadCsvZip = async function(){
 
+const selectedDate =
+document.getElementById("csvDownloadDate").value;
+
+const selectedType =
+document.getElementById("csvDownloadType").value;
+
+if(!selectedDate){
+alert("Select Date");
+return;
+}
+
+const reports = allData.filter(x =>
+x.type === selectedType &&
+fixDate(x.date) === selectedDate &&
+x.csvFile
+);
+
+if(reports.length === 0){
+alert("No CSV Found");
+return;
+}
+
+const zip = new JSZip();
+
+for(let i=0;i<reports.length;i++){
+
+const response =
+await fetch(reports[i].csvFile);
+
+const blob =
+await response.blob();
+
+zip.file(
+`CSV_${i+1}.csv`,
+blob
+);
+
+}
+
+const content =
+await zip.generateAsync({
+type:"blob"
+});
+
+const link =
+document.createElement("a");
+
+link.href =
+URL.createObjectURL(content);
+
+link.download =
+`${selectedType}_${selectedDate}.zip`;
+
+link.click();
+
+}
 /* START */
 
 loadData();
 
 </script>
 <script src="https://upload-widget.cloudinary.com/global/all.js"></script>
-
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 </body>
 
 </html>
