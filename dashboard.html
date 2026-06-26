@@ -576,6 +576,7 @@ grid-template-columns:1fr;
 <a href="#" onclick="showPage('reports')">Reports</a>
 <a href="#" onclick="showPage('expense')">Expense</a>
 </div>
+
 <div class="main">
   <div id="userInfo"></div>
   <div id="dashboardSection">
@@ -613,10 +614,10 @@ grid-template-columns:1fr;
             <div class="value" id="totalUsers">0</div>
         </div>
 
-        <div class="card">
-            <h3>✅ Present Today</h3>
-            <div class="value" id="presentToday">0</div>
-        </div>
+        <div class="card" onclick="showPresentUsers()" style="cursor:pointer;">
+    <h3>✅ Present Today</h3>
+    <div class="value" id="presentToday">0</div>
+</div>
 
         <div class="card">
           <h3>💰 Salary</h3>
@@ -1459,6 +1460,103 @@ document.querySelector(".sidebar").classList.add("hide");
 window.scrollTo(0,0);
 
 }
+window.showPresentUsers = async function(){
+
+if(userRole !== "admin"){
+alert("Only Admin Can View");
+return;
+}
+
+const today =
+new Date().toISOString().split("T")[0];
+
+// Present Users
+let users = [
+...new Set(
+allAttendanceData
+.filter(x => x.date === today)
+.map(x => x.name)
+)
+];
+
+// Reports Collection Read
+const reportSnap =
+await db.collection("reports")
+.where("date","==",today)
+.get();
+
+let reportCount = {};
+let totalReports = 0;
+
+reportSnap.forEach(doc=>{
+
+const data = doc.data();
+
+if(!reportCount[data.name]){
+reportCount[data.name] = 0;
+}
+
+reportCount[data.name]++;
+totalReports++;
+
+});
+
+let html = "";
+
+users.forEach((name,index)=>{
+
+html += `
+<div style="
+padding:12px;
+margin-bottom:10px;
+background:#f3f4f6;
+border-radius:10px;
+color:black;
+font-weight:bold;
+">
+
+${index+1}. ${name}
+
+<br>
+
+📦 Report Count :
+${reportCount[name] || 0}
+
+</div>
+`;
+
+});
+
+html += `
+<hr>
+
+<b>Total Present Users :</b> ${users.length}
+
+<br><br>
+
+<b>Total Reports :</b> ${totalReports}
+`;
+
+document.getElementById("presentUsersList").innerHTML =
+html;
+
+document.getElementById("presentUsersModal").style.display =
+"flex";
+
+};
+
+window.closePresentUsers = function(){
+
+document.getElementById("presentUsersModal").style.display =
+"none";
+
+};
+window.closePresentUsers = function(){
+
+document.getElementById("presentUsersModal").style.display =
+"none";
+
+}
 window.addEventListener("load",()=>{
 
 if(window.innerWidth <= 768){
@@ -1466,6 +1564,211 @@ document.querySelector(".sidebar").classList.add("hide");
 }
 
 });
+window.showPresentUsersPopup = function(){
+
+document.getElementById("presentPopup").style.display =
+"flex";
+
+loadPresentUsers();
+
+};
+
+window.closePresentPopup = function(){
+
+document.getElementById("presentPopup").style.display =
+"none";
+
+};
+
+window.prevAttendanceDate = function(){
+
+selectedAttendanceDate.setDate(
+selectedAttendanceDate.getDate()-1
+);
+
+loadPresentUsers();
+
+};
+
+window.nextAttendanceDate = function(){
+
+selectedAttendanceDate.setDate(
+selectedAttendanceDate.getDate()+1
+);
+
+loadPresentUsers();
+
+};
+
+window.loadPresentUsers = function(){
+
+let dateStr =
+selectedAttendanceDate.toISOString().split("T")[0];
+
+document.getElementById("attendancePopupDate").innerHTML =
+dateStr;
+
+let users = {};
+
+allAttendanceData.forEach(x=>{
+
+if(x.date === dateStr){
+
+if(!users[x.name]){
+users[x.name] = 0;
+}
+
+users[x.name]++;
+
+}
+
+});
+
+let html = "";
+
+let index = 1;
+
+for(let name in users){
+
+html += `
+<div style="
+padding:10px;
+margin-bottom:10px;
+background:#f3f4f6;
+border-radius:10px;
+">
+
+${index}. ${name}
+&nbsp;&nbsp;
+Count - ${users[name]}
+
+</div>
+`;
+
+index++;
+
+}
+
+if(html===""){
+
+html =
+"<h3 style='text-align:center'>No Attendance Found</h3>";
+
+}
+
+document.getElementById("presentUsersList").innerHTML =
+html;
+
+};
 </script>
+<div id="presentUsersModal" style="
+display:none;
+position:fixed;
+top:0;
+left:0;
+width:100%;
+height:100%;
+background:rgba(0,0,0,.7);
+z-index:99999;
+justify-content:center;
+align-items:center;
+">
+
+<div style="
+background:white;
+color:black;
+width:90%;
+max-width:500px;
+border-radius:20px;
+padding:20px;
+max-height:80vh;
+overflow:auto;
+">
+
+<h2 style="margin-bottom:15px;">
+✅ Present Users Today
+</h2>
+
+<div id="presentUsersList"></div>
+
+<br>
+
+<button onclick="closePresentUsers()"
+style="
+padding:10px 20px;
+border:none;
+background:red;
+color:white;
+border-radius:10px;
+cursor:pointer;
+">
+Close
+</button>
+
+</div>
+
+</div>
+<div id="presentPopup" style="
+display:none;
+position:fixed;
+top:0;
+left:0;
+width:100%;
+height:100%;
+background:rgba(0,0,0,.7);
+z-index:99999;
+justify-content:center;
+align-items:center;
+">
+
+<div style="
+background:white;
+color:black;
+width:90%;
+max-width:500px;
+padding:20px;
+border-radius:20px;
+max-height:80vh;
+overflow:auto;
+">
+
+<h2 style="text-align:center;">
+Present Users
+</h2>
+
+<div style="
+display:flex;
+justify-content:center;
+gap:15px;
+margin:15px 0;
+">
+
+<button onclick="prevAttendanceDate()">⬅</button>
+
+<span id="attendancePopupDate"></span>
+
+<button onclick="nextAttendanceDate()">➡</button>
+
+</div>
+
+<div id="presentUsersList"></div>
+
+<br>
+
+<button onclick="closePresentPopup()"
+style="
+width:100%;
+padding:12px;
+background:red;
+color:white;
+border:none;
+border-radius:10px;
+">
+Close
+</button>
+
+</div>
+
+</div>
 </body>
 </html>
