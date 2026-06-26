@@ -1696,10 +1696,14 @@ font-weight:bold;
 🗑 Delete
 </button>
 
+${
+x.csvFile
+?
+`
 <button
-onclick="replaceCSV('${x.id}')"
+onclick="downloadFile('${x.csvFile}')"
 style="
-background:#2563eb;
+background:#22c55e;
 color:white;
 border:none;
 padding:8px 12px;
@@ -1707,8 +1711,26 @@ border-radius:10px;
 cursor:pointer;
 font-weight:bold;
 ">
-📦 CSV Upload
+✅ CSV Uploaded
 </button>
+`
+:
+`
+<button
+onclick="replaceCSV('${x.id}')"
+style="
+background:#ef4444;
+color:white;
+border:none;
+padding:8px 12px;
+border-radius:10px;
+cursor:pointer;
+font-weight:bold;
+">
+❌ CSV Not Uploaded
+</button>
+`
+}
 
 </div>
 ` : ""}
@@ -1844,6 +1866,18 @@ onclick="changePhoto('${x.id}', ${index})">
 if(x.csvFile){
 
 html += `
+<div style="
+background:#22c55e;
+padding:5px 10px;
+border-radius:20px;
+display:inline-block;
+font-size:12px;
+font-weight:bold;
+margin-bottom:10px;
+">
+📦 CSV Uploaded
+</div>
+
 <p>📄 ${x.csvFileName || "CSV File"}</p>
 
 <br>
@@ -1854,15 +1888,29 @@ onclick="downloadFile('${x.csvFile}')">
 📥 Download CSV
 </button>
 
-
 <br><br>
-
 `;
 
+}else{
+
+html += `
+<div style="
+background:#ef4444;
+padding:5px 10px;
+border-radius:20px;
+display:inline-block;
+font-size:12px;
+font-weight:bold;
+margin-bottom:10px;
+">
+❌ No CSV Uploaded
+</div>
+
+<br><br>
+`;
 }
 
 html += `</div>`;
-
 });
 
 
