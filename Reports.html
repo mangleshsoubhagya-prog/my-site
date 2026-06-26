@@ -353,6 +353,11 @@ grid-template-columns:repeat(4,1fr);
 <div class="form-grid">
 
 <div class="form-card">
+<label>Category</label>
+<input id="category" placeholder="Enter Category">
+</div>
+
+<div class="form-card">
 <label>RG No.</label>
 <input id="rgno" required>
 </div>
@@ -1115,6 +1120,10 @@ return;
 /* GPS */
 
 if(type==="GPS"){
+    if(!document.getElementById("category").value){
+alert("Enter Category");
+return;
+}
 
 if(!document.getElementById("rgno").value){
 alert("Enter RG No.");
@@ -1211,6 +1220,8 @@ createdAt:Date.now()
 /* GPS */
 
 if(type==="GPS"){
+saveData.category =
+document.getElementById("category").value;
 
 saveData.rgno =
 document.getElementById("rgno").value;
@@ -1701,6 +1712,7 @@ font-weight:bold;
 if(x.type==="GPS"){
 
 html += `
+<p>📂 Category: ${x.category || ""}</p>
 
 <p>🛰 RG No: ${x.rgno || ""}</p>
 
@@ -1975,6 +1987,7 @@ let rows = [[
 "Date",
 "Name",
 "Type",
+"Category",
 "RG No",
 "Asset Code",
 "IMEI",
@@ -1998,7 +2011,7 @@ rows.push([
 x.date || "",
 x.name || "",
 x.type || "",
-
+x.category || "",
 /* GPS */
 x.rgno || "",
 x.assetcode || "",
