@@ -660,28 +660,49 @@ doc,
 updateDoc
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
-/* FIREBASE */
+/* =========================
+   NEW FIREBASE PROJECT
+========================= */
 
 const firebaseConfig = {
-
-apiKey: "AIzaSyAbjZrPfGx0UTBAW4HndPxf9mMhhmg513s",
-
-authDomain: "attendance-system-fc71c.firebaseapp.com",
-
-projectId: "attendance-system-fc71c",
-
-storageBucket: "attendance-system-fc71c.appspot.com",
-
-messagingSenderId: "57089003187",
-
-appId: "1:57089003187:web:dc8864aa56701384d6aac6"
-
+  apiKey: "AIzaSyBHe44S_oU2ndgRlea4OI_nKt9N5oQ9XNE",
+  authDomain: "reportssystem-4fad7.firebaseapp.com",
+  projectId: "reportssystem-4fad7",
+  storageBucket: "reportssystem-4fad7.firebasestorage.app",
+  messagingSenderId: "402469731114",
+  appId: "1:402469731114:web:dcf97312036971f2977c53"
 };
 
-const app = initializeApp(firebaseConfig);
+/* =========================
+   OLD FIREBASE PROJECT
+========================= */
 
+const oldFirebaseConfig = {
+  apiKey: "AIzaSyAbjZrPfGx0UTBAW4HndPxf9mMhhmg513s",
+  authDomain: "attendance-system-fc71c.firebaseapp.com",
+  projectId: "attendance-system-fc71c",
+  storageBucket: "attendance-system-fc71c.appspot.com",
+  messagingSenderId: "57089003187",
+  appId: "1:57089003187:web:dc8864aa56701384d6aac6"
+};
+
+/* =========================
+   INITIALIZE BOTH PROJECTS
+========================= */
+
+// NEW PROJECT
+const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 
+// OLD PROJECT
+const oldApp = initializeApp(
+  oldFirebaseConfig,
+  "oldProject"
+);
+
+const oldDb = getFirestore(oldApp);
+console.log("NEW PROJECT:", db.app.options.projectId);
+console.log("OLD PROJECT:", oldDb.app.options.projectId);
 /* CLOUDINARY */
 
 const CLOUD_NAME = "dhs6u2y6l";
@@ -692,9 +713,10 @@ window.uploadedVideos = [];
 window.currentDate = new Date();
 window.allData = [];
 
-const currentUser = localStorage.getItem("user") || "Guest";
-window.currentUser = currentUser;
+const currentUser =
+localStorage.getItem("user") || "Guest";
 
+window.currentUser = currentUser;
 // LOGIN CHECK
 if(!localStorage.getItem("user")){
     window.location.replace("login.html");
@@ -1422,54 +1444,85 @@ document.getElementById("videoPercent").innerText = "";
 
 };
 /* LOAD DATA */
-
 window.loadData = async function(){
 
-let q =
+allData = [];
+
+try{
+
+// NEW PROJECT
+const newSnap = await getDocs(
 query(
 collection(db,"reports"),
 orderBy("createdAt","desc")
+)
 );
-
-let snap =
-await getDocs(q);
-
-allData = [];
-snap.forEach(docSnap=>{
+console.log("NEW RECORDS:", newSnap.size);
+newSnap.forEach(docSnap=>{
 
 let data = {
-
-id:docSnap.id,
+id: docSnap.id,
+source: "new",
 ...docSnap.data()
-
 };
 
-/* ADMIN = SEE ALL */
-
 if(isAdmin){
-
 allData.push(data);
-
-}
-
-/* USER = SEE ONLY OWN */
-
-else{
-
+}else{
 if(data.name === currentUser){
-
 allData.push(data);
-
 }
-
 }
 
 });
 
-renderCalendar();
+// OLD PROJECT
+const oldSnap = await getDocs(
+query(
+collection(oldDb,"reports"),
+orderBy("createdAt","desc")
+)
+);
+console.log("OLD RECORDS:", oldSnap.size);
+oldSnap.forEach(docSnap=>{
 
+let data = {
+id: docSnap.id,
+source: "old",
+...docSnap.data()
 };
 
+if(isAdmin){
+allData.push(data);
+}else{
+if(data.name === currentUser){
+allData.push(data);
+}
+}
+
+});
+
+allData.sort(
+(a,b)=>(b.createdAt||0)-(a.createdAt||0)
+);
+
+console.log("TOTAL RECORDS:", allData.length);
+
+renderCalendar();
+
+}
+catch(err){
+
+console.error(err);
+
+alert(
+"Load Error : " +
+err.message
+);
+
+}
+
+};
 /* CALENDAR */
 
 window.renderCalendar = function(){
