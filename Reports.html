@@ -270,28 +270,6 @@ grid-template-columns:repeat(4,1fr);
 
 <body>
 
-<div class="navbar">
-
-<h2>💼 Reports System</h2>
-
-<div style="display:flex;gap:10px;">
-
-<button onclick="refreshData()">
-🔄 Refresh
-</button>
-
-<button onclick="openDownloadOptions()">
-⬇ Download
-</button>
-
-<button onclick="goDashboard()">
-🏠 Dashboard
-</button>
-
-</div>
-
-</div>
-
 <div class="month-box">
 
 <button onclick="prevMonth()">⬅</button>
@@ -493,7 +471,7 @@ style="margin-top:8px;font-size:13px;color:#fff;">
 </div>
 
 </div>
-<div class="form-card full">
+<div class="form-card full" id="csvSection" style="display:none;">
 
 <label>CSV Upload</label>
 
@@ -811,8 +789,12 @@ type==="GPS" ? "block" : "none";
 document.getElementById("sensorFields").style.display =
 type==="Sensor" ? "block" : "none";
 
-};
+document.getElementById("csvSection").style.display =
+(type==="Sensor" || type==="GPS")
+? "block"
+: "none";
 
+};
 /* FILE HANDLE */
 
 /* MULTIPLE FILE HANDLE */
