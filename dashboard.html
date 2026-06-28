@@ -559,6 +559,25 @@ grid-template-columns:1fr;
 }
 
 }
+#logoutBtn{
+padding:10px 15px;
+border:none;
+border-radius:12px;
+background:#ef4444;
+color:white;
+cursor:pointer;
+font-weight:600;
+}
+
+#logoutBtn:hover{
+background:#dc2626;
+}
+
+.profile-box{
+display:flex;
+align-items:center;
+gap:12px;
+}
 }
 </style>
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -575,6 +594,7 @@ grid-template-columns:1fr;
 <a href="#" onclick="showPage('attendance')">Attendance</a>
 <a href="#" onclick="showPage('reports')">Reports</a>
 <a href="#" onclick="showPage('expense')">Expense</a>
+<a href="#" onclick="showPage('createid')" id="createIdMenu">Create ID</a>
 </div>
 
 <div class="main">
@@ -585,22 +605,26 @@ grid-template-columns:1fr;
     <div class="topbar-glass">
 
         <div class="welcome-box">
-            <h1>👋 Welcome, <span id="userName">Manglesh</span></h1>
-            <p>Attendance Management Dashboard</p>
+            <h1>👋 Welcome, <span id="userName"></span></h1>
+            
         </div>
 
-        <div class="profile-box">
+       <div class="profile-box">
 
-            <img id="profilePhoto"
-            src="https://cdn-icons-png.flaticon.com/512/149/149071.png">
+    <img id="profilePhoto"
+    src="https://cdn-icons-png.flaticon.com/512/149/149071.png">
 
-            <input
-            type="file"
-            id="photoInput"
-            accept="image/*"
-            style="display:none">
+    <button onclick="logout()" id="logoutBtn">
+        🚪 Logout
+    </button>
 
-        </div>
+    <input
+    type="file"
+    id="photoInput"
+    accept="image/*"
+    style="display:none">
+
+</div>
 
     </div>
 
@@ -706,6 +730,70 @@ grid-template-columns:1fr;
     <div id="expenseSection" style="display:none">
         <iframe src="expence.html"></iframe>
     </div>
+    <div id="createidSection" style="display:none">
+
+<div class="summary">
+
+<h2>➕ Create User ID</h2>
+
+<br>
+
+<input type="text" id="newUserName"
+placeholder="User ID"
+style="width:100%;padding:12px;margin-bottom:10px;border-radius:10px;">
+
+<input type="password" id="newPassword"
+placeholder="Password"
+style="width:100%;padding:12px;margin-bottom:10px;border-radius:10px;">
+
+<select id="newRole"
+style="width:100%;padding:12px;margin-bottom:10px;border-radius:10px;">
+
+<option value="user">User</option>
+<option value="admin">Admin</option>
+<select id="newEnabled"
+style="width:100%;padding:12px;margin-bottom:10px;border-radius:10px;">
+
+<select id="newEnabled">
+<option value="true">🟢 Enabled</option>
+<option value="false">🔴 Disabled</option>
+</select>
+</select>
+
+<button onclick="createUserID()"
+style="
+padding:12px 20px;
+background:#16a34a;
+color:white;
+border:none;
+border-radius:10px;
+cursor:pointer;
+width:100%;
+">
+Create User
+</button>
+<hr style="margin:20px 0">
+
+<h2>👥 User Management</h2>
+
+<div id="userManageList"></div>
+</div>
+
+</div>
+
+</div>
+<div id="userManageSection"
+style="
+margin-top:20px;
+background:rgba(255,255,255,.08);
+padding:20px;
+border-radius:20px;
+color:white;
+">
+
+<h2>👥 User Management</h2>
+
+<div id="userManageList"></div>
 
 </div>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -1320,6 +1408,9 @@ window.onload = async function(){
 showPage("dashboard");
 
     await loadUsers();
+    if(userRole !== "admin"){
+    document.getElementById("createIdMenu").style.display = "none";
+}
 
     if(userRole === "admin"){
         document.getElementById("userFilter").value = "all";
@@ -1331,6 +1422,7 @@ showPage("dashboard");
     listenAttendance();
     initProfilePhoto();
     loadUserProfiles();
+    loadLoginUsers();
     
     updateMonthLabel();
     loadSalarySummary();
@@ -1436,11 +1528,15 @@ const dashboard = document.getElementById("dashboardSection");
 const attendance = document.getElementById("attendanceSection");
 const reports = document.getElementById("reportsSection");
 const expense = document.getElementById("expenseSection");
+const createid =
+document.getElementById("createidSection");
+createid.style.display = "none";
 
 dashboard.style.display = "none";
 attendance.style.display = "none";
 reports.style.display = "none";
 expense.style.display = "none";
+createid.style.display = "none";
 
 if(page==="dashboard"){
     dashboard.style.display = "block";
@@ -1453,6 +1549,15 @@ else if(page==="reports"){
 }
 else if(page==="expense"){
     expense.style.display = "block";
+}
+else if(page==="createid"){
+
+    if(userRole !== "admin"){
+        alert("Access Denied");
+        return;
+    }
+
+    createid.style.display = "block";
 }
 if(window.innerWidth <= 768){
 document.querySelector(".sidebar").classList.add("hide");
@@ -1660,6 +1765,159 @@ document.getElementById("presentUsersList").innerHTML =
 html;
 
 };
+async function createUserID(){
+
+if(userRole !== "admin"){
+alert("Only Admin Can Create Users");
+return;
+}
+
+let name =
+document.getElementById("newUserName").value.trim();
+
+let password =
+document.getElementById("newPassword").value.trim();
+
+let role =
+document.getElementById("newRole").value;
+
+let enabled =
+document.getElementById("newEnabled").value === "true";
+
+if(!name || !password){
+alert("Fill all fields");
+return;
+}
+try{
+
+await db.collection("users")
+.doc(name)
+.set({
+
+name:name,
+password:password,
+role:role,
+enabled: enabled,
+createdAt:Date.now()
+
+});
+
+await db.collection("users")
+.doc(name)
+.set({
+
+name:name,
+role:role,
+createdAt:Date.now(),
+profileImage:""
+
+},{merge:true});
+
+alert("✅ User Created Successfully");
+
+document.getElementById("newUserName").value="";
+document.getElementById("newPassword").value="";
+
+}catch(err){
+
+console.log(err);
+alert("❌ Error Creating User");
+
+}
+
+}
+
+function loadLoginUsers(){
+
+db.collection("loginUsers")
+.onSnapshot(snapshot=>{
+
+let html = "";
+
+snapshot.forEach(doc=>{
+
+let data = doc.data();
+
+let enabled =
+data.enabled !== false;
+
+html += `
+
+<div style="
+display:flex;
+justify-content:space-between;
+align-items:center;
+padding:15px;
+margin-bottom:10px;
+background:rgba(255,255,255,.08);
+border-radius:15px;
+">
+
+<div>
+<b>👤 User :</b> ${data.name}<br>
+<b>🔑 Password :</b> ${data.password}<br>
+<b>🛡 Role :</b> ${data.role}
+</div>
+
+<label style="
+display:flex;
+align-items:center;
+gap:10px;
+cursor:pointer;
+font-weight:bold;
+">
+
+<input
+type="checkbox"
+${enabled ? "checked" : ""}
+onchange="toggleUser('${doc.id}', ${enabled})">
+
+<span>
+${enabled ? "🟢 ON" : "🔴 OFF"}
+</span>
+
+</label>
+
+</div>
+
+`;
+
+});
+
+document.getElementById("userManageList").innerHTML =
+html || "<h3>No Users Found</h3>";
+
+});
+
+}
+
+async function toggleUser(id,currentStatus){
+
+try{
+
+await db.collection("loginUsers")
+.doc(id)
+.update({
+
+enabled: !currentStatus
+
+});
+
+}catch(err){
+
+console.log(err);
+alert("❌ Update Failed");
+
+}
+
+}
+function logout(){
+
+localStorage.clear();
+
+window.location.href = "login.html";
+
+}
 </script>
 <div id="presentUsersModal" style="
 display:none;
@@ -1770,5 +2028,6 @@ Close
 </div>
 
 </div>
+
 </body>
 </html>
