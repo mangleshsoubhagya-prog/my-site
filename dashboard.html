@@ -749,17 +749,18 @@ style="width:100%;padding:12px;margin-bottom:10px;border-radius:10px;">
 <select id="newRole"
 style="width:100%;padding:12px;margin-bottom:10px;border-radius:10px;">
 
-<option value="user">User</option>
-<option value="admin">Admin</option>
+    <option value="user">User</option>
+    <option value="admin">Admin</option>
+
+</select>
+
 <select id="newEnabled"
 style="width:100%;padding:12px;margin-bottom:10px;border-radius:10px;">
 
-<select id="newEnabled">
-<option value="true">🟢 Enabled</option>
-<option value="false">🔴 Disabled</option>
-</select>
-</select>
+    <option value="true">🟢 Enabled</option>
+    <option value="false">🔴 Disabled</option>
 
+</select>
 <button onclick="createUserID()"
 style="
 padding:12px 20px;
@@ -782,20 +783,7 @@ Create User
 </div>
 
 </div>
-<div id="userManageSection"
-style="
-margin-top:20px;
-background:rgba(255,255,255,.08);
-padding:20px;
-border-radius:20px;
-color:white;
-">
 
-<h2>👥 User Management</h2>
-
-<div id="userManageList"></div>
-
-</div>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
 
@@ -1422,7 +1410,7 @@ showPage("dashboard");
     listenAttendance();
     initProfilePhoto();
     loadUserProfiles();
-    loadLoginUsers();
+   loadUsersManagement();
     
     updateMonthLabel();
     loadSalarySummary();
@@ -1789,31 +1777,19 @@ alert("Fill all fields");
 return;
 }
 try{
-
 await db.collection("users")
 .doc(name)
 .set({
-
-name:name,
-password:password,
-role:role,
-enabled: enabled,
-createdAt:Date.now()
-
+    name:name,
+    password:password,
+    role:role,
+    enabled:enabled,
+    createdAt:Date.now(),
+    profileImage:""
 });
 
-await db.collection("users")
-.doc(name)
-.set({
-
-name:name,
-role:role,
-createdAt:Date.now(),
-profileImage:""
-
-},{merge:true});
-
 alert("✅ User Created Successfully");
+await loadUsers();
 
 document.getElementById("newUserName").value="";
 document.getElementById("newPassword").value="";
@@ -1827,9 +1803,9 @@ alert("❌ Error Creating User");
 
 }
 
-function loadLoginUsers(){
+function loadUsersManagement(){
 
-db.collection("loginUsers")
+db.collection("users")
 .onSnapshot(snapshot=>{
 
 let html = "";
@@ -1867,6 +1843,20 @@ cursor:pointer;
 font-weight:bold;
 ">
 
+<button
+onclick="deleteUser('${doc.id}')"
+style="
+background:#e53935;
+color:white;
+border:none;
+padding:8px 12px;
+border-radius:8px;
+cursor:pointer;
+margin-left:10px;
+">
+🗑 Delete
+</button>
+
 <input
 type="checkbox"
 ${enabled ? "checked" : ""}
@@ -1895,7 +1885,7 @@ async function toggleUser(id,currentStatus){
 
 try{
 
-await db.collection("loginUsers")
+db.collection("users")
 .doc(id)
 .update({
 
@@ -1918,6 +1908,34 @@ localStorage.clear();
 window.location.href = "login.html";
 
 }
+window.deleteUser = async function(id){
+
+if(userRole !== "admin"){
+alert("Only Admin Can Delete Users");
+return;
+}
+
+let ok = confirm("Delete user '" + id + "' ?");
+
+if(!ok) return;
+
+try{
+
+await db.collection("users")
+.doc(id)
+.delete();
+
+alert("✅ User Deleted Successfully");
+
+}catch(err){
+
+console.log(err);
+alert("❌ Error Deleting User");
+
+}
+
+}
+
 </script>
 <div id="presentUsersModal" style="
 display:none;
