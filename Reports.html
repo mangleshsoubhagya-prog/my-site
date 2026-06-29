@@ -269,6 +269,25 @@ grid-template-columns:repeat(4,1fr);
 </head>
 
 <body>
+    <div class="navbar">
+
+<h2>📊 Reports System</h2>
+
+<div style="display:flex;gap:10px;">
+
+<button onclick="openDownloadOptions()">
+📥 Download
+</button>
+
+<button onclick="refreshData()">
+🔄 Refresh
+</button>
+
+
+
+</div>
+
+</div>
 
 <div class="month-box">
 
@@ -1447,11 +1466,23 @@ id: docSnap.id,
 source: "new",
 ...docSnap.data()
 };
+console.log(
+"REPORT NAME =",
+data.name,
+"| LOGIN =",
+currentUser
+);
 
 if(isAdmin){
 allData.push(data);
 }else{
-if(data.name === currentUser){
+const reportUser =
+(data.name || "").trim().toLowerCase();
+
+const loginUser =
+(currentUser || "").trim().toLowerCase();
+
+if(reportUser === loginUser){
 allData.push(data);
 }
 }
@@ -1477,7 +1508,13 @@ source: "old",
 if(isAdmin){
 allData.push(data);
 }else{
-if(data.name === currentUser){
+const reportUser =
+(data.name || "").trim().toLowerCase();
+
+const loginUser =
+(currentUser || "").trim().toLowerCase();
+
+if(reportUser === loginUser){
 allData.push(data);
 }
 }
@@ -2317,7 +2354,11 @@ link.download =
 
 link.click();
 
-}
+URL.revokeObjectURL(link.href);
+
+closeCsvDownloadModal();
+
+};
 /* START */
 
 loadData();
