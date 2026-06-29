@@ -605,7 +605,7 @@ gap:12px;
     <div class="topbar-glass">
 
         <div class="welcome-box">
-            <h1>👋 Welcome, <span id="userName"></span></h1>
+            <h1>👋 Welcome, <span id="user"></span></h1>
             
         </div>
 
@@ -686,9 +686,12 @@ gap:12px;
 
                 <br>
 
-                <select id="userFilter">
-                    <option value="all">All Users</option>
-                </select>
+               <select id="userFilter">
+               <option value="" selected disabled hidden>
+                👤 Select User
+               </option>
+                <option value="all">All Users</option>
+               </select>
 
                 <div id="salarySummary"
                 style="margin-top:20px">
@@ -828,8 +831,18 @@ async function loadUsers() {
 select.innerHTML = "";
 
 if(userRole === "admin"){
-   select.innerHTML =
-   '<option value="all">All Users</option>';
+   select.innerHTML = `
+      <option value="" selected disabled hidden>
+         👤 Select User
+      </option>
+      <option value="all">All Users</option>
+   `;
+}else{
+   select.innerHTML = `
+      <option value="" selected disabled hidden>
+         👤 Select User
+      </option>
+   `;
 }
   try {
     let snap = await db.collection("attendance").get();
@@ -1066,12 +1079,14 @@ current.setHours(0,0,0,0);
     return attendance;
 }
 // ---------------- SALARY SUMMARY ----------------
-function loadSalarySummary() {
+function loadSalarySummary(){
 
-  let selectedUser = document.getElementById("userFilter").value;
-if(!selectedUser){
-    return;
-}
+    let selectedUser = document.getElementById("userFilter").value;
+
+    if(selectedUser === ""){
+        document.getElementById("salarySummary").innerHTML = "";
+        return;
+    }
 
 if(selectedUser === "all" && userRole === "admin"){
 let { start, end } = getSalaryMonthRange();
@@ -1400,13 +1415,11 @@ showPage("dashboard");
     document.getElementById("createIdMenu").style.display = "none";
 }
 
-    if(userRole === "admin"){
-        document.getElementById("userFilter").value = "all";
-    }
+  
 
     document.getElementById("userInfo").innerHTML =
     "👤 " + currentUser + " (" + userRole + ")";
-
+document.getElementById("user").textContent = currentUser;
     listenAttendance();
     initProfilePhoto();
     loadUserProfiles();
