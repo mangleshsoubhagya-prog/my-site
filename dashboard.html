@@ -644,9 +644,9 @@ gap:12px;
 </div>
 
         <div class="card">
-          <h3>💰 Salary</h3>
-          <div class="value" id="salaryCard">₹0</div>
-        </div>
+        <h3>📦 Total Reports</h3>
+        <div class="value" id="totalReports">0</div>
+       </div>
 
         <div class="card">
             <h3>📈 Performance</h3>
@@ -823,6 +823,8 @@ this.classList.add("active");
 });
 // ---------------- GLOBAL DATA ----------------
 let allAttendanceData = [];
+let allReportsData = [];
+
 let monthOffset = 0;
 // ---------------- LOAD USERS ----------------
 async function loadUsers() {
@@ -845,7 +847,7 @@ if(userRole === "admin"){
    `;
 }
   try {
-    let snap = await db.collection("attendance").get();
+   let snap = await db.collection("users").get();
 
     let users = new Set();
 
@@ -899,52 +901,45 @@ function updateDashboardCards(){
     document.getElementById("presentToday").innerText =
     presentUsers.length;
 
-let totalSalary = 0;
-
-users.forEach(user=>{
-
-   let attendance = getAttendanceCount(user);
-
-   let salaryMap = {
-      "Manglesh":25000,
-      "Nityanand":13000,
-      "Arvind":13000,
-      "Alok":15000,
-      "Rajan":13000
-   };
-
-   let monthlySalary = salaryMap[user] || 13000;
-
-   let {start,end} = getSalaryMonthRange();
-
-   let totalDays =
-   Math.floor((end-start)/(1000*60*60*24))+1;
-
-   let perDay = monthlySalary / totalDays;
-
-   totalSalary += attendance * perDay;
-
-});
-
-document.getElementById("salaryCard").innerText =
-"₹" + Math.round(totalSalary);
+document.getElementById("totalReports").innerText =
+allReportsData.length;
 }
-function listenAttendance() {
+function listenAttendance(){
 
-  db.collection("attendance").onSnapshot(snapshot => {
+    db.collection("attendance")
+    .onSnapshot(snapshot=>{
 
-    allAttendanceData = [];
+        allAttendanceData = [];
 
-    snapshot.forEach(doc => {
-      allAttendanceData.push(doc.data());
+        snapshot.forEach(doc=>{
+
+            allAttendanceData.push(doc.data());
+
+        });
+
+        updateDashboardCards();
+        loadSalarySummary();
+
     });
 
-    updateDashboardCards(); // ✅ ADD THIS
+}
+function listenReports(){
 
-    loadSalarySummary();    // ✅ ADD THIS
+    db.collection("reports").onSnapshot(snapshot=>{
 
-  });
-  
+        allReportsData = [];
+
+        snapshot.forEach(doc=>{
+
+            allReportsData.push(doc.data());
+
+        });
+
+        updateDashboardCards();
+
+    });
+
+
 }
 
 // ---------------- MONTH RANGE ----------------
@@ -1420,11 +1415,18 @@ showPage("dashboard");
     document.getElementById("userInfo").innerHTML =
     "👤 " + currentUser + " (" + userRole + ")";
 document.getElementById("user").textContent = currentUser;
+
     listenAttendance();
+    listenReports();
     initProfilePhoto();
     loadUserProfiles();
    loadUsersManagement();
-    
+   db.collection("users").onSnapshot(snapshot=>{
+
+    document.getElementById("totalUsers").innerText =
+    snapshot.size;
+
+}); 
     updateMonthLabel();
     loadSalarySummary();
 
