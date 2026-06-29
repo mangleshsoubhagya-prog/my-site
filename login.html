@@ -245,107 +245,123 @@ const db = getFirestore(app);
 /* LOGIN */
 /* ========================= */
 
-window.login = async function(){
+window.login = async function () {
 
-let id =
-document.getElementById("userid").value.trim();
+  let id = document.getElementById("userid").value.trim();
+  let pass = document.getElementById("password").value.trim();
+  let error = document.getElementById("error");
+  let btn = document.getElementById("loginBtn");
 
-let pass =
-document.getElementById("password").value.trim();
+  error.innerText = "";
 
-let error =
-document.getElementById("error");
+  if (!id || !pass) {
+    error.innerText = "❌ Please enter username & password";
+    return;
+  }
 
-let btn =
-document.getElementById("loginBtn");
+  btn.innerText = "⏳ Checking...";
+  btn.classList.add("loading");
 
-error.innerText = "";
+  try {
 
-if(!id || !pass){
+    let foundUser = null;
 
-error.innerText =
-"❌ Please enter username & password";
+// loginUsers collection
+const loginSnap = await getDocs(collection(db, "loginUsers"));
 
-return;
+loginSnap.forEach((doc) => {
 
+  const data = doc.data();
+
+  const oldLogin =
+  doc.id.toLowerCase() === id.toLowerCase();
+
+  const newLogin =
+  (data.name || "").toLowerCase() === id.toLowerCase();
+
+  const enabled =
+  data.enabled !== false;
+
+  if (
+    enabled &&
+    (oldLogin || newLogin) &&
+    data.password === pass
+  ) {
+    foundUser = data;
+  }
+
+});
+
+// users collection bhi check karo
+if(!foundUser){
+
+  const userSnap =
+  await getDocs(collection(db,"users"));
+
+  userSnap.forEach((doc)=>{
+
+    const data = doc.data();
+
+    const enabled = data.enabled !== false;
+
+if (
+  enabled &&
+  (
+    (data.name || "").toLowerCase() === id.toLowerCase() ||
+    (data.userid || "").toLowerCase() === id.toLowerCase()
+  ) &&
+  data.password === pass
+) {
+  foundUser = data;
 }
 
-btn.innerText = "⏳ Checking...";
+  });
+  }
 
-btn.classList.add("loading");
+if(foundUser){
 
-try{
+  let role =
+  (foundUser.role || "user").toLowerCase();
 
-/* ========================= */
-/* FIRESTORE QUERY */
-/* ========================= */
+  localStorage.setItem(
+    "user",
+    foundUser.name || foundUser.userid || id
+  );
 
-const q = query(
-collection(db,"users"),
-where("userid","==",id),
-where("password","==",pass)
-);
+  localStorage.setItem("role", role);
 
-const snap = await getDocs(q);
+  document.getElementById("loginBox")
+  .classList.add("success");
 
-if(!snap.empty){
+  btn.innerText = "✅ Success";
 
-let userData =
-snap.docs[0].data();
+  setTimeout(()=>{
+    window.location.href = "dashboard.html";
+  },800);
 
-let role =
-(userData.role || "user").toLowerCase();
+}else{
 
-/* SAVE LOGIN */
+  error.innerText =
+  "❌ Invalid Username or Password";
 
-localStorage.setItem("user", id);
+  btn.innerText = "LOGIN";
 
-localStorage.setItem("role", role);
-
-/* SUCCESS */
-
-document.getElementById("loginBox")
-.classList.add("success");
-
-btn.innerText = "✅ Success";
-
-/* REDIRECT */
-
-setTimeout(()=>{
-
-window.location.href =
-"dashboard.html";
-
-},1000);
-
-}
-else{
-
-error.innerText =
-"❌ Invalid Username or Password";
-
-btn.innerText = "LOGIN";
-
-btn.classList.remove("loading");
-
+  btn.classList.remove("loading");
 }
 
-}
-catch(e){
+} catch(e){
 
-console.error(e);
+  console.error(e);
 
-error.innerText =
-"❌ Firebase Error";
+  error.innerText =
+  "❌ Firebase Error";
 
-btn.innerText = "LOGIN";
+  btn.innerText = "LOGIN";
 
-btn.classList.remove("loading");
-
+  btn.classList.remove("loading");
 }
 
 };
-
 </script>
 
 </body>
