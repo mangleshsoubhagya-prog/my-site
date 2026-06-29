@@ -349,6 +349,7 @@ const db = firebase.firestore();
 
 let user =
 localStorage.getItem("user") || "Guest";
+user = user.trim();
 
 let role =
 localStorage.getItem("role") || "user";
@@ -367,11 +368,14 @@ document.getElementById("liveTrackingBtn").style.display =
 
 let monthlySalaryMap = {
 
-"Manglesh":20000,
+"Manglesh":25000,
 "Nityanand":13000,
 "Arvind":13000,
 "Alok":15000,
-"Rajan":13000
+"Rajan":13000,
+"Anuj":13000,
+"Ajay":13000,
+"Nandan":13000,
 
 };
 
@@ -934,10 +938,10 @@ role==="admin"
 allData.some(x=>x.date===full)
 :
 allData.some(
-x=>x.date===full &&
-x.name===user
+x =>
+x.date===full &&
+x.name.trim().toLowerCase() === user.trim().toLowerCase()
 );
-
 // TODAY
 
 let today =
@@ -1034,8 +1038,9 @@ role==="admin"
 allData.filter(x=>x.date===date)
 :
 allData.filter(
-x=>x.date===date &&
-x.name===user
+x =>
+x.date===date &&
+x.name.trim().toLowerCase() === user.trim().toLowerCase()
 );
 
 if(list.length===0){
