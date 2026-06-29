@@ -322,6 +322,9 @@ if(foundUser){
 
   let role =
   (foundUser.role || "user").toLowerCase();
+  console.log("Entered ID:", id);
+  console.log("Found User:", foundUser);
+  console.log("Role:", role);
 
   localStorage.setItem(
     "user",
@@ -329,7 +332,9 @@ if(foundUser){
   );
 
   localStorage.setItem("role", role);
-
+ console.log("Saved User:", localStorage.getItem("user"));
+ console.log("Saved Role:", localStorage.getItem("role"));
+ 
   document.getElementById("loginBox")
   .classList.add("success");
 
