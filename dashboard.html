@@ -656,7 +656,7 @@ gap:12px;
             <div class="value">95%</div>
         </div>
 <!-- Excel Upload Card -->
-<div class="card">
+<div class="card" id="importCSVCard">
 
 <h3>📥 Import Pending CSV</h3>
 
@@ -1558,10 +1558,13 @@ showPage("dashboard");
 await loadUsers();
 
 // baaki code...
-    if(userRole !== "admin"){
-    document.getElementById("createIdMenu").style.display = "none";
-}
+ if(userRole !== "admin"){
 
+    document.getElementById("createIdMenu").style.display = "none";
+
+    document.getElementById("importCSVCard").style.display = "none";
+
+}
   
 
     document.getElementById("userInfo").innerHTML =
@@ -1727,7 +1730,10 @@ if(userRole !== "admin"){
 alert("Only Admin Can View");
 return;
 }
-
+if(userRole !== "admin"){
+    alert("Only Admin Can Import CSV");
+    return;
+}
 const today =
 new Date().toISOString().split("T")[0];
 
