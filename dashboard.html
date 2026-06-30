@@ -12,7 +12,10 @@
 <title>Modern Dashboard</title>
 <link rel="stylesheet" href="theme.css">
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <style>
+
 *{
 margin:0;
 padding:0;
@@ -551,15 +554,18 @@ padding-left:290px;
 display:grid;
 grid-template-columns:2fr 1fr;
 gap:20px;
+align-items:start;
 }
 
 
 @media(max-width:900px){
 
 .dashboard-grid{
-grid-template-columns:1fr;
+display:grid;
+grid-template-columns:2fr 1fr;
+gap:20px;
+align-items:start;
 }
-
 }
 #logoutBtn{
 padding:10px 15px;
@@ -580,6 +586,9 @@ display:flex;
 align-items:center;
 gap:12px;
 }
+}
+.summary{
+height:fit-content;
 }
 </style>
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -851,7 +860,6 @@ Create User
 
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-
 <script>
   let currentUser = localStorage.getItem("user") || "";
 let userRole = localStorage.getItem("role") || "user";
@@ -887,6 +895,7 @@ this.classList.add("active");
 let allAttendanceData = [];
 let allReportsData = []; 
 let excelData = [];
+let originalHeaders = [];
 
 let monthOffset = 0;
 // ---------------- LOAD USERS ----------------
@@ -1009,21 +1018,30 @@ function listenReports(){
 function listenPendingSites(){
 
     db.collection("pendingSites")
-    .onSnapshot(snapshot=>{
+    .onSnapshot(async snapshot=>{
 
-        excelData = [];
+        excelData=[];
 
         snapshot.forEach(doc=>{
 
-            const data = doc.data();
+            const d=doc.data();
 
-            if(data.data){
-                excelData.push(data.data);
+            if(d.data){
+                excelData.push(d.data);
             }
 
         });
 
-        document.getElementById("excelCount").innerText = excelData.length;
+        // Header alag collection se load karo
+        const meta=await db.collection("pendingMeta")
+        .doc("header")
+        .get();
+
+        if(meta.exists){
+            originalHeaders=meta.data().headers || [];
+        }
+
+        document.getElementById("excelCount").innerText=excelData.length;
 
         updateCompletedPending();
 
@@ -1505,7 +1523,7 @@ function handleImport() {
         const sheetName = workbook.SheetNames[0];
         const sheet = workbook.Sheets[sheetName];
 
-        data = XLSX.utils.sheet_to_json(sheet);
+    
       }
 
       console.log("Imported Data:", data);
@@ -2091,11 +2109,14 @@ async function importPendingCSV() {
         const sheet =
             workbook.Sheets[workbook.SheetNames[0]];
 
-        const data =
-            XLSX.utils.sheet_to_json(sheet);
-            excelData = data;
+   const data = XLSX.utils.sheet_to_json(sheet, {
+    defval: ""
+});
+// Original Header Order
 
-           document.getElementById("excelCount").innerText = excelData.length;
+originalHeaders = Object.keys(data[0]);
+
+           document.getElementById("excelCount").innerText = data.length;
 
            updateCompletedPending();
 
@@ -2130,18 +2151,18 @@ async function importPendingCSV() {
                 continue;
             }
 
-            await docRef.set({
+   await docRef.set({
+    indusId: indusId,
+    data: row,
+    status: "Pending",
+    createdAt: Date.now()
+});
 
-                indusId: indusId,
-
-                data: row,
-
-                status: "Pending",
-
-                createdAt: Date.now()
-
-            });
-
+await db.collection("pendingMeta")
+.doc("header")
+.set({
+    headers: originalHeaders
+});
             added++;
 
         }
@@ -2154,9 +2175,14 @@ async function importPendingCSV() {
 
     };
 
-    reader.readAsBinaryString(file);
 
 }
+
+
+function openPendingMap() {
+  window.location.href="pending-map.html";
+}
+
 function logout(){
 
 localStorage.clear();
@@ -2251,56 +2277,230 @@ function closeCompletedPopup(){
 document.getElementById("completedPopup").style.display="none";
 
 }
+function showPendingPopup(){
 
-function downloadPendingCSV(){
+document.getElementById("pendingPopup").style.display="flex";
+
+}
+
+function closePendingPopup(){
+
+document.getElementById("pendingPopup").style.display="none";
+
+}
+
+function showDownloadOptions(){
+
+closePendingPopup();
+
+document.getElementById("downloadPopup").style.display="flex";
+
+}
+
+function closeDownloadPopup(){
+
+document.getElementById("downloadPopup").style.display="none";
+
+}
+function downloadPendingCSV() {
 
     const reportIds = new Set();
 
-    allReportsData.forEach(r=>{
+    allReportsData.forEach(r => {
         reportIds.add(cleanIndusId(r.indusId));
     });
 
-    let pending = [];
+    const pending = excelData.filter(item => {
 
-    excelData.forEach(item=>{
-
-        const id =
-        cleanIndusId(
+        const id = cleanIndusId(
             item["Indus ID"] ||
             item["Indus Id"] ||
             item["INDUS ID"]
         );
 
-        if(!reportIds.has(id)){
-            pending.push(item);
-        }
-
+        return !reportIds.has(id);
     });
 
-    if(pending.length===0){
+    if (pending.length === 0) {
         alert("No Pending Records");
         return;
     }
 
-    const sheet =
-    XLSX.utils.json_to_sheet(pending);
+    const headers = originalHeaders.length
+        ? originalHeaders
+        : Object.keys(pending[0]);
+        const rows = pending.map(item => {
 
-    const wb =
-    XLSX.utils.book_new();
+    let obj = {};
 
-    XLSX.utils.book_append_sheet(
-        wb,
-        sheet,
-        "Pending"
+    headers.forEach(h => {
+        obj[h] = item[h] ?? "";
+    });
+
+    return obj;
+
+});
+
+const ws = XLSX.utils.json_to_sheet(rows,{
+    header: headers,
+    skipHeader:false
+});
+
+    const csvRows = [];
+
+    csvRows.push(headers.join(","));
+
+    pending.forEach(row => {
+
+        csvRows.push(
+            headers.map(h => `"${row[h] ?? ""}"`).join(",")
+        );
+
+    });
+
+    const blob = new Blob(
+        [csvRows.join("\n")],
+        { type: "text/csv;charset=utf-8;" }
     );
 
-    XLSX.writeFile(
-        wb,
-        "Pending_Sites.csv"
-    );
+    const link = document.createElement("a");
+    link.href = URL.createObjectURL(blob);
+    link.download = "Pending_Sites.csv";
+    link.click();
 
 }
+function downloadPendingExcel() {
 
+    const reportIds = new Set();
+
+    allReportsData.forEach(r => {
+        reportIds.add(cleanIndusId(r.indusId));
+    });
+
+    const pending = excelData.filter(item => {
+
+        const id = cleanIndusId(
+            item["Indus ID"] ||
+            item["Indus Id"] ||
+            item["INDUS ID"]
+        );
+
+        return !reportIds.has(id);
+
+    });
+
+    if (pending.length === 0) {
+        alert("No Pending Records");
+        return;
+    }
+
+    // Original Header Order
+    const headers = originalHeaders.length
+        ? originalHeaders
+        : Object.keys(pending[0]);
+
+    // Data Original Header Order me Convert
+    const sheetData = [
+        headers,
+        ...pending.map(row =>
+            headers.map(header => row[header] ?? "")
+        )
+    ];
+
+    // Excel Sheet
+    const ws = XLSX.utils.aoa_to_sheet(sheetData);
+
+    // Workbook
+    const wb = XLSX.utils.book_new();
+
+    XLSX.utils.book_append_sheet(wb, ws, "Pending Sites");
+
+    // Download
+    XLSX.writeFile(wb, "Pending_Sites.xlsx");
+
+}// ================= PENDING MAP =================
+
+let map;
+
+function openPendingMap() {
+
+    document.getElementById("mapModal").style.display = "block";
+
+    setTimeout(() => {
+
+        if (!map) {
+            map = L.map('map').setView([18.5204, 73.8567], 12);
+
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                maxZoom: 19
+            }).addTo(map);
+        }
+
+        loadPendingMarkers();
+
+    }, 300);
+}
+
+function loadPendingMarkers() {
+
+    // Remove old markers
+    map.eachLayer(layer => {
+        if (layer instanceof L.Marker) {
+            map.removeLayer(layer);
+        }
+    });
+
+    // Report ID sirf EK baar banao
+    const reportIds = new Set();
+
+    allReportsData.forEach(r => {
+        reportIds.add(cleanIndusId(r.indusId));
+    });
+
+    excelData.forEach(item => {
+
+        const id = cleanIndusId(
+            item["Indus ID"] ||
+            item["Indus Id"] ||
+            item["INDUS ID"]
+        );
+
+        if(reportIds.has(id)) return;
+
+        const lat=parseFloat(
+item.Lat||
+item.LAT||
+item.Latitude
+);
+
+const lng=parseFloat(
+item.Long||
+item.LNG||
+item.Longitude
+);
+        if(isNaN(lat) || isNaN(lng)) return;
+
+        L.marker([lat,lng])
+        .addTo(map)
+        .bindPopup(`
+            <b>Pending Site</b><br>
+            ID : ${id}<br><br>
+
+            <button onclick="navigate(${lat},${lng})">
+            🚗 Navigate
+            </button>
+        `);
+
+    });
+
+}
+function navigate(lat, long) {
+    window.open(`https://www.google.com/maps/dir/?api=1&destination=${lat},${long}`);
+}
+
+function closeMapPopup() {
+    document.getElementById("mapModal").style.display = "none";
+}
 </script>
 <div id="presentUsersModal" style="
 display:none;
@@ -2447,6 +2647,167 @@ Close
 </button>
 
 </div>
+
+</div>
+<div id="pendingPopup"
+style="
+display:none;
+position:fixed;
+top:0;
+left:0;
+width:100%;
+height:100%;
+background:rgba(0,0,0,.6);
+justify-content:center;
+align-items:center;
+z-index:99999;
+">
+
+<div
+style="
+background:white;
+padding:30px;
+width:320px;
+border-radius:20px;
+text-align:center;
+">
+
+<h2>Pending Sites</h2>
+
+<br>
+
+<button
+onclick="showDownloadOptions()"
+style="
+width:100%;
+padding:12px;
+margin-bottom:15px;
+background:#2563eb;
+color:white;
+border:none;
+border-radius:10px;
+cursor:pointer;
+">
+📥 Download
+</button>
+
+<button
+onclick="openPendingMap()"
+style="
+width:100%;
+padding:12px;
+background:#16a34a;
+color:white;
+border:none;
+border-radius:10px;
+cursor:pointer;
+">
+🗺 Open Map
+</button>
+
+<br><br>
+
+<button
+onclick="closePendingPopup()"
+style="
+width:100%;
+padding:10px;
+background:red;
+color:white;
+border:none;
+border-radius:10px;
+">
+Close
+</button>
+
+</div>
+
+</div>
+<div id="downloadPopup"
+style="
+display:none;
+position:fixed;
+top:0;
+left:0;
+width:100%;
+height:100%;
+background:rgba(0,0,0,.6);
+justify-content:center;
+align-items:center;
+z-index:99999;
+">
+
+<div
+style="
+background:white;
+padding:30px;
+width:320px;
+border-radius:20px;
+text-align:center;
+">
+
+<h2>Download Pending</h2>
+
+<br>
+
+<button
+onclick="downloadPendingCSV()"
+style="
+width:100%;
+padding:12px;
+margin-bottom:15px;
+background:#16a34a;
+color:white;
+border:none;
+border-radius:10px;
+">
+CSV
+</button>
+
+<button
+onclick="downloadPendingExcel()"
+style="
+width:100%;
+padding:12px;
+background:#2563eb;
+color:white;
+border:none;
+border-radius:10px;
+">
+Excel
+</button>
+
+<br><br>
+
+<button
+onclick="closeDownloadPopup()"
+style="
+width:100%;
+padding:10px;
+background:red;
+color:white;
+border:none;
+border-radius:10px;
+">
+Close
+</button>
+
+</div>
+
+</div>
+<!-- ================= PENDING MAP POPUP ================= -->
+<div id="mapModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:#000000aa; z-index:999999;">
+
+  <div style="width:95%; height:95%; margin:2% auto; background:white; border-radius:15px; position:relative;">
+
+    <button onclick="closeMapPopup()" 
+      style="position:absolute; top:10px; right:10px; z-index:1000; padding:10px;">
+      ❌ Close
+    </button>
+
+    <div id="map" style="width:100%; height:100%;"></div>
+
+  </div>
 
 </div>
 </body>
