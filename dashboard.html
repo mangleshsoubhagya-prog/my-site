@@ -10,6 +10,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Modern Dashboard</title>
+<link rel="stylesheet" href="theme.css">
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
 <style>
 *{
@@ -552,6 +553,7 @@ grid-template-columns:2fr 1fr;
 gap:20px;
 }
 
+
 @media(max-width:900px){
 
 .dashboard-grid{
@@ -595,6 +597,7 @@ gap:12px;
 <a href="#" onclick="showPage('reports')">Reports</a>
 <a href="#" onclick="showPage('expense')">Expense</a>
 <a href="#" onclick="showPage('createid')" id="createIdMenu">Create ID</a>
+<a href="themes.html">🎨 Themes</a>
 </div>
 
 <div class="main">
@@ -652,8 +655,66 @@ gap:12px;
             <h3>📈 Performance</h3>
             <div class="value">95%</div>
         </div>
+<!-- Excel Upload Card -->
+<div class="card">
 
-    </div>
+<h3>📥 Import Pending CSV</h3>
+
+<input
+type="file"
+id="csvFile"
+accept=".csv"
+style="margin-top:15px;width:100%;">
+
+<br><br>
+
+<button
+onclick="importPendingCSV()"
+style="
+width:100%;
+padding:10px;
+border:none;
+border-radius:10px;
+background:#16a34a;
+color:white;
+cursor:pointer;
+">
+
+Import CSV
+
+</button>
+
+</div>
+<!-- Total Excel Records -->
+<div class="card">
+    <h3>📋 Total List</h3>
+    <div class="value" id="excelCount">0</div>
+</div>
+
+<div class="card"
+onclick="showCompletedPopup()"
+style="cursor:pointer;">
+
+    <h3>✅ Completed</h3>
+
+    <div class="value" id="completedCount">0</div>
+
+    <small>Click to View</small>
+
+</div>
+<div class="card"
+onclick="downloadPendingCSV()"
+style="cursor:pointer;">
+
+    <h3>⏳ Pending</h3>
+
+    <div class="value" id="pendingCount">0</div>
+
+    <small>Click to Download</small>
+
+</div>
+</div>
+   
 
 
     <!-- Dashboard Grid -->
@@ -719,8 +780,9 @@ gap:12px;
         </div>
 
     </div>
+    </div> <!-- dashboardSection close -->
 
-</div> <!-- dashboardSection close -->
+
     <!-- Pages -->
     <div id="attendanceSection" style="display:none">
         <iframe src="attendance.html"></iframe>
@@ -823,7 +885,8 @@ this.classList.add("active");
 });
 // ---------------- GLOBAL DATA ----------------
 let allAttendanceData = [];
-let allReportsData = [];
+let allReportsData = []; 
+let excelData = [];
 
 let monthOffset = 0;
 // ---------------- LOAD USERS ----------------
@@ -918,6 +981,7 @@ function listenAttendance(){
         });
 
         updateDashboardCards();
+        updateCompletedPending();
         loadSalarySummary();
 
     });
@@ -936,13 +1000,80 @@ function listenReports(){
         });
 
         updateDashboardCards();
+        updateCompletedPending();
 
     });
 
 
 }
+function listenPendingSites(){
 
-// ---------------- MONTH RANGE ----------------
+    db.collection("pendingSites")
+    .onSnapshot(snapshot=>{
+
+        excelData = [];
+
+        snapshot.forEach(doc=>{
+
+            const data = doc.data();
+
+            if(data.data){
+                excelData.push(data.data);
+            }
+
+        });
+
+        document.getElementById("excelCount").innerText = excelData.length;
+
+        updateCompletedPending();
+
+    });
+
+}
+function cleanIndusId(value){
+    return String(value || "")
+        .replace(/IN-/ig, "")
+        .replace(/[^0-9]/g, "")
+        .trim();
+}
+
+function updateCompletedPending(){
+
+    if(excelData.length === 0){
+        document.getElementById("completedCount").innerText = 0;
+        document.getElementById("pendingCount").innerText = 0;
+        return;
+    }
+
+    const reportIds = new Set();
+
+    allReportsData.forEach(r => {
+        const id = cleanIndusId(r.indusId);
+        if(id){
+            reportIds.add(id);
+        }
+    });
+
+    let completed = 0;
+
+    excelData.forEach(item => {
+       const id =
+cleanIndusId(
+item["Indus ID"] ||
+item["Indus Id"] ||
+item["INDUS ID"]
+);
+        if(reportIds.has(id)){
+            completed++;
+        }
+    });
+
+    document.getElementById("completedCount").innerText = completed;
+    document.getElementById("pendingCount").innerText = excelData.length - completed;
+
+    console.log("Report IDs:", [...reportIds]);
+    console.log("Excel Data:", excelData);
+}// ---------------- MONTH RANGE ----------------
  function getSalaryMonthRange() {
 
     let today = new Date();
@@ -1309,6 +1440,7 @@ async function initProfilePhoto() {
   };
 
 }
+
 // ---------------- IMPORT FIXED ----------------
 function handleImport() {
 
@@ -1401,11 +1533,31 @@ function handleImport() {
     reader.readAsArrayBuffer(file);
   }
 }
+function applyTheme(){
+
+let theme =
+localStorage.getItem("dashboardTheme") || "blue";
+
+document.body.classList.remove(
+"blue-theme",
+"green-theme",
+"purple-theme",
+"dark-theme"
+);
+
+document.body.classList.add(theme + "-theme");
+
+}
 // ---------------- INIT ----------------
 window.onload = async function(){
+
+applyTheme();
+
 showPage("dashboard");
 
-    await loadUsers();
+await loadUsers();
+
+// baaki code...
     if(userRole !== "admin"){
     document.getElementById("createIdMenu").style.display = "none";
 }
@@ -1421,6 +1573,7 @@ document.getElementById("user").textContent = currentUser;
     initProfilePhoto();
     loadUserProfiles();
    loadUsersManagement();
+   listenPendingSites();
    db.collection("users").onSnapshot(snapshot=>{
 
     document.getElementById("totalUsers").innerText =
@@ -1653,12 +1806,6 @@ document.getElementById("presentUsersModal").style.display =
 
 };
 
-window.closePresentUsers = function(){
-
-document.getElementById("presentUsersModal").style.display =
-"none";
-
-};
 window.closePresentUsers = function(){
 
 document.getElementById("presentUsersModal").style.display =
@@ -1916,6 +2063,94 @@ alert("❌ Update Failed");
 }
 
 }
+async function importPendingCSV() {
+
+    const file = document.getElementById("csvFile").files[0];
+
+    if (!file) {
+        alert("Please select CSV file");
+        return;
+    }
+
+    const reader = new FileReader();
+
+    reader.onload = async function (e) {
+
+        const text = e.target.result;
+
+        const workbook = XLSX.read(text, {
+            type: "binary"
+        });
+
+        const sheet =
+            workbook.Sheets[workbook.SheetNames[0]];
+
+        const data =
+            XLSX.utils.sheet_to_json(sheet);
+            excelData = data;
+
+           document.getElementById("excelCount").innerText = excelData.length;
+
+           updateCompletedPending();
+
+        if (data.length === 0) {
+            alert("CSV is empty");
+            return;
+        }
+
+        let added = 0;
+        let skipped = 0;
+
+        for (const row of data) {
+
+            const indusId =
+                String(
+                    row["Indus ID"] ||
+                    row["Indus Id"] ||
+                    ""
+                ).trim();
+
+            if (!indusId) continue;
+
+            const docRef =
+                db.collection("pendingSites")
+                  .doc(indusId);
+
+            const doc =
+                await docRef.get();
+
+            if (doc.exists) {
+                skipped++;
+                continue;
+            }
+
+            await docRef.set({
+
+                indusId: indusId,
+
+                data: row,
+
+                status: "Pending",
+
+                createdAt: Date.now()
+
+            });
+
+            added++;
+
+        }
+
+        alert(
+            "✅ Import Complete\n\n" +
+            "Added : " + added +
+            "\nSkipped : " + skipped
+        );
+
+    };
+
+    reader.readAsBinaryString(file);
+
+}
 function logout(){
 
 localStorage.clear();
@@ -1948,6 +2183,115 @@ console.log(err);
 alert("❌ Error Deleting User");
 
 }
+
+}
+console.log("Theme :", localStorage.getItem("dashboardTheme"));
+function showCompletedPopup(){
+
+    const reportMap = {};
+
+    allReportsData.forEach(r=>{
+
+        const id =
+        cleanIndusId(r.indusId);
+
+        reportMap[id]=r;
+
+    });
+
+    let html="";
+
+    excelData.forEach(item=>{
+
+        const id=
+        cleanIndusId(
+        item["Indus ID"]||
+        item["Indus Id"]||
+        item["INDUS ID"]);
+
+        if(reportMap[id]){
+
+            html+=`
+            <div style="
+            padding:10px;
+            margin-bottom:10px;
+            border:1px solid #ddd;
+            border-radius:10px;
+            ">
+
+            <b>Indus ID :</b> ${id}<br>
+
+            <b>Date :</b> ${reportMap[id].date || "-"}
+
+            </div>
+            `;
+
+        }
+
+    });
+
+    if(html===""){
+        html="<h3>No Completed Records</h3>";
+    }
+
+    document.getElementById("completedList").innerHTML=html;
+
+    document.getElementById("completedPopup").style.display="flex";
+
+}
+
+function closeCompletedPopup(){
+
+document.getElementById("completedPopup").style.display="none";
+
+}
+
+function downloadPendingCSV(){
+
+    const reportIds = new Set();
+
+    allReportsData.forEach(r=>{
+        reportIds.add(cleanIndusId(r.indusId));
+    });
+
+    let pending = [];
+
+    excelData.forEach(item=>{
+
+        const id =
+        cleanIndusId(
+            item["Indus ID"] ||
+            item["Indus Id"] ||
+            item["INDUS ID"]
+        );
+
+        if(!reportIds.has(id)){
+            pending.push(item);
+        }
+
+    });
+
+    if(pending.length===0){
+        alert("No Pending Records");
+        return;
+    }
+
+    const sheet =
+    XLSX.utils.json_to_sheet(pending);
+
+    const wb =
+    XLSX.utils.book_new();
+
+    XLSX.utils.book_append_sheet(
+        wb,
+        sheet,
+        "Pending"
+    );
+
+    XLSX.writeFile(
+        wb,
+        "Pending_Sites.csv"
+    );
 
 }
 
@@ -2062,5 +2406,42 @@ Close
 
 </div>
 
+<div id="completedPopup"
+style="
+display:none;
+position:fixed;
+top:0;
+left:0;
+width:100%;
+height:100%;
+background:rgba(0,0,0,.6);
+justify-content:center;
+align-items:center;
+z-index:99999;
+">
+
+<div style="
+background:white;
+width:90%;
+max-width:800px;
+max-height:80vh;
+overflow:auto;
+padding:20px;
+border-radius:15px;
+">
+
+<h2>Completed Sites</h2>
+
+<div id="completedList"></div>
+
+<br>
+
+<button onclick="closeCompletedPopup()">
+Close
+</button>
+
+</div>
+
+</div>
 </body>
 </html>
