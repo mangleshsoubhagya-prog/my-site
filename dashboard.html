@@ -590,6 +590,7 @@ gap:12px;
 .summary{
 height:fit-content;
 }
+
 </style>
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
@@ -727,14 +728,14 @@ style="cursor:pointer;">
 
 </div>
 <div class="card"
-onclick="downloadPendingCSV()"
+onclick="showPendingTechMenu()"
 style="cursor:pointer;">
 
     <h3>⏳ Pending</h3>
 
     <div class="value" id="pendingCount">0</div>
 
-    <small>Click to Download</small>
+    <small>Click to View</small>
 
 </div>
 </div>
@@ -787,21 +788,7 @@ style="cursor:pointer;">
         </div>
 
 
-        <!-- Right Side -->
-        <div>
-
-            <!-- User Profiles -->
-            <div id="userListContainer">
-
-                <h2>👥 Team Members</h2>
-
-                <br>
-
-                <div id="userList"></div>
-
-            </div>
-
-        </div>
+        
 
     </div>
     </div> <!-- dashboardSection close -->
@@ -946,6 +933,9 @@ let allAttendanceData = [];
 let allReportsData = []; 
 let excelData = [];
 let originalHeaders = [];
+let selectedTechPending = [];
+let selectedTechName = "";
+
 
 let monthOffset = 0;
 let selectedReportDate = new Date();
@@ -2428,6 +2418,118 @@ function closeCompletedPopup(){
 document.getElementById("completedPopup").style.display="none";
 
 }
+function showPendingTechMenu(){
+
+document.getElementById("techPendingBody").innerHTML = `
+<div style="
+padding:12px;
+font-weight:bold;
+background:#f5f5f5;
+border-bottom:1px solid #ddd;
+">
+Pending By Tech
+</div>
+
+<div id="pendingTechList"></div>
+`;
+document.getElementById("pendingTechPopup").style.display="flex";
+
+const reportIds=new Set();
+
+allReportsData.forEach(r=>{
+reportIds.add(cleanIndusId(r.indusId));
+});
+
+let techs={};
+
+excelData.forEach(item=>{
+
+const id=cleanIndusId(
+item["Indus ID"]||
+item["Indus Id"]||
+item["INDUS ID"]
+);
+
+if(reportIds.has(id)) return;
+
+const tech = (
+    item["FSC Name"] ||
+    item["FSC NAME"] ||
+    item["Fsc Name"] ||
+    item["Tech Name"] ||
+    "No Name"
+).trim();
+
+if(!techs[tech]){
+techs[tech]=[];
+}
+
+techs[tech].push(item);
+
+});
+
+let html="";
+
+Object.keys(techs)
+.sort()
+.forEach(name=>{
+
+html+=`
+
+<div
+onclick="openTechPending('${name}')"
+style="
+padding:12px;
+cursor:pointer;
+border-bottom:1px solid #eee;
+display:flex;
+justify-content:space-between;
+">
+
+<span>👷 ${name}</span>
+
+<b>${techs[name].length}</b>
+
+</div>
+
+`;
+
+});
+
+document.getElementById("pendingTechList").innerHTML=html;
+
+}
+function openTechPending(name){
+selectedTechName = name;
+const reportIds=new Set();
+
+allReportsData.forEach(r=>{
+reportIds.add(cleanIndusId(r.indusId));
+});
+
+selectedTechPending=excelData.filter(item=>{
+
+const id=cleanIndusId(
+item["Indus ID"]||
+item["Indus Id"]||
+item["INDUS ID"]
+);
+
+const techName = (
+item["FSC Name"] ||
+item["FSC NAME"] ||
+item["Fsc Name"] ||
+item["Tech Name"] ||
+""
+).trim();
+
+return !reportIds.has(id) && techName === name;
+});
+
+showTechPendingPopup(name);
+
+}
+
 function showPendingPopup(){
 
 document.getElementById("pendingPopup").style.display="flex";
@@ -2653,6 +2755,27 @@ function closeMapPopup() {
     document.getElementById("mapModal").style.display = "none";
 }
 
+function getPendingData(){
+
+    const reportIds = new Set();
+
+    allReportsData.forEach(r=>{
+        reportIds.add(cleanIndusId(r.indusId));
+    });
+
+    return excelData.filter(item=>{
+
+        const id = cleanIndusId(
+            item["Indus ID"] ||
+            item["Indus Id"] ||
+            item["INDUS ID"]
+        );
+
+        return !reportIds.has(id);
+
+    });
+
+}
 async function deleteImportedCSV(){
 
     if(!confirm("Delete imported CSV?")) return;
@@ -2695,6 +2818,245 @@ async function deleteImportedCSV(){
     }
 
 }
+function showTechPendingPopup(name){
+
+    document.getElementById("techPendingBody").innerHTML = `
+    
+    <div style="padding:20px;">
+
+        <h2>👷 ${name}</h2>
+
+        <div style="margin:15px 0;font-size:18px;">
+            Total Pending :
+            <b>${selectedTechPending.length}</b>
+        </div>
+
+        <div style="display:flex;gap:10px;flex-wrap:wrap;">
+
+            <button onclick="showTechPendingList()"
+            style="
+            flex:1;
+            padding:10px;
+            background:#2563eb;
+            color:white;
+            border:none;
+            border-radius:8px;
+            cursor:pointer;">
+                📋 Show Pending List
+            </button>
+
+            <button onclick="downloadTechPending()"
+            style="
+            flex:1;
+            padding:10px;
+            background:#16a34a;
+            color:white;
+            border:none;
+            border-radius:8px;
+            cursor:pointer;">
+                📥 Download
+            </button>
+
+        </div>
+
+        <br>
+
+        <button onclick="closeTechPendingPopup()"
+        style="
+        width:100%;
+        padding:12px;
+        background:#ef4444;
+        color:white;
+        border:none;
+        border-radius:8px;
+        cursor:pointer;">
+        
+            ❌ Close
+        </button>
+
+    </div>
+    `;
+
+    // Popup ko Flex se open karo
+    document.getElementById("pendingTechPopup").style.display = "flex";
+
+}
+function showTechPendingList(){
+
+if(selectedTechPending.length===0){
+alert("No Pending Data");
+return;
+}
+
+let html=`
+<div style="
+background:white;
+padding:20px;
+max-height:80vh;
+overflow:auto;
+">
+
+<h2>${selectedTechName}</h2>
+
+<table border="1"
+style="
+width:100%;
+border-collapse:collapse;
+">
+
+<tr>
+`;
+
+const headers=originalHeaders.length
+?originalHeaders
+:Object.keys(selectedTechPending[0]);
+
+headers.forEach(h=>{
+html+=`<th>${h}</th>`;
+});
+
+html+="</tr>";
+
+selectedTechPending.forEach(row=>{
+
+html+="<tr>";
+
+headers.forEach(h=>{
+html+=`<td>${row[h]??""}</td>`;
+});
+
+html+="</tr>";
+
+});
+
+html+=`
+</table>
+
+<br>
+
+<button
+onclick="this.parentElement.parentElement.remove()"
+style="
+display:block;
+margin:20px auto 5px;
+padding:12px 35px;
+background:linear-gradient(135deg,#ef4444,#dc2626);
+color:white;
+border:none;
+border-radius:10px;
+font-size:16px;
+font-weight:600;
+cursor:pointer;
+box-shadow:0 5px 15px rgba(239,68,68,.35);
+transition:.3s;
+"
+onmouseover="
+this.style.transform='scale(1.05)';
+this.style.boxShadow='0 8px 20px rgba(239,68,68,.5)';
+"
+onmouseout="
+this.style.transform='scale(1)';
+this.style.boxShadow='0 5px 15px rgba(239,68,68,.35)';
+">
+❌ Close
+</button>
+
+</div>
+`;
+
+const popup=document.createElement("div");
+
+popup.style.position="fixed";
+popup.style.left="0";
+popup.style.top="0";
+popup.style.width="100%";
+popup.style.height="100%";
+popup.style.background="rgba(0,0,0,.4)";
+popup.style.zIndex="999999";
+
+popup.appendChild(document.createRange().createContextualFragment(html));
+
+document.body.appendChild(popup);
+
+}
+function downloadTechPending(){
+
+if(selectedTechPending.length===0){
+alert("No Pending Data");
+return;
+}
+
+const headers =
+originalHeaders.length
+? originalHeaders
+: Object.keys(selectedTechPending[0]);
+
+const rows = [
+headers,
+...selectedTechPending.map(row =>
+headers.map(h => row[h] ?? "")
+)
+];
+
+const ws = XLSX.utils.aoa_to_sheet(rows);
+
+const wb = XLSX.utils.book_new();
+
+XLSX.utils.book_append_sheet(
+wb,
+ws,
+selectedTechName
+);
+
+XLSX.writeFile(
+wb,
+selectedTechName + "_Pending.xlsx"
+);
+
+}
+function closeTechPendingPopup(){
+
+    document.getElementById("pendingTechPopup").style.display = "none";
+
+    // Popup band hone ke baad technician list fir se bana do
+    showPendingTechMenu();
+
+}
+// ================= CLOSE POPUPS WHEN CLICK OUTSIDE =================
+
+window.onclick = function(e){
+
+    // Pending Tech Popup
+    if(e.target == document.getElementById("pendingTechPopup")){
+        document.getElementById("pendingTechPopup").style.display="none";
+    }
+
+    // Completed Popup
+    if(e.target == document.getElementById("completedPopup")){
+        document.getElementById("completedPopup").style.display="none";
+    }
+
+    // Pending Popup
+    if(e.target == document.getElementById("pendingPopup")){
+        document.getElementById("pendingPopup").style.display="none";
+    }
+
+    // Download Popup
+    if(e.target == document.getElementById("downloadPopup")){
+        document.getElementById("downloadPopup").style.display="none";
+    }
+
+    // Map Popup
+    if(e.target == document.getElementById("mapModal")){
+        document.getElementById("mapModal").style.display="none";
+    }
+
+    // Present Users
+    if(e.target == document.getElementById("presentUsersModal")){
+        document.getElementById("presentUsersModal").style.display="none";
+    }
+
+};
 </script>
 <div id="presentUsersModal" style="
 display:none;
@@ -3021,6 +3383,56 @@ Close
     <div id="map" style="width:100%; height:100%;"></div>
 
   </div>
+
+</div>
+<!-- Pending Tech Menu -->
+<div id="pendingTechPopup"
+onclick="closeTechPendingPopup()"
+style="
+display:none;
+position:fixed;
+top:0;
+left:0;
+width:100%;
+height:100%;
+background:rgba(0,0,0,.35);
+justify-content:center;
+align-items:center;
+z-index:999999;
+">
+
+<div
+onclick="event.stopPropagation()"
+style="
+position:relative;
+width:420px;
+max-width:95%;
+max-height:85vh;
+overflow:auto;
+background:white;
+border-radius:12px;
+padding:20px;
+box-shadow:0 10px 30px rgba(0,0,0,.25);
+">
+<div id="techPendingBody">
+
+<div
+style="
+padding:12px;
+font-weight:bold;
+background:#f5f5f5;
+border-bottom:1px solid #ddd;
+">
+
+Pending By Tech
+
+</div>
+
+<div id="pendingTechList"></div>
+
+</div>
+
+</div>
 
 </div>
 </body>
