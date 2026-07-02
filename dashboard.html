@@ -692,6 +692,21 @@ cursor:pointer;
 Import CSV
 
 </button>
+<button
+    onclick="deleteImportedCSV()"
+    style="
+        width:100%;
+        margin-top:10px;
+        background:#e53935;
+        color:white;
+        border:none;
+        padding:10px;
+        border-radius:8px;
+        cursor:pointer;
+        font-weight:bold;
+    ">
+    🗑 Delete Imported CSV
+</button>
 
 </div>
 <!-- Total Excel Records -->
@@ -861,9 +876,11 @@ Create User
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
 <script>
-  let currentUser = localStorage.getItem("user") || "";
+ let currentUser = localStorage.getItem("user") || "";
 let userRole = localStorage.getItem("role") || "user";
+
 // ---------------- FIREBASE INIT ----------------
+
 const firebaseConfig = {
   apiKey: "AIzaSyAbjZrPfGx0UTBAW4HndPxf9mMhhmg513s",
   authDomain: "attendance-system-fc71c.firebaseapp.com",
@@ -871,25 +888,58 @@ const firebaseConfig = {
   storageBucket: "attendance-system-fc71c.appspot.com",
   appId: "1:57089003187:web:dc8864aa56701384d6aac6"
 };
-if(!localStorage.getItem("user")){
-   window.location.href = "login.html";
+
+if (!localStorage.getItem("user")) {
+    window.location.href = "login.html";
 }
+
+// OLD PROJECT (Attendance)
 firebase.initializeApp(firebaseConfig);
+
 const db = firebase.firestore();
+
+// Old Reports bhi isi project me honge
+const oldReportsDB = db;
+
+
+// ---------------- NEW REPORTS PROJECT ----------------
+
+const reportsFirebaseConfig = {
+  apiKey: "AIzaSyBHe44S_oU2ndgRlea4OI_nKt9N5oQ9XNE",
+  authDomain: "reportssystem-4fad7.firebaseapp.com",
+  projectId: "reportssystem-4fad7",
+  storageBucket: "reportssystem-4fad7.firebasestorage.app",
+  messagingSenderId: "402469731114",
+  appId: "1:402469731114:web:dcf97312036971f2977c53"
+};
+
+// Second Firebase App
+const reportsApp = firebase.initializeApp(
+    reportsFirebaseConfig,
+    "reportsApp"
+);
+
+// New Reports Firestore
+const reportsDB = reportsApp.firestore();
+
 const CLOUD_NAME = "dhs6u2y6l";
 const UPLOAD_PRESET = "expense_upload";
+
 function showSection(section){
 
 }
-document.querySelectorAll(".sidebar a").forEach(link=>{
-link.addEventListener("click",function(){
 
-document.querySelectorAll(".sidebar a")
-.forEach(a=>a.classList.remove("active"));
+document.querySelectorAll(".sidebar a").forEach(link => {
 
-this.classList.add("active");
+    link.addEventListener("click", function(){
 
-});
+        document.querySelectorAll(".sidebar a")
+        .forEach(a => a.classList.remove("active"));
+
+        this.classList.add("active");
+
+    });
+
 });
 // ---------------- GLOBAL DATA ----------------
 let allAttendanceData = [];
@@ -898,6 +948,11 @@ let excelData = [];
 let originalHeaders = [];
 
 let monthOffset = 0;
+let selectedReportDate = new Date();
+
+function formatReportDate(date){
+    return date.toISOString().split("T")[0];
+}
 // ---------------- LOAD USERS ----------------
 async function loadUsers() {
   let select = document.getElementById("userFilter");
@@ -998,21 +1053,99 @@ function listenAttendance(){
 }
 function listenReports(){
 
-    db.collection("reports").onSnapshot(snapshot=>{
+    let oldReports = [];
+    let newReports = [];
 
-        allReportsData = [];
+    function mergeReports(){
 
-        snapshot.forEach(doc=>{
+        const reportMap = new Map();
 
-            allReportsData.push(doc.data());
+        // New Project
+        newReports.forEach(report=>{
+
+            const id = cleanIndusId(report.indusId);
+
+            if(id){
+                reportMap.set(id, report);
+            }
 
         });
 
+        // Old Project
+        oldReports.forEach(report=>{
+
+            const id = cleanIndusId(report.indusId);
+
+            if(id && !reportMap.has(id)){
+                reportMap.set(id, report);
+            }
+
+        });
+
+        allReportsData = [...reportMap.values()];
+
+        console.log("Old Reports :", oldReports.length);
+        console.log("New Reports :", newReports.length);
+        console.log("Merged :", allReportsData.length);
+        console.log("========== ALL REPORTS ==========");
+
+allReportsData.forEach(r => {
+    console.log(
+        "Name:", r.name,
+        "| Date:", r.date,
+        "| Indus:", r.indusId
+    );
+});
+
+console.log("========== END ==========");
+
         updateDashboardCards();
         updateCompletedPending();
+        
+
+    }
+
+    // New Project Listener
+reportsDB.collection("reports").onSnapshot(snapshot => {
+
+    console.log("TOTAL FIRESTORE DOCS :", snapshot.size);
+
+    newReports = [];
+
+    snapshot.forEach(doc => {
+
+        const d = doc.data();
+
+        // 👇 Manglesh ke reports check karo
+        if ((d.name || "").trim().toLowerCase() === "manglesh") {
+            console.log(
+                "MANGLESH REPORT",
+                d.date,
+                d.type,
+                d.indusId,   // agar indusNo nahi hai to indusId use karo
+                doc.id
+            );
+        }
+
+        newReports.push(d);
 
     });
 
+    mergeReports();
+
+});
+    // Old Project Listener
+    oldReportsDB.collection("reports").onSnapshot(snapshot=>{
+
+        oldReports = [];
+
+        snapshot.forEach(doc=>{
+            oldReports.push(doc.data());
+        });
+
+        mergeReports();
+
+    });
 
 }
 function listenPendingSites(){
@@ -1048,16 +1181,20 @@ function listenPendingSites(){
     });
 
 }
-function cleanIndusId(value){
-    return String(value || "")
-        .replace(/IN-/ig, "")
-        .replace(/[^0-9]/g, "")
-        .trim();
+function cleanIndusId(value) {
+
+    if (!value) return "";
+
+    // Sirf number nikalo
+    const match = String(value).match(/\d+/g);
+
+    return match ? match.join("") : "";
+
 }
 
-function updateCompletedPending(){
+function updateCompletedPending() {
 
-    if(excelData.length === 0){
+    if (!excelData || excelData.length === 0) {
         document.getElementById("completedCount").innerText = 0;
         document.getElementById("pendingCount").innerText = 0;
         return;
@@ -1065,33 +1202,43 @@ function updateCompletedPending(){
 
     const reportIds = new Set();
 
-    allReportsData.forEach(r => {
-        const id = cleanIndusId(r.indusId);
-        if(id){
+    // Firestore Reports se sabhi Indus IDs
+    allReportsData.forEach(report => {
+
+        const id = cleanIndusId(report.indusId);
+
+        if (id) {
             reportIds.add(id);
         }
+
     });
 
     let completed = 0;
 
     excelData.forEach(item => {
-       const id =
-cleanIndusId(
-item["Indus ID"] ||
-item["Indus Id"] ||
-item["INDUS ID"]
-);
-        if(reportIds.has(id)){
+
+        const excelId = cleanIndusId(
+            item["Indus ID"] ||
+            item["Indus Id"] ||
+            item["INDUS ID"] ||
+            item["INDUS_ID"] ||
+            item["IndusID"]
+        );
+
+        if (reportIds.has(excelId)) {
             completed++;
         }
+
     });
 
     document.getElementById("completedCount").innerText = completed;
     document.getElementById("pendingCount").innerText = excelData.length - completed;
 
-    console.log("Report IDs:", [...reportIds]);
-    console.log("Excel Data:", excelData);
-}// ---------------- MONTH RANGE ----------------
+    console.log("Report IDs :", [...reportIds]);
+    console.log("Excel Total :", excelData.length);
+    console.log("Completed :", completed);
+}
+// ---------------- MONTH RANGE ----------------
  function getSalaryMonthRange() {
 
     let today = new Date();
@@ -1692,6 +1839,25 @@ function nextMonth(){
     updateMonthLabel();
     loadSalarySummary();
 }
+// ================= PREVIOUS / NEXT REPORT DATE =================
+
+window.prevReportDate = function () {
+
+    selectedReportDate.setDate(
+        selectedReportDate.getDate() - 1
+    );
+
+    showPresentUsers();
+};
+
+window.nextReportDate = function () {
+
+    selectedReportDate.setDate(
+        selectedReportDate.getDate() + 1
+    );
+
+    showPresentUsers();
+};
 function toggleSidebar(){
 
 document
@@ -1742,116 +1908,97 @@ document.querySelector(".sidebar").classList.add("hide");
 window.scrollTo(0,0);
 
 }
-window.showPresentUsers = async function(){
+window.showPresentUsers = function () {
 
-if(userRole !== "admin"){
-alert("Only Admin Can View");
-return;
-}
-if(userRole !== "admin"){
-    alert("Only Admin Can Import CSV");
-    return;
-}
-const today =
-new Date().toISOString().split("T")[0];
+    if (userRole !== "admin") {
+        alert("Only Admin Can View");
+        return;
+    }
 
-// Present Users
-let users = [
-...new Set(
-allAttendanceData
-.filter(x => x.date === today)
-.map(x => x.name)
-)
-];
+   const today = formatReportDate(selectedReportDate);
 
-// Reports Collection Read
-const reportSnap =
-await db.collection("reports")
-.where("date","==",today)
-.get();
+    // Today's Present Users
+    const users = [
+        ...new Set(
+            allAttendanceData
+                .filter(x => x.date === today)
+                .map(x => (x.name || "").trim())
+        )
+    ];
 
-let reportCount = {};
-let totalReports = 0;
+    // Report Count
+    let reportCount = {};
+    let totalReports = 0;
 
-reportSnap.forEach(doc=>{
+    // allReportsData = Old + New Reports
+    allReportsData.forEach(report => {
 
-const data = doc.data();
+        if (report.date !== today) return;
 
-if(!reportCount[data.name]){
-reportCount[data.name] = 0;
-}
+        const key = (report.name || "")
+            .trim()
+            .toLowerCase();
 
-reportCount[data.name]++;
-totalReports++;
+        if (!reportCount[key]) {
+            reportCount[key] = 0;
+        }
 
-});
+        reportCount[key]++;
+        totalReports++;
 
-let html = "";
+    });
 
-users.forEach((name,index)=>{
+    let html = "";
 
-html += `
-<div style="
-padding:12px;
-margin-bottom:10px;
-background:#f3f4f6;
-border-radius:10px;
-color:black;
-font-weight:bold;
-">
+    users.forEach((name, index) => {
 
-${index+1}. ${name}
+        const key = name.trim().toLowerCase();
 
-<br>
+        html += `
+        <div style="
+            padding:12px;
+            margin-bottom:10px;
+            background:#f3f4f6;
+            border-radius:10px;
+            color:black;
+            font-weight:bold;
+        ">
+            ${index + 1}. ${name}
+            <br>
+            📦 Report Count : ${reportCount[key] || 0}
+        </div>
+        `;
 
-📦 Report Count :
-${reportCount[name] || 0}
+    });
 
-</div>
-`;
+    html += `
+        <hr>
+        <b>Total Present Users :</b> ${users.length}
+        <br><br>
+        <b>Total Reports :</b> ${totalReports}
+    `;
 
-});
+   document.getElementById("presentUsersList").innerHTML = html;
 
-html += `
-<hr>
+document.getElementById("reportDateLabel").innerText = today;
 
-<b>Total Present Users :</b> ${users.length}
-
-<br><br>
-
-<b>Total Reports :</b> ${totalReports}
-`;
-
-document.getElementById("presentUsersList").innerHTML =
-html;
-
-document.getElementById("presentUsersModal").style.display =
-"flex";
-
+document.getElementById("presentUsersModal").style.display = "flex";
 };
 
-window.closePresentUsers = function(){
-
-document.getElementById("presentUsersModal").style.display =
-"none";
-
-}
-window.addEventListener("load",()=>{
-
-if(window.innerWidth <= 768){
-document.querySelector(".sidebar").classList.add("hide");
-}
-
-});
-window.showPresentUsersPopup = function(){
-
-document.getElementById("presentPopup").style.display =
-"flex";
-
-loadPresentUsers();
-
+window.closePresentUsers = function () {
+    document.getElementById("presentUsersModal").style.display = "none";
 };
 
+window.addEventListener("load", () => {
+    if (window.innerWidth <= 768) {
+        document.querySelector(".sidebar").classList.add("hide");
+    }
+});
+
+window.showPresentUsersPopup = function () {
+    document.getElementById("presentPopup").style.display = "flex";
+    loadPresentUsers();
+};
 window.closePresentPopup = function(){
 
 document.getElementById("presentPopup").style.display =
@@ -2109,17 +2256,21 @@ async function importPendingCSV() {
         const sheet =
             workbook.Sheets[workbook.SheetNames[0]];
 
-   const data = XLSX.utils.sheet_to_json(sheet, {
-    defval: ""
+   const data = XLSX.utils.sheet_to_json(sheet,{
+    defval:""
 });
-// Original Header Order
 
+// Excel data memory me save karo
+excelData = data;
+
+// Header save karo
 originalHeaders = Object.keys(data[0]);
 
-           document.getElementById("excelCount").innerText = data.length;
+// Count update
+document.getElementById("excelCount").innerText = excelData.length;
 
-           updateCompletedPending();
-
+// Card update
+updateCompletedPending();
         if (data.length === 0) {
             alert("CSV is empty");
             return;
@@ -2174,7 +2325,7 @@ await db.collection("pendingMeta")
         );
 
     };
-
+reader.readAsBinaryString(file);
 
 }
 
@@ -2501,6 +2652,49 @@ function navigate(lat, long) {
 function closeMapPopup() {
     document.getElementById("mapModal").style.display = "none";
 }
+
+async function deleteImportedCSV(){
+
+    if(!confirm("Delete imported CSV?")) return;
+
+    try{
+
+        const snapshot = await db.collection("pendingSites").get();
+
+        const batch = db.batch();
+
+        snapshot.forEach(doc=>{
+            batch.delete(doc.ref);
+        });
+
+        await batch.commit();
+
+        try{
+            await db.collection("pendingMeta")
+            .doc("header")
+            .delete();
+        }catch(e){}
+
+        excelData = [];
+        originalHeaders = [];
+
+        document.getElementById("csvFile").value = "";
+
+        document.getElementById("excelCount").innerText = "0";
+        document.getElementById("completedCount").innerText = "0";
+        document.getElementById("pendingCount").innerText = "0";
+
+        alert("✅ CSV Deleted Successfully");
+
+    }catch(err){
+
+        console.error(err);
+
+        alert(err.message);
+
+    }
+
+}
 </script>
 <div id="presentUsersModal" style="
 display:none;
@@ -2527,9 +2721,28 @@ overflow:auto;
 ">
 
 <h2 style="margin-bottom:15px;">
-✅ Present Users Today
+✅ Present Users
 </h2>
 
+<div style="
+display:flex;
+justify-content:center;
+align-items:center;
+gap:15px;
+margin-bottom:15px;
+">
+
+<button onclick="prevReportDate()">
+⬅
+</button>
+
+<span id="reportDateLabel"></span>
+
+<button onclick="nextReportDate()">
+➡
+</button>
+
+</div>
 <div id="presentUsersList"></div>
 
 <br>
