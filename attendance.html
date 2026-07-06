@@ -6,6 +6,7 @@
 
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 
 <link href="https://fonts.googleapis.com/css2?family=Poppins&display=swap" rel="stylesheet">
 
@@ -186,17 +187,45 @@ gap:10px;
 
 <h2>Bhavy Softech Solution</h2>
 
-<div style="display:flex;align-items:center;gap:8px;">
+<div style="display:flex;align-items:center;gap:12px;">
 
 <button onclick="goDashboard()">
 🏠 Dashboard
 </button>
 
-<span id="userName"></span>
+<div
+onclick="openNotification()"
+style="
+position:relative;
+cursor:pointer;
+font-size:28px;
+">
 
+🔔
+
+<span
+id="notificationBadge"
+style="
+position:absolute;
+top:-8px;
+right:-8px;
+background:red;
+color:white;
+border-radius:50%;
+padding:2px 6px;
+font-size:11px;
+display:none;
+">
+
+0
+
+</span>
 
 </div>
 
+<span id="userName"></span>
+
+</div>
 </div>
 
 <div class="glass">
@@ -300,25 +329,29 @@ Close
 </div>
 
 <!-- LIVE -->
-
-<div id="liveModal" class="modal">
+<div id="notificationModal" class="modal">
 
 <div class="modal-box">
 
-<h3>📡 Live Users</h3>
+<h3>🔔 Notifications</h3>
 
-<div id="liveUsersList">
-Loading...
+<div id="notificationList">
+
+No Notifications
+
 </div>
 
-<button onclick="closeLiveModal()">
+<br>
+
+<button onclick="closeNotification()">
+
 Close
+
 </button>
 
 </div>
 
 </div>
-
 <script>
 
 function goDashboard(){
@@ -376,6 +409,7 @@ let monthlySalaryMap = {
 "Anuj":13000,
 "Ajay":13000,
 "Nandan":13000,
+"Gourav":13000,
 
 };
 
@@ -384,6 +418,8 @@ let currentDate = new Date();
 let trackingInterval = null;
 let map;
 let markers = {};
+let deleteAttendanceId = "";
+let deleteAttendanceData = null;
 // DATE
 
 function getDate(d){
@@ -698,6 +734,17 @@ function closeLiveModal(){
 liveModal.style.display = "none";
 
 }
+function openNotification(){
+
+notificationModal.style.display="flex";
+
+}
+
+function closeNotification(){
+
+notificationModal.style.display="none";
+
+}
 
 // ATTENDANCE
 
@@ -735,7 +782,38 @@ date:today,
 place:manualPlace.value,
 lat:p.coords.latitude,
 lon:p.coords.longitude,
-timestamp:new Date()
+timestamp:new Date(),
+
+status: "Pending",          // Pending / Approved
+approved: false,
+approvedBy: "",
+approvedTime: "",
+
+deleted: false,
+deleteReason: "",
+deletedBy: "",
+deletedTime: ""
+
+});
+await db.collection("notifications").add({
+
+receiver: "admin",
+
+sender: user,
+
+title: "New Attendance",
+
+message: user + " marked attendance.",
+
+date: today,
+
+type: "pending",
+
+attendanceId: docId,
+
+read: false,
+
+time: firebase.firestore.FieldValue.serverTimestamp()
 
 });
 
@@ -875,6 +953,75 @@ async function loadData(){
 
 }   // 👈 YAHAN FUNCTION END
 
+function loadNotifications(){
+
+    db.collection("notifications")
+    .where("receiver","==",role=="admin" ? "admin" : user)
+    .where("read","==",false)
+    .orderBy("time","desc")
+    .onSnapshot(snapshot=>{
+
+        notificationBadge.style.display =
+            snapshot.size ? "inline-block" : "none";
+
+        notificationBadge.innerText = snapshot.size;
+
+        let html="";
+
+        snapshot.forEach(doc=>{
+
+            let n=doc.data();
+
+            html+=`
+
+            <div class="user-card">
+
+                <b>${n.sender}</b><br>
+
+                ${n.message}<br>
+
+                <small>${n.date}</small>
+
+                ${
+                    role=="admin" && n.type=="pending"
+                    ?
+
+                    `
+                    <br><br>
+
+                    <button
+                    style="background:#00c853;color:white"
+                    onclick="approveAttendanceFromBell('${doc.id}','${n.attendanceId}')">
+
+                    ✅ Approve
+
+                    </button>
+
+                    <button
+                    style="background:red;color:white"
+                    onclick="rejectAttendanceFromBell('${doc.id}','${n.attendanceId}')">
+
+                    ❌ Reject
+
+                    </button>
+                    `
+                    :
+                    ""
+
+                }
+
+            </div>
+
+            `;
+
+        });
+
+        notificationList.innerHTML=
+        html || "No Notifications";
+
+    });
+
+}
 // 🔥 YAHAN PASTE KARO
 function initMap(){
 
@@ -1137,6 +1284,14 @@ role==="admin"
 ?
 `
 <button
+style="background:#00c853;color:white;margin-top:8px;"
+onclick="approveAttendance('${x.id}')">
+
+✅ Approve
+
+</button>
+
+<button
 class="delete-btn"
 onclick="deleteAttendance('${x.id}')">
 
@@ -1155,22 +1310,148 @@ onclick="deleteAttendance('${x.id}')">
 }).join("");
 
 }
+async function approveAttendance(id){
 
-// DELETE
+    if(role !== "admin") return;
 
-async function deleteAttendance(id){
-
-    if(role!=="admin") return;
-
-    let ok = confirm("Delete Attendance ?");
+    let ok = confirm("Approve this attendance?");
 
     if(!ok) return;
 
-    await db.collection("attendance").doc(id).delete();
+    await db.collection("attendance").doc(id).update({
 
-    alert("Deleted");
+        status: "Approved",
+        approved: true,
+        approvedBy: user,
+        approvedTime: new Date()
+
+    });
+
+    alert("Attendance Approved");
 
     loadData();
+
+}
+async function approveAttendanceFromBell(notificationId,attendanceId){
+
+    await db.collection("attendance")
+    .doc(attendanceId)
+    .update({
+
+        status:"Approved",
+        approved:true,
+        approvedBy:user,
+        approvedTime:new Date()
+
+    });
+
+    await db.collection("notifications")
+    .doc(notificationId)
+    .update({
+
+        read:true
+
+    });
+
+    alert("Attendance Approved");
+
+}
+async function rejectAttendanceFromBell(notificationId,attendanceId){
+
+    let reason=prompt("Reject Reason");
+
+    if(!reason) return;
+
+    await db.collection("attendance")
+    .doc(attendanceId)
+    .update({
+
+        status:"Rejected",
+        deleted:true,
+        deleteReason:reason,
+        deletedBy:user,
+        deletedTime:new Date()
+
+    });
+
+    await db.collection("notifications")
+    .doc(notificationId)
+    .update({
+
+        read:true
+
+    });
+
+    alert("Attendance Rejected");
+
+}
+// DELETE
+
+function deleteAttendance(id){
+
+    if(role!="admin") return;
+
+    deleteAttendanceId=id;
+
+    deleteReason.value="";
+
+    deleteModal.style.display="flex";
+
+}
+function closeDeleteModal(){
+
+    deleteModal.style.display="none";
+
+}
+async function confirmDeleteAttendance(){
+
+    let reason=deleteReason.value.trim();
+
+    if(reason==""){
+
+        alert("Please enter delete reason.");
+
+        return;
+
+    }
+
+    let doc=await db.collection("attendance")
+    .doc(deleteAttendanceId)
+    .get();
+
+    if(!doc.exists){
+
+        alert("Attendance not found.");
+
+        return;
+
+    }
+
+    let data=doc.data();
+
+    await db.collection("attendance_deleted")
+    .add({
+
+        ...data,
+
+        deleteReason:reason,
+
+        deletedBy:user,
+
+        deletedTime:new Date()
+
+    });
+
+    await db.collection("attendance")
+    .doc(deleteAttendanceId)
+    .delete();
+
+    closeDeleteModal();
+
+    alert("Attendance Deleted");
+
+    loadData();
+
 }
 // MAP
 function openMap(lat, lon){
@@ -1205,54 +1486,172 @@ currentDate.getMonth()+1
 renderCalendar();
 
 }
+function getAttendanceSummary(name, from, to){
 
+    let userData = allData.filter(x =>
+        x.name === name &&
+        x.date >= from &&
+        x.date <= to
+    );
+
+    let uniqueDates = [...new Set(userData.map(x => x.date))];
+
+    let attendance = uniqueDates.length;
+    let workingSunday = 0;
+    let sundayHoliday = 0;
+
+    let startDate = new Date(uniqueDates[0] || from);
+
+    let endDate = new Date(to);
+
+    let temp = new Date(startDate);
+
+    while(temp <= endDate){
+
+        let isSunday = temp.getDay() === 0;
+
+        if(isSunday){
+
+            let date = getDate(temp);
+
+            if(uniqueDates.includes(date)){
+
+                attendance++;
+                workingSunday++;
+
+            }else{
+
+                attendance++;
+                sundayHoliday++;
+
+            }
+
+        }
+
+        temp.setDate(temp.getDate()+1);
+
+    }
+
+    return{
+
+        attendance,
+        workingSunday,
+        sundayHoliday
+
+    };
+
+}
 // CSV
 
 function downloadCSV(){
 
-let from = fromDate.value;
-let to = toDate.value;
+    let from = fromDate.value;
+    let to = toDate.value;
 
-if(!from || !to){
+    if(!from || !to){
+        alert("Select Date");
+        return;
+    }
 
-alert("Select Date");
+    // Sabhi users ke naam
+    let users = [...new Set(allData.map(x => x.name))];
 
-return;
+    let summary = [];
 
-}
+    users.forEach(name => {
 
-let filtered =
-allData.filter(
-x=>x.date>=from &&
-x.date<=to
-);
+        let s = getAttendanceSummary(name, from, to);
 
-let csv =
-"Name,Date,Place,Latitude,Longitude\n";
+        summary.push({
+            Name: name,
+            Attendance: s.attendance,
+            "Working Sunday": s.workingSunday,
+            "Sunday Holiday": s.sundayHoliday
+        });
 
-filtered.forEach(x=>{
+    });
 
-csv +=
-`${x.name},${x.date},${x.place},${x.lat},${x.lon}\n`;
+   let details = [];
+
+users.forEach(name => {
+
+    let userData = allData.filter(x =>
+        x.name === name &&
+        x.date >= from &&
+        x.date <= to
+    );
+
+    let map = {};
+
+    userData.forEach(x => {
+        map[x.date] = x;
+    });
+
+    let start = new Date(from);
+    let end = new Date(to);
+
+    while(start <= end){
+
+        let date = getDate(start);
+        let day = start.toLocaleDateString("en-IN",{weekday:"long"});
+
+        if(map[date]){
+
+            // Normal Attendance
+            details.push({
+                Name: name,
+                Date: date,
+                Day: day,
+                Place: map[date].place,
+                Latitude: map[date].lat,
+                Longitude: map[date].lon
+            });
+
+            // Sunday Double Attendance
+            if(start.getDay() === 0){
+
+                details.push({
+                    Name: name,
+                    Date: date,
+                    Day: day,
+                    Place: map[date].place,
+                    Latitude: map[date].lat,
+                    Longitude: map[date].lon
+                });
+
+            }
+
+        }else if(start.getDay() === 0){
+
+            // Sunday Weekly Off
+            details.push({
+                Name: name,
+                Date: date,
+                Day: "Sunday",
+                Place: "Weekly Off",
+                Latitude: "",
+                Longitude: ""
+            });
+
+        }
+
+        start.setDate(start.getDate()+1);
+
+    }
 
 });
+    // Workbook
+    let wb = XLSX.utils.book_new();
 
-let blob =
-new Blob([csv]);
+    let ws1 = XLSX.utils.json_to_sheet(summary);
+    let ws2 = XLSX.utils.json_to_sheet(details);
 
-let a =
-document.createElement("a");
+    XLSX.utils.book_append_sheet(wb, ws1, "Summary");
+    XLSX.utils.book_append_sheet(wb, ws2, "Attendance");
 
-a.href =
-URL.createObjectURL(blob);
-
-a.download =
-"attendance.csv";
-
-a.click();
+    XLSX.writeFile(wb, "Attendance_Report.xlsx");
 
 }
-
 // LOGOUT
 
 function logout(){
@@ -1265,15 +1664,59 @@ window.location.href =
 }
 
 window.onload = function () {
+
     loadData();
+
+    loadNotifications();
 
     setTimeout(() => {
         initMap();
         loadLiveMap();
     }, 500);
+
 };
 
 </script>
+<!-- DELETE REMARK MODAL -->
+
+<div id="deleteModal" class="modal">
+
+<div class="modal-box">
+
+<h3>🗑 Delete Attendance</h3>
+
+<p>Please enter reason for deleting attendance.</p>
+
+<textarea
+id="deleteReason"
+placeholder="Enter Delete Reason..."
+style="
+width:100%;
+height:100px;
+padding:10px;
+border-radius:10px;
+resize:none;
+"></textarea>
+
+<br><br>
+
+<button
+style="background:red;color:white;"
+onclick="confirmDeleteAttendance()">
+
+Delete
+
+</button>
+
+<button onclick="closeDeleteModal()">
+
+Cancel
+
+</button>
+
+</div>
+
+</div>
 
 </body>
 </html>
