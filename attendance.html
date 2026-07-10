@@ -477,11 +477,18 @@ let endDate = getDate(end);
 
 let userData = allData.filter(x =>
 
-x.name === name &&
-x.date >= startDate &&
-x.date <= endDate
+    x.name.trim().toLowerCase() ===
+    name.trim().toLowerCase()
+
+    &&
+
+    x.date >= startDate &&
+    x.date <= endDate
 
 );
+console.log("User :", name);
+
+console.log(userData);
 
 // UNIQUE DATES
 
