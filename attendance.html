@@ -81,7 +81,20 @@ border:3px solid yellow;
 background:#3ce608;
 color:black;
 }
+.pending{
+background:#FFD600;
+color:#000;
+}
+.reject{
+background:#17dcff;
+color:white;
+}
 
+.weeklyoff{
+background:linear-gradient(135deg,#7b2ff7,#f107a3);
+color:#fff;
+border:2px dashed rgba(255,255,255,.35);
+}
 .a{
 background:#ff4b2b;
 }
@@ -406,10 +419,9 @@ let monthlySalaryMap = {
 "Arvind":13000,
 "Alok":15000,
 "Rajan":13000,
-"Anuj":13000,
 "Ajay":13000,
 "Nandan":13000,
-"Gourav":13000,
+"Gourav":12000,
 
 };
 
@@ -816,7 +828,7 @@ read: false,
 time: firebase.firestore.FieldValue.serverTimestamp()
 
 });
-
+alert("Notification Added Successfully");
 alert("Attendance Marked");
 
 closeAttendance();
@@ -941,24 +953,28 @@ async function loadData(){
     let snap =
     await db.collection("attendance").get();
 
-    allData =
-    snap.docs.map(d=>({
+allData = snap.docs.map(doc => {
 
-        id:d.id,
-        ...d.data()
+    let data = doc.data();
 
-    }));
+    data.id = doc.id;
 
+    return data;
+
+});
     renderCalendar();
 
 }   // 👈 YAHAN FUNCTION END
 
 function loadNotifications(){
 
-    db.collection("notifications")
-    .where("receiver","==",role=="admin" ? "admin" : user)
-    .where("read","==",false)
-    .orderBy("time","desc")
+  db.collection("notifications")
+.where(
+    "receiver",
+    "==",
+    role=="admin" ? "admin" : user
+)
+.orderBy("time","desc")
     .onSnapshot(snapshot=>{
 
         notificationBadge.style.display =
@@ -976,11 +992,20 @@ function loadNotifications(){
 
             <div class="user-card">
 
-                <b>${n.sender}</b><br>
+<b>${n.title}</b><br>
 
-                ${n.message}<br>
+👤 ${n.userName || n.sender}<br>
 
-                <small>${n.date}</small>
+${n.message}<br>
+
+📅 ${n.date}
+${n.rejectReason ? `
+<br>
+<b style="color:#ff5252">
+Reason :
+${n.rejectReason}
+</b>
+` : ""}
 
                 ${
                     role=="admin" && n.type=="pending"
@@ -1065,8 +1090,7 @@ function renderCalendar(){
 
 calendarGrid.innerHTML = "";
 
-let {start,end} =
-getMonthRange();
+let {start,end} = getMonthRange();
 
 monthLabel.innerText =
 getDate(start) + " → " + getDate(end);
@@ -1079,67 +1103,86 @@ let full = getDate(temp);
 
 // USER ATTENDANCE CHECK
 
-let found =
+let attendance =
 role==="admin"
 ?
-allData.some(x=>x.date===full)
+allData.find(x => x.date === full)
 :
-allData.some(
-x =>
-x.date===full &&
-x.name.trim().toLowerCase() === user.trim().toLowerCase()
+allData.find(x =>
+    x.date === full &&
+    x.name.trim().toLowerCase() === user.trim().toLowerCase()
 );
+
+let found = !!attendance;
+let approved = attendance?.approved === true;
+let rejected = attendance?.status === "Rejected";
+
 // TODAY
 
-let today =
-getDate(new Date())===full;
+let today = getDate(new Date()) === full;
 
 // SUNDAY CHECK
 
-let isSunday =
-temp.getDay() === 0;
-
-// ==========================
-// COLOR LOGIC
-// ==========================
+let isSunday = temp.getDay() === 0;
 
 let className = "day";
 
 // TODAY BORDER
 
 if(today){
-
-className += " today";
-
+    className += " today";
 }
 
 // ==========================
-// SUNDAY LOGIC
+// FINAL COLOR LOGIC
 // ==========================
 
-// Sunday + Attendance = GREEN
+if(isSunday){
 
-if(isSunday && found){
+    // Sunday Working & Approved
+    if(found && approved){
 
-className += " p";
+    className += " p";
 
-// Sunday + No Attendance = YELLOW
+}
+else if(found && rejected){
 
-}else if(isSunday && !found){
+    className += " reject";
 
-className += " sunday";
+}
+else if(found){
 
-// Normal Present = GREEN
+    className += " pending";
 
-}else if(found){
+}
+else{
 
-className += " p";
+    className += " weeklyoff";
 
-// Normal Absent = RED
+}
 
 }else{
 
-className += " a";
+    if(found && approved){
+
+    className += " p";
+
+}
+else if(found && rejected){
+
+    className += " reject";
+
+}
+else if(found){
+
+    className += " pending";
+
+}
+else{
+
+    className += " a";
+
+}
 
 }
 
@@ -1167,14 +1210,11 @@ ${temp.toLocaleDateString(
 
 `;
 
-temp.setDate(
-temp.getDate()+1
-);
+temp.setDate(temp.getDate()+1);
 
 }
 
 }
-
 // SHOW DAY
 
 function showDay(date){
@@ -1278,6 +1318,20 @@ onclick="openMap('${x.lat}','${x.lon}')">
 🗺 Attendance Location
 
 </button>
+<span
+style="
+display:inline-block;
+margin-left:10px;
+padding:8px 15px;
+border-radius:20px;
+font-weight:bold;
+background:${x.approved ? '#00c853' : '#ffd600'};
+color:${x.approved ? 'white' : 'black'};
+">
+
+${x.approved ? "✅ Approved" : "🟡 Pending"}
+
+</span>
 
 ${
 role==="admin"
@@ -1318,139 +1372,314 @@ async function approveAttendance(id){
 
     if(!ok) return;
 
-    await db.collection("attendance").doc(id).update({
+  await db.collection("attendance")
+.doc(id)
+.update({
 
-        status: "Approved",
-        approved: true,
-        approvedBy: user,
-        approvedTime: new Date()
+status:"Approved",
+approved:true,
+approvedBy:user,
+approvedTime:new Date()
+
+});
+// Admin ki pending notification ko Read kar do
+const notify = await db.collection("notifications")
+.where("attendanceId", "==", id)
+.where("receiver", "==", "admin")
+.where("read", "==", false)
+.get();
+
+for(const doc of notify.docs){
+
+    await doc.ref.update({
+
+        read: true
 
     });
-
-    alert("Attendance Approved");
-
-    loadData();
 
 }
-async function approveAttendanceFromBell(notificationId,attendanceId){
+// Attendance data nikalo
+const attendanceDoc = await db.collection("attendance")
+.doc(id)
+.get();
 
-    await db.collection("attendance")
-    .doc(attendanceId)
-    .update({
+const attendanceData = attendanceDoc.data();
 
-        status:"Approved",
-        approved:true,
-        approvedBy:user,
-        approvedTime:new Date()
+// User ko notification bhejo
+await db.collection("notifications").add({
 
-    });
+    receiver: attendanceData.name,
 
-    await db.collection("notifications")
-    .doc(notificationId)
-    .update({
+    sender: "admin",
 
-        read:true
+    title: "✅ Attendance Approved",
 
-    });
+    message:
+        attendanceData.name +
+        " attendance approved for " +
+        attendanceData.date,
 
-    alert("Attendance Approved");
+    attendanceId: id,
+
+    date: attendanceData.date,
+
+    userName: attendanceData.name,
+
+    type: "approved",
+
+    read: false,
+
+    time: firebase.firestore.FieldValue.serverTimestamp()
+
+});
+alert("Notification Saved");
+await loadData();
+
+loadNotifications();
+
+renderCalendar();
+
+alert("Attendance Approved");
 
 }
-async function rejectAttendanceFromBell(notificationId,attendanceId){
+async function approveAttendanceFromBell(notificationId, attendanceId){
 
-    let reason=prompt("Reject Reason");
+    try{
 
-    if(!reason) return;
+        // Attendance approve
+        await db.collection("attendance")
+        .doc(attendanceId)
+        .update({
 
-    await db.collection("attendance")
-    .doc(attendanceId)
-    .update({
+            status: "Approved",
+            approved: true,
+            approvedBy: user,
+            approvedTime: new Date()
 
-        status:"Rejected",
-        deleted:true,
-        deleteReason:reason,
-        deletedBy:user,
-        deletedTime:new Date()
+        });
 
-    });
+        // Admin notification hide
+        await db.collection("notifications")
+        .doc(notificationId)
+        .update({
 
-    await db.collection("notifications")
-    .doc(notificationId)
-    .update({
+            read: true
 
-        read:true
+        });
 
-    });
+        // Attendance document
+        let doc = await db.collection("attendance")
+        .doc(attendanceId)
+        .get();
 
-    alert("Attendance Rejected");
+        let data = doc.data();
+
+        // User ko notification
+        await db.collection("notifications").add({
+
+            receiver: data.name,
+            sender: "Admin",
+
+            title: "✅ Attendance Approved",
+
+           message:
+         data.name +
+         " attendance approved for " +
+         data.date,
+
+         userName: data.name,
+            attendanceId: attendanceId,
+
+            date: data.date,
+
+            type: "approved",
+
+            read: false,
+
+            time: firebase.firestore.FieldValue.serverTimestamp()
+
+        });
+
+      await loadData();
+
+// Bell notification refresh
+loadNotifications();
+
+// Calendar refresh
+renderCalendar();
+
+alert("Attendance Approved");
+
+    }catch(err){
+
+        console.error(err);
+
+        alert(err.message);
+
+    }
+
+}
+async function rejectAttendanceFromBell(notificationId, attendanceId){
+
+    try{
+
+        let reason = prompt("Reject reason:");
+
+        if(!reason){
+            return;
+        }
+
+        // Attendance Reject
+        await db.collection("attendance")
+        .doc(attendanceId)
+        .update({
+
+            status: "Rejected",
+            approved: false,
+            rejected: true,
+            rejectedBy: user,
+            rejectedTime: new Date(),
+            rejectReason: reason
+
+        });
+
+        // Admin notification hide
+        await db.collection("notifications")
+        .doc(notificationId)
+        .update({
+
+            read: true
+
+        });
+
+        // Attendance document
+        let doc = await db.collection("attendance")
+        .doc(attendanceId)
+        .get();
+
+        let data = doc.data();
+
+        // User notification
+await db.collection("notifications").add({
+
+    receiver: data.name,
+    sender: "Admin",
+
+    title: "❌ Attendance Rejected",
+
+    message:
+        data.name +
+        " attendance rejected for " +
+        data.date +
+        "\nReason: " + reason,
+
+    attendanceId: attendanceId,
+
+    date: data.date,
+
+    userName: data.name,
+
+    rejectReason: reason,
+
+    type: "rejected",
+
+    read: false,
+
+    time: firebase.firestore.FieldValue.serverTimestamp()
+
+});
+        await loadData();
+
+        loadNotifications();
+
+        renderCalendar();
+
+        alert("Attendance Rejected");
+
+    }catch(err){
+
+        console.error(err);
+
+        alert(err.message);
+
+    }
 
 }
 // DELETE
 
 function deleteAttendance(id){
 
-    if(role!="admin") return;
+    if(role !== "admin"){
+        return;
+    }
 
-    deleteAttendanceId=id;
+    deleteAttendanceId = id;
 
-    deleteReason.value="";
+    document.getElementById("deleteReason").value = "";
 
-    deleteModal.style.display="flex";
+    document.getElementById("deleteModal").style.display = "flex";
+
+    console.log("Delete ID:", deleteAttendanceId);
 
 }
 function closeDeleteModal(){
 
-    deleteModal.style.display="none";
+    document.getElementById("deleteModal").style.display = "none";
 
 }
 async function confirmDeleteAttendance(){
 
-    let reason=deleteReason.value.trim();
+    try{
 
-    if(reason==""){
+        let reason = document.getElementById("deleteReason").value.trim();
 
-        alert("Please enter delete reason.");
+        if(reason === ""){
+            alert("Please enter delete reason.");
+            return;
+        }
 
-        return;
+        console.log("Deleting:", deleteAttendanceId);
+
+        let doc = await db.collection("attendance")
+            .doc(deleteAttendanceId)
+            .get();
+
+        if(!doc.exists){
+            alert("Attendance not found.");
+            return;
+        }
+
+        let data = doc.data();
+
+        await db.collection("attendance_deleted").doc(deleteAttendanceId).set({
+
+            ...data,
+
+            deleteReason: reason,
+
+            deletedBy: user,
+
+            deletedTime: new Date()
+
+        });
+
+        await db.collection("attendance")
+            .doc(deleteAttendanceId)
+            .delete();
+
+        document.getElementById("deleteModal").style.display = "none";
+
+        alert("Attendance Deleted Successfully");
+
+        loadData();
+
+    }catch(err){
+
+        console.error(err);
+
+        alert(err.message);
 
     }
-
-    let doc=await db.collection("attendance")
-    .doc(deleteAttendanceId)
-    .get();
-
-    if(!doc.exists){
-
-        alert("Attendance not found.");
-
-        return;
-
-    }
-
-    let data=doc.data();
-
-    await db.collection("attendance_deleted")
-    .add({
-
-        ...data,
-
-        deleteReason:reason,
-
-        deletedBy:user,
-
-        deletedTime:new Date()
-
-    });
-
-    await db.collection("attendance")
-    .doc(deleteAttendanceId)
-    .delete();
-
-    closeDeleteModal();
-
-    alert("Attendance Deleted");
-
-    loadData();
 
 }
 // MAP
