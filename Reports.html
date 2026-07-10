@@ -263,7 +263,15 @@ grid-template-columns:repeat(4,1fr);
 }
 
 }
+#searchResults>div:hover{
 
+transform:scale(1.02);
+
+background:#1f2937 !important;
+
+box-shadow:0 10px 20px rgba(0,0,0,.4);
+
+}
 </style>
 
 </head>
@@ -273,7 +281,12 @@ grid-template-columns:repeat(4,1fr);
 
 <h2>📊 Reports System</h2>
 
-<div style="display:flex;gap:10px;">
+<div style="display:flex;gap:10px;flex-wrap:wrap;">
+
+<button onclick="openSearchModal()">
+🔍 Search
+</button>
+
 
 <button onclick="openDownloadOptions()">
 📥 Download
@@ -282,8 +295,6 @@ grid-template-columns:repeat(4,1fr);
 <button onclick="refreshData()">
 🔄 Refresh
 </button>
-
-
 
 </div>
 
@@ -539,6 +550,43 @@ Close
 </button>
 
 </div>
+
+</div>
+
+</div>
+
+</div>
+<!-- SEARCH MODAL -->
+
+<div class="modal" id="searchModal">
+
+<div class="modal-box" style="max-width:700px;">
+
+<div class="modal-title">
+🔍 Search Reports
+</div>
+
+<input
+type="text"
+id="searchInput"
+placeholder="Search by Site Name / Indus ID / Sensor No / RG No / IMEI..."
+style="margin-bottom:20px;">
+
+<div
+id="searchResults"
+style="
+max-height:450px;
+overflow:auto;
+">
+</div>
+
+<div class="button-group">
+
+<button
+class="close"
+onclick="closeSearchModal()">
+Close
+</button>
 
 </div>
 
@@ -1657,15 +1705,46 @@ document.getElementById("calendar").innerHTML =
 html;
 
 };
+window.openSearchResult = function(reportId){
+
+const report = allData.find(x => x.id === reportId);
+
+if(!report){
+alert("Report Not Found");
+return;
+}
+
+// Search Popup बंद
+closeSearchModal();
+
+// उसी Date का Report Popup खोलो
+window.selectedSearchReportId = report.id;
+
+showDay(report.date);
+
+};
 
 /* SHOW DAY */
 
 window.showDay = function(date){
 
-let list =
-allData.filter(
-x=>fixDate(x.date)===date
+let list;
+
+if(window.selectedSearchReportId){
+
+list = allData.filter(x =>
+x.id === window.selectedSearchReportId
 );
+
+window.selectedSearchReportId = null;
+
+}else{
+
+list = allData.filter(x =>
+fixDate(x.date) === date
+);
+
+}
 
 document.getElementById("modal").style.display =
 "flex";
@@ -1768,6 +1847,9 @@ font-weight:bold;
 🗑 Delete
 </button>
 
+${isAdmin ? `
+<div style="display:flex;gap:8px;flex-wrap:wrap;">
+
 ${
 x.csvFile
 ?
@@ -1783,13 +1865,27 @@ border-radius:10px;
 cursor:pointer;
 font-weight:bold;
 ">
-✅ CSV Uploaded
+📥 Download CSV
+</button>
+
+<button
+onclick="replaceCSV('${x.id}','${x.source}')"
+style="
+background:#f59e0b;
+color:white;
+border:none;
+padding:8px 12px;
+border-radius:10px;
+cursor:pointer;
+font-weight:bold;
+">
+✏ Change CSV
 </button>
 `
 :
 `
 <button
-onclick="replaceCSV('${x.id}')"
+onclick="replaceCSV('${x.id}','${x.source}')"
 style="
 background:#ef4444;
 color:white;
@@ -1799,10 +1895,13 @@ border-radius:10px;
 cursor:pointer;
 font-weight:bold;
 ">
-❌ CSV Not Uploaded
+📤 Upload CSV
 </button>
 `
 }
+
+</div>
+` : ""}
 
 </div>
 ` : ""}
@@ -1868,14 +1967,23 @@ html += `
 <p>⚙ Installation:
 ${x.installationType || ""}</p>
 
-<p>🧵 Used Wire:
-${x.usedWire || ""}</p>
+<p>🧵 Used Wire: ${x.usedWire || ""}</p>
 
-<p>🔢 Sensor No:
-${x.sensorNo || ""}</p>
+<p>🔢 Sensor No: ${x.sensorNo || ""}</p>
 
-<p>🔢 Indus Id:
-${x.indusId || ""}</p>
+<p>🔢 Indus Id: ${x.indusId || ""}</p>
+
+${isAdmin ? `
+<br>
+
+<button
+class="submit"
+onclick="editSensorDetails('${x.id}','${x.source}')">
+✏ Edit Details
+</button>
+
+<br><br>
+` : ""}
 
 `;
 if(x.video){
@@ -1990,6 +2098,72 @@ document.getElementById("viewSection").innerHTML =
 html;
 
 };
+
+window.editSensorDetails = async function(reportId, source){
+
+if(!isAdmin){
+alert("Only Admin Allowed");
+return;
+}
+
+const report = allData.find(x=>x.id===reportId);
+
+if(!report) return;
+
+const usedWire = prompt(
+"Used Wire",
+report.usedWire || ""
+);
+
+if(usedWire===null) return;
+
+const sensorNo = prompt(
+"Sensor No",
+report.sensorNo || ""
+);
+
+if(sensorNo===null) return;
+
+const indusId = prompt(
+"Indus ID",
+report.indusId || ""
+);
+
+if(indusId===null) return;
+
+try{
+
+const database =
+source==="old"
+? oldDb
+: db;
+
+await updateDoc(
+doc(database,"reports",reportId),
+{
+usedWire,
+sensorNo,
+indusId
+}
+);
+
+alert("✅ Details Updated");
+
+await loadData();
+
+showDay(report.date);
+
+}
+catch(e){
+
+console.log(e);
+
+alert("❌ Update Failed");
+
+}
+
+};
+
 window.openModalForDate = function(date){
 document.getElementById("modal").style.display = "flex";
 
@@ -2005,17 +2179,20 @@ document.getElementById("name").value =
 currentUser;
 
 };
-window.replaceCSV = async function(reportId){
+window.replaceCSV = async function(reportId, source){
+
+if(!isAdmin){
+    alert("Only Admin Allowed");
+    return;
+}
 
 const input = document.createElement("input");
-
 input.type = "file";
 input.accept = ".csv";
 
 input.onchange = async function(){
 
 const file = input.files[0];
-
 if(!file) return;
 
 try{
@@ -2024,24 +2201,29 @@ alert("Uploading CSV...");
 
 const csvUrl = await uploadRawFile(file);
 
+const database =
+source === "old"
+? oldDb
+: db;
+
 await updateDoc(
-doc(db,"reports",reportId),
+doc(database,"reports",reportId),
 {
 csvFile: csvUrl,
 csvFileName: file.name
 }
 );
 
-alert("✅ CSV Uploaded Successfully");
+alert("✅ CSV Changed Successfully");
 
-loadData();
+await loadData();
 
 }
 catch(e){
 
-console.log(e);
+console.error(e);
 
-alert("❌ CSV Upload Failed");
+alert("❌ Upload Failed");
 
 }
 
@@ -2359,6 +2541,237 @@ URL.revokeObjectURL(link.href);
 closeCsvDownloadModal();
 
 };
+window.openSearchModal = function(){
+
+document.getElementById("searchModal").style.display = "flex";
+
+document.getElementById("searchInput").value = "";
+
+document.getElementById("searchResults").innerHTML = "";
+
+document.getElementById("searchInput").focus();
+
+}
+document.addEventListener("input", function(e){
+
+if(e.target.id==="searchInput"){
+
+searchReports(e.target.value);
+
+}
+
+});
+
+window.closeSearchModal = function(){
+
+document.getElementById("searchModal").style.display = "none";
+
+}
+window.highlightSearch = function(text, keyword){
+
+text = String(text || "");
+
+if(!keyword) return text;
+
+const reg = new RegExp(keyword,"ig");
+
+return text.replace(reg,function(match){
+
+return `
+<span style="
+background:#facc15;
+color:black;
+padding:2px 4px;
+border-radius:4px;
+font-weight:bold;
+">
+${match}
+</span>
+`;
+
+});
+
+}
+window.searchReports = function(keyword){
+
+keyword = keyword.trim().toLowerCase();
+
+const resultBox =
+document.getElementById("searchResults");
+
+if(keyword===""){
+
+resultBox.innerHTML = `
+<div style="
+text-align:center;
+padding:30px;
+opacity:.7;
+">
+Type anything to search...
+</div>
+`;
+
+return;
+
+}
+
+const results = allData.filter(x=>{
+
+return (
+
+String(x.indusId || "")
+.toLowerCase()
+.includes(keyword)
+
+||
+
+String(x.sensorNo || "")
+.toLowerCase()
+.includes(keyword)
+
+||
+
+String(x.rgno || "")
+.toLowerCase()
+.includes(keyword)
+
+||
+
+String(x.assetcode || "")
+.toLowerCase()
+.includes(keyword)
+
+||
+
+String(x.imei || "")
+.toLowerCase()
+.includes(keyword)
+
+||
+
+String(x.category || "")
+.toLowerCase()
+.includes(keyword)
+
+||
+
+String(x.installationType || "")
+.toLowerCase()
+.includes(keyword)
+
+||
+
+String(x.usedWire || "")
+.toLowerCase()
+.includes(keyword)
+
+||
+
+String(x.name || "")
+.toLowerCase()
+.includes(keyword)
+
+||
+
+String(x.date || "")
+.toLowerCase()
+.includes(keyword)
+
+);
+
+});
+
+if(results.length===0){
+
+resultBox.innerHTML = `
+<div style="
+text-align:center;
+padding:30px;
+color:#ffb4b4;
+">
+❌ No Report Found
+</div>
+`;
+
+return;
+
+}
+const k = keyword;
+let html="";
+
+results.forEach(r=>{
+const photo =
+r.photos && r.photos.length
+? r.photos[0]
+: "";
+
+html+=`
+
+<div
+onclick="openSearchResult('${r.id}')"
+style="
+background:#111827;
+border-radius:18px;
+padding:15px;
+margin-bottom:15px;
+cursor:pointer;
+transition:.3s;
+display:flex;
+gap:15px;
+align-items:center;
+">
+
+<img
+src="${photo || 'https://via.placeholder.com/80'}"
+style="
+width:80px;
+height:80px;
+border-radius:12px;
+object-fit:cover;
+flex-shrink:0;
+">
+
+<div style="flex:1;">
+
+<div style="
+font-size:17px;
+font-weight:bold;
+margin-bottom:5px;
+">
+👤 ${highlightSearch(r.name,k)}
+</div>
+
+<div>
+📅 ${highlightSearch(r.date,k)}
+</div>
+
+<div>
+📌 ${highlightSearch(r.type,k)}
+</div>
+
+<div>
+🆔 ${highlightSearch(r.indusId,k)}
+</div>
+
+<div>
+🔢 ${highlightSearch(r.sensorNo,k)}
+</div>
+
+<div>
+🏢 ${highlightSearch(r.assetcode || r.rgno || "-",k)}
+</div>
+
+</div>
+
+</div>
+
+`;
+
+});
+
+resultBox.innerHTML = html;
+
+}
 /* START */
 
 loadData();
