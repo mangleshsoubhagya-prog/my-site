@@ -1,0 +1,1144 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>Stock Management</title>
+
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
+
+<style>
+
+*{
+margin:0;
+padding:0;
+box-sizing:border-box;
+font-family:Poppins,sans-serif;
+}
+
+body{
+background:linear-gradient(135deg,#667eea,#764ba2);
+padding:20px;
+min-height:100vh;
+}
+
+.container{
+max-width:1100px;
+margin:auto;
+}
+
+.topbar{
+display:flex;
+justify-content:space-between;
+align-items:center;
+margin-bottom:20px;
+color:white;
+}
+
+.topbar button{
+padding:12px 18px;
+border:none;
+border-radius:10px;
+background:#2563eb;
+color:white;
+cursor:pointer;
+font-weight:bold;
+}
+
+.card{
+background:rgba(255,255,255,.1);
+backdrop-filter:blur(15px);
+border-radius:20px;
+padding:20px;
+margin-bottom:20px;
+box-shadow:0 10px 25px rgba(0,0,0,.25);
+color:white;
+}
+
+.grid{
+display:grid;
+grid-template-columns:repeat(2,1fr);
+gap:15px;
+}
+
+label{
+display:block;
+margin-bottom:6px;
+font-size:14px;
+}
+
+input,
+textarea{
+width:100%;
+padding:12px;
+border:none;
+border-radius:10px;
+background:#111827;
+color:white;
+outline:none;
+font-size:15px;
+}
+
+textarea{
+height:90px;
+resize:none;
+}
+
+.full{
+grid-column:1/3;
+}
+
+.saveBtn{
+width:100%;
+padding:15px;
+border:none;
+border-radius:12px;
+background:#22c55e;
+color:white;
+font-size:17px;
+font-weight:bold;
+cursor:pointer;
+margin-top:20px;
+}
+
+.summaryGrid{
+display:grid;
+grid-template-columns:repeat(2,1fr);
+gap:20px;
+}
+
+.stockBox{
+background:rgba(255,255,255,.12);
+border-radius:18px;
+padding:20px;
+text-align:center;
+}
+
+.stockBox h2{
+margin-bottom:15px;
+}
+
+.stockBox p{
+margin:8px 0;
+font-size:17px;
+}
+
+.stockBox span{
+font-weight:bold;
+color:#22c55e;
+}
+
+.historyCard{
+background:rgba(255,255,255,.08);
+padding:18px;
+border-radius:15px;
+margin-bottom:15px;
+}
+
+.historyCard h3{
+margin-bottom:10px;
+}
+
+.historyCard p{
+margin:4px 0;
+}
+
+.actionBtns{
+display:flex;
+gap:10px;
+margin-top:15px;
+}
+
+.editBtn{
+flex:1;
+background:#2563eb;
+border:none;
+padding:10px;
+border-radius:10px;
+color:white;
+cursor:pointer;
+}
+
+.deleteBtn{
+flex:1;
+background:#dc2626;
+border:none;
+padding:10px;
+border-radius:10px;
+color:white;
+cursor:pointer;
+}
+
+@media(max-width:700px){
+
+.grid{
+grid-template-columns:1fr;
+}
+
+.full{
+grid-column:auto;
+}
+
+.summaryGrid{
+grid-template-columns:1fr;
+}
+
+}
+
+</style>
+
+</head>
+
+<body>
+
+<div class="container">
+
+<div class="topbar">
+
+<h2>📦 Stock Management</h2>
+
+<button onclick="location.href='dashboard.html'">
+🏠 Dashboard
+</button>
+
+</div>
+
+<!-- ENTRY FORM -->
+
+<div class="card">
+
+<h2 style="margin-bottom:20px;">
+➕ Stock Entry
+</h2>
+
+<div class="grid">
+
+<div>
+
+<label>Date</label>
+
+<input
+type="date"
+id="date">
+
+</div>
+
+<div>
+
+<label>Project</label>
+
+<input
+type="text"
+id="project"
+placeholder="Project Name">
+
+</div>
+
+<div>
+
+<label>State</label>
+
+<input
+type="text"
+id="state"
+placeholder="State">
+
+</div>
+
+<div>
+
+<label>Invoice No.</label>
+
+<input
+type="text"
+id="invoice"
+placeholder="Invoice Number">
+
+</div>
+
+<div>
+
+<label>Sensor Received</label>
+
+<input
+type="number"
+id="sensorQty"
+placeholder="0">
+
+</div>
+
+<div>
+
+<label>Conduit Received</label>
+
+<input
+type="number"
+id="conduitQty"
+placeholder="0">
+
+</div>
+
+<div class="full">
+
+<label>Remarks</label>
+
+<textarea
+id="remarks"></textarea>
+
+</div>
+
+</div>
+
+<button
+class="saveBtn"
+id="saveBtn">
+
+💾 Save Stock
+
+</button>
+
+</div>
+
+<!-- CURRENT STOCK -->
+
+<div class="card">
+
+<h2 style="margin-bottom:20px;">
+📦 Current Stock
+</h2>
+
+<div class="summaryGrid">
+
+<div class="stockBox">
+
+<h2>Sensor</h2>
+
+<p>
+Received :
+<span id="sensorReceived">0</span>
+</p>
+
+<p>
+Used :
+<span id="sensorUsed">0</span>
+</p>
+
+<p>
+Available :
+<span id="sensorAvailable">0</span>
+</p>
+
+</div>
+
+<div class="stockBox">
+
+<h2>Conduit</h2>
+
+<p>
+Received :
+<span id="conduitReceived">0</span>
+</p>
+
+<p>
+Used :
+<span id="conduitUsed">0</span>
+</p>
+
+<p>
+Available :
+<span id="conduitAvailable">0</span>
+</p>
+
+</div>
+
+</div>
+
+</div>
+
+<!-- HISTORY -->
+
+<div class="card">
+
+<h2 style="margin-bottom:20px;">
+📋 Stock History
+</h2>
+
+<div id="historyList">
+
+<div class="historyCard">
+
+No Stock Available
+
+</div>
+
+</div>
+
+</div>
+
+</div>
+<script type="module">
+
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import {
+getFirestore,
+collection,
+addDoc,
+getDocs,
+query,
+orderBy,
+deleteDoc,
+doc,
+updateDoc,
+onSnapshot
+}
+from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+/* ==========================
+   FIREBASE
+========================== */
+
+const firebaseConfig = {
+
+apiKey: "AIzaSyBHe44S_oU2ndgRlea4OI_nKt9N5oQ9XNE",
+
+authDomain: "reportssystem-4fad7.firebaseapp.com",
+
+projectId: "reportssystem-4fad7",
+
+storageBucket: "reportssystem-4fad7.firebasestorage.app",
+
+messagingSenderId: "402469731114",
+
+appId: "1:402469731114:web:dcf97312036971f2977c53"
+
+};
+
+const app = initializeApp(firebaseConfig);
+
+const db = getFirestore(app);
+
+/* ==========================
+   LOGIN USER
+========================== */
+
+const currentUser =
+localStorage.getItem("user") || "Guest";
+
+window.currentUser = currentUser;
+if(!localStorage.getItem("user")){
+    window.location.href="login.html";
+}
+
+/* ==========================
+   ADMIN
+========================== */
+
+const ADMIN_USERS = [
+
+"Admin",
+
+"Manglesh",
+
+"Bhavy"
+
+];
+
+const isAdmin =
+ADMIN_USERS.includes(currentUser);
+
+/* ==========================
+   SAVE STOCK
+========================== */
+
+document
+.getElementById("saveBtn")
+.addEventListener("click", saveStock);
+
+async function saveStock(){
+
+const data={
+
+date:
+document.getElementById("date").value,
+
+project:
+document.getElementById("project").value,
+
+state:
+document.getElementById("state").value,
+
+invoice:
+document.getElementById("invoice").value,
+
+sensorQty:
+Number(
+document.getElementById("sensorQty").value || 0
+),
+
+conduitQty:
+Number(
+document.getElementById("conduitQty").value || 0
+),
+
+remarks:
+document.getElementById("remarks").value,
+
+createdBy:
+currentUser,
+
+createdAt:
+Date.now()
+
+};
+
+if(!data.date){
+
+alert("Select Date");
+
+return;
+
+}
+
+try{
+
+await addDoc(
+
+collection(db,"stock"),
+
+data
+
+);
+
+alert("✅ Stock Saved");
+
+clearForm();
+
+loadStock();
+
+}
+catch(e){
+
+console.log(e);
+
+alert("Save Failed");
+
+}
+
+}
+
+/* ==========================
+CLEAR
+========================== */
+
+function clearForm(){
+
+document.getElementById("date").value="";
+
+document.getElementById("project").value="";
+
+document.getElementById("state").value="";
+
+document.getElementById("invoice").value="";
+
+document.getElementById("sensorQty").value="";
+
+document.getElementById("conduitQty").value="";
+
+document.getElementById("remarks").value="";
+
+}
+
+/* ==========================
+LOAD STOCK
+========================== */
+
+window.stockData=[];
+
+/* ==========================
+REALTIME STOCK
+========================== */
+
+function loadStock(){
+
+onSnapshot(
+
+query(
+collection(db,"stock"),
+orderBy("createdAt","desc")
+),
+
+(snapshot)=>{
+
+stockData=[];
+
+snapshot.forEach(doc=>{
+
+stockData.push({
+
+id:doc.id,
+
+...doc.data()
+
+});
+
+});
+
+calculateStock();
+}
+
+);
+
+}
+loadStock();
+
+/* ==========================
+   RENDER HISTORY
+========================== */
+
+function renderHistory(){
+
+const history =
+document.getElementById("historyList");
+
+history.innerHTML="";
+
+if(stockData.length===0){
+
+history.innerHTML=`
+
+<div class="historyCard">
+
+No Stock Available
+
+</div>
+
+`;
+
+return;
+
+}
+
+stockData.forEach(stock=>{
+
+history.innerHTML+=`
+
+<div class="historyCard">
+
+<h3>📅 ${stock.date}</h3>
+
+<p><b>Project :</b> ${stock.project}</p>
+
+<p><b>State :</b> ${stock.state}</p>
+
+<p><b>Invoice :</b> ${stock.invoice}</p>
+
+<p><b>Sensor Received :</b> ${stock.sensorQty}</p>
+
+<p><b>Conduit Received :</b> ${stock.conduitQty}</p>
+
+<p><b>Remarks :</b> ${stock.remarks || "-"}</p>
+
+<p><b>Created By :</b> ${stock.createdBy}</p>
+
+${
+isAdmin
+?
+
+`
+
+<div class="actionBtns">
+
+<button
+class="editBtn"
+onclick="editStock('${stock.id}')">
+
+✏ Edit
+
+</button>
+
+<button
+class="deleteBtn"
+onclick="deleteStock('${stock.id}')">
+
+🗑 Delete
+
+</button>
+
+</div>
+
+`
+
+:
+
+""
+
+}
+
+</div>
+
+`;
+
+});
+
+}
+
+function calculateStock(){
+
+
+const stocks = [...stockData].sort((a,b)=>{
+
+return new Date(a.date) - new Date(b.date);
+
+});
+
+
+let previousSensorBalance = 0;
+let previousConduitBalance = 0;
+
+
+let finalSensor = 0;
+let finalConduit = 0;
+
+
+
+stocks.forEach((stock,index)=>{
+
+
+const stockDate = new Date(stock.date);
+
+
+// अगली Stock Entry Date
+
+let nextStockDate = null;
+
+
+if(stocks[index + 1]){
+
+nextStockDate =
+new Date(stocks[index + 1].date);
+
+}
+
+
+
+// Previous Balance Carry
+
+let openingSensor =
+previousSensorBalance;
+
+
+let openingConduit =
+previousConduitBalance;
+
+
+
+// New Received Add
+
+let totalSensor =
+openingSensor + Number(stock.sensorQty || 0);
+
+
+let totalConduit =
+openingConduit + Number(stock.conduitQty || 0);
+
+
+
+let sensorUsed = 0;
+
+let conduitUsed = 0;
+
+
+
+// केवल इसी Stock Period का Used
+
+reportsData.forEach(report=>{
+
+
+if(!report.date) return;
+
+
+let reportDate =
+new Date(report.date);
+
+
+
+if(
+
+reportDate >= stockDate &&
+
+(
+!nextStockDate ||
+reportDate < nextStockDate
+)
+
+){
+
+
+sensorUsed += 1;
+
+
+conduitUsed +=
+Number(report.usedWire || 0);
+
+
+}
+
+
+});
+
+
+
+// Balance Calculate
+
+
+let balanceSensor =
+totalSensor - sensorUsed;
+
+
+let balanceConduit =
+totalConduit - conduitUsed;
+
+
+
+// Save Temporary History Data
+
+
+stock.openingSensor =
+openingSensor;
+
+
+stock.openingConduit =
+openingConduit;
+
+
+stock.sensorUsed =
+sensorUsed;
+
+
+stock.conduitUsed =
+conduitUsed;
+
+
+stock.sensorBalance =
+balanceSensor;
+
+
+stock.conduitBalance =
+balanceConduit;
+
+
+
+// Next Stock के लिए Carry
+
+
+previousSensorBalance =
+balanceSensor;
+
+
+previousConduitBalance =
+balanceConduit;
+
+
+
+finalSensor =
+balanceSensor;
+
+
+finalConduit =
+balanceConduit;
+
+
+});
+
+
+
+// Top Summary Update
+
+
+document.getElementById("sensorReceived").textContent =
+
+stocks.reduce(
+(a,b)=>a + Number(b.sensorQty || 0),
+0
+);
+
+
+
+document.getElementById("conduitReceived").textContent =
+
+stocks.reduce(
+(a,b)=>a + Number(b.conduitQty || 0),
+0
+);
+
+
+
+document.getElementById("sensorAvailable").textContent =
+finalSensor;
+
+
+
+document.getElementById("conduitAvailable").textContent =
+finalConduit;
+
+
+
+renderHistory();
+
+
+}
+/* ==========================
+REPORT DATA
+========================== */
+
+let reportsData = [];
+
+function loadReports(){
+
+onSnapshot(
+
+collection(db,"reports"),
+
+(snapshot)=>{
+
+reportsData = [];
+
+snapshot.forEach(doc=>{
+
+reportsData.push(doc.data());
+
+});
+
+/* Report Update होते ही Stock दुबारा Calculate होगा */
+
+calculateStock();
+
+});
+
+}
+
+loadReports();
+/* ==========================
+USED STOCK FROM REPORTS
+========================== */
+
+function calculateUsedStock(){
+
+onSnapshot(collection(db,"reports"), (snapshot)=>{
+
+let sensorUsed = 0;
+let conduitUsed = 0;
+
+snapshot.forEach(doc=>{
+
+const data = doc.data();
+
+/* Every Report = 1 Sensor */
+
+sensorUsed += 1;
+
+/* Used Wire = Conduit */
+
+conduitUsed += Number(data.usedWire || 0);
+
+});
+
+/* Show Used */
+
+document.getElementById("sensorUsed").textContent =
+sensorUsed;
+
+document.getElementById("conduitUsed").textContent =
+conduitUsed;
+
+/* Received */
+
+const sensorReceived =
+Number(document.getElementById("sensorReceived").textContent);
+
+const conduitReceived =
+Number(document.getElementById("conduitReceived").textContent);
+
+/* Available */
+
+const sensorAvailable =
+sensorReceived - sensorUsed;
+
+const conduitAvailable =
+conduitReceived - conduitUsed;
+
+document.getElementById("sensorAvailable").textContent =
+sensorAvailable;
+
+document.getElementById("conduitAvailable").textContent =
+conduitAvailable;
+
+/* Low Stock Alert */
+
+document.getElementById("sensorAvailable").style.color =
+sensorAvailable <= 10 ? "#ff4444" : "#22c55e";
+
+document.getElementById("conduitAvailable").style.color =
+conduitAvailable <= 10 ? "#ff4444" : "#22c55e";
+
+});
+
+}
+/* ==========================
+DELETE STOCK
+========================== */
+
+window.deleteStock = async function(id){
+
+if(!isAdmin){
+
+alert("Only Admin Can Delete");
+
+return;
+
+}
+
+if(!confirm("Delete this Stock Entry ?")){
+
+return;
+
+}
+
+try{
+
+await deleteDoc(
+
+doc(db,"stock",id)
+
+);
+
+alert("✅ Deleted Successfully");
+
+loadStock();
+
+}
+catch(e){
+
+console.log(e);
+
+alert("Delete Failed");
+
+}
+
+};
+
+/* ==========================
+EDIT STOCK
+========================== */
+
+window.editStock = async function(id){
+
+if(!isAdmin){
+
+alert("Only Admin Can Edit");
+
+return;
+
+}
+
+const stock =
+stockData.find(x=>x.id===id);
+
+if(!stock){
+
+return;
+
+}
+
+document.getElementById("date").value =
+stock.date;
+
+document.getElementById("project").value =
+stock.project;
+
+document.getElementById("state").value =
+stock.state;
+
+document.getElementById("invoice").value =
+stock.invoice;
+
+document.getElementById("sensorQty").value =
+stock.sensorQty;
+
+document.getElementById("conduitQty").value =
+stock.conduitQty;
+
+document.getElementById("remarks").value =
+stock.remarks;
+
+document.getElementById("saveBtn").innerHTML =
+"💾 Update Stock";
+
+document.getElementById("saveBtn").onclick =
+async function(){
+
+const data={
+
+date:
+document.getElementById("date").value,
+
+project:
+document.getElementById("project").value,
+
+state:
+document.getElementById("state").value,
+
+invoice:
+document.getElementById("invoice").value,
+
+sensorQty:Number(
+document.getElementById("sensorQty").value||0
+),
+
+conduitQty:Number(
+document.getElementById("conduitQty").value||0
+),
+
+remarks:
+document.getElementById("remarks").value
+
+};
+
+try{
+
+await updateDoc(
+
+doc(db,"stock",id),
+
+data
+
+);
+
+alert("✅ Updated Successfully");
+
+clearForm();
+
+document.getElementById("saveBtn").innerHTML =
+"💾 Save Stock";
+
+document.getElementById("saveBtn").onclick =
+saveStock;
+
+loadStock();
+
+}
+catch(e){
+
+console.log(e);
+
+alert("Update Failed");
+
+}
+
+};
+
+};
+</script>
+</body>
+</html>
