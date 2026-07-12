@@ -607,6 +607,7 @@ height:fit-content;
 <a href="#" onclick="showPage('reports')">Reports</a>
 <a href="#" onclick="showPage('expense')">Expense</a>
 <a href="#" onclick="showPage('createid')" id="createIdMenu">Create ID</a>
+<a href="#" onclick="showPage('stock')">📦 Stock</a>
 <a href="themes.html">🎨 Themes</a>
 </div>
 
@@ -671,10 +672,12 @@ height:fit-content;
 <h3>📥 Import Pending CSV</h3>
 
 <input
-type="file"
-id="csvFile"
-accept=".csv"
-style="margin-top:15px;width:100%;">
+    type="file"
+    id="csvFile"
+    accept=".csv"
+    multiple
+    onchange="handleCSV(this)"
+    style="margin-top:15px;width:100%;">
 
 <br><br>
 
@@ -728,7 +731,7 @@ style="cursor:pointer;">
 
 </div>
 <div class="card"
-onclick="showPendingTechMenu()"
+onclick="showProjectMenu()"
 style="cursor:pointer;">
 
     <h3>⏳ Pending</h3>
@@ -806,6 +809,14 @@ style="cursor:pointer;">
     <div id="expenseSection" style="display:none">
         <iframe src="expence.html"></iframe>
     </div>
+    <div
+    <div id="stockPage" class="page" style="display:none;">
+    <iframe
+        src="stock.html"
+        style="width:100%;height:100vh;border:none;">
+    </iframe>
+</div>
+</div>
     <div id="createidSection" style="display:none">
 
 <div class="summary">
@@ -935,7 +946,7 @@ let excelData = [];
 let originalHeaders = [];
 let selectedTechPending = [];
 let selectedTechName = "";
-
+let selectedProject = "";
 
 let monthOffset = 0;
 let selectedReportDate = new Date();
@@ -1144,16 +1155,24 @@ function listenPendingSites(){
     .onSnapshot(async snapshot=>{
 
         excelData=[];
+snapshot.forEach(doc=>{
 
-        snapshot.forEach(doc=>{
+    const d = doc.data();
 
-            const d=doc.data();
+    if(d.data){
 
-            if(d.data){
-                excelData.push(d.data);
-            }
+        // Firestore Document ID save karo
+        d.data.firestoreId = doc.id;
+        d.data.projectId = d.projectId || "";
+        d.data.remark = d.remark || "";
+        d.data.remarkBy = d.remarkBy || "";
+        d.data.remarkTime = d.remarkTime || "";
 
-        });
+        excelData.push(d.data);
+
+    }
+
+});
 
         // Header alag collection se load karo
         const meta=await db.collection("pendingMeta")
@@ -1861,40 +1880,71 @@ const dashboard = document.getElementById("dashboardSection");
 const attendance = document.getElementById("attendanceSection");
 const reports = document.getElementById("reportsSection");
 const expense = document.getElementById("expenseSection");
-const createid =
-document.getElementById("createidSection");
-createid.style.display = "none";
+const stock = document.getElementById("stockPage");
+const createid = document.getElementById("createidSection");
+
+/* Hide All */
 
 dashboard.style.display = "none";
 attendance.style.display = "none";
 reports.style.display = "none";
 expense.style.display = "none";
+
+if(stock)
+stock.style.display = "none";
+
 createid.style.display = "none";
 
+/* Show Selected */
+
 if(page==="dashboard"){
-    dashboard.style.display = "block";
+
+    dashboard.style.display="block";
+
 }
 else if(page==="attendance"){
-    attendance.style.display = "block";
+
+    attendance.style.display="block";
+
 }
 else if(page==="reports"){
-    reports.style.display = "block";
+
+    reports.style.display="block";
+
 }
 else if(page==="expense"){
-    expense.style.display = "block";
+
+    expense.style.display="block";
+
+}
+else if(page==="stock"){
+
+    if(stock)
+    stock.style.display="block";
+
 }
 else if(page==="createid"){
 
-    if(userRole !== "admin"){
+    if(userRole!=="admin"){
+
         alert("Access Denied");
+
         return;
+
     }
 
-    createid.style.display = "block";
+    createid.style.display="block";
+
 }
-if(window.innerWidth <= 768){
+
+/* Mobile */
+
+if(window.innerWidth<=768){
+
 document.querySelector(".sidebar").classList.add("hide");
+
 }
+
 window.scrollTo(0,0);
 
 }
@@ -2249,7 +2299,9 @@ async function importPendingCSV() {
    const data = XLSX.utils.sheet_to_json(sheet,{
     defval:""
 });
-
+// Project ID = File Name
+const projectId = file.name.replace(/\.[^/.]+$/, "");
+console.log("Project ID =", projectId);
 // Excel data memory me save karo
 excelData = data;
 
@@ -2270,6 +2322,7 @@ updateCompletedPending();
         let skipped = 0;
 
         for (const row of data) {
+             row.projectId = projectId;
 
             const indusId =
                 String(
@@ -2293,6 +2346,7 @@ updateCompletedPending();
             }
 
    await docRef.set({
+    projectId: projectId,   // 👈 New
     indusId: indusId,
     data: row,
     status: "Pending",
@@ -2416,6 +2470,49 @@ function showCompletedPopup(){
 function closeCompletedPopup(){
 
 document.getElementById("completedPopup").style.display="none";
+
+}
+function showProjectMenu(){
+    const projects = [...new Set(
+    excelData.map(x =>
+        (x.projectId || x.Project || x.project || "Default Project").trim()
+    )
+   )].sort();
+
+    let html = `
+    <div style="padding:15px;font-weight:bold;font-size:20px;">
+        📂 Select Project
+    </div>
+    `;
+
+    projects.forEach(project=>{
+
+        html += `
+        <div
+        onclick="selectProject('${project}')"
+        style="
+        padding:15px;
+        cursor:pointer;
+        border-bottom:1px solid #eee;
+        display:flex;
+        justify-content:space-between;
+        ">
+            <span>📁 ${project}</span>
+        </div>
+        `;
+
+    });
+
+    document.getElementById("techPendingBody").innerHTML = html;
+
+    document.getElementById("pendingTechPopup").style.display="flex";
+
+}
+function selectProject(project){
+
+    selectedProject = project;
+
+    showPendingTechMenu();
 
 }
 function showPendingTechMenu(){
@@ -2778,7 +2875,8 @@ function getPendingData(){
 }
 async function deleteImportedCSV(){
 
-    if(!confirm("Delete imported CSV?")) return;
+    showDeleteProjectMenu();
+return;
 
     try{
 
@@ -2818,6 +2916,101 @@ async function deleteImportedCSV(){
     }
 
 }
+async function showDeleteProjectMenu(){
+
+    const projects = [...new Set(
+        excelData.map(x => x.projectId).filter(Boolean)
+    )].sort();
+
+    let html = `
+    <div style="
+    background:white;
+    width:400px;
+    max-height:80vh;
+    overflow:auto;
+    border-radius:10px;
+    padding:20px;
+    ">
+
+    <h2>🗑 Select Project</h2>
+    `;
+
+    projects.forEach(project=>{
+
+        html += `
+        <div
+        onclick="deleteProject('${project}')"
+        style="
+        padding:12px;
+        margin:8px 0;
+        border:1px solid #ddd;
+        border-radius:8px;
+        cursor:pointer;
+        ">
+        📁 ${project}
+        </div>
+        `;
+
+    });
+
+    html += `
+    <br>
+    <button onclick="this.parentElement.parentElement.remove()">
+    Close
+    </button>
+    </div>
+    `;
+
+    const popup=document.createElement("div");
+
+    popup.style.position="fixed";
+    popup.style.left="0";
+    popup.style.top="0";
+    popup.style.width="100%";
+    popup.style.height="100%";
+    popup.style.background="rgba(0,0,0,.5)";
+    popup.style.display="flex";
+    popup.style.alignItems="center";
+    popup.style.justifyContent="center";
+    popup.style.zIndex="999999";
+
+    popup.appendChild(document.createRange().createContextualFragment(html));
+
+    document.body.appendChild(popup);
+
+}
+async function deleteProject(projectId){
+
+    if(!confirm("Delete Project : " + projectId + " ?")) return;
+
+    try{
+
+        const snap = await db.collection("pendingSites")
+        .where("projectId","==",projectId)
+        .get();
+
+        const batch = db.batch();
+
+        snap.forEach(doc=>{
+            batch.delete(doc.ref);
+        });
+
+        await batch.commit();
+
+        alert("✅ Project Deleted");
+
+        location.reload();
+
+    }catch(err){
+
+        console.error(err);
+
+        alert(err.message);
+
+    }
+
+}
+
 function showTechPendingPopup(name){
 
     document.getElementById("techPendingBody").innerHTML = `
@@ -2915,15 +3108,68 @@ headers.forEach(h=>{
 html+=`<th>${h}</th>`;
 });
 
-html+="</tr>";
+html += "<th>Remark</th>";
 
 selectedTechPending.forEach(row=>{
 
 html+="<tr>";
 
 headers.forEach(h=>{
-html+=`<td>${row[h]??""}</td>`;
+html+=`<td>${row[h] ?? ""}</td>`;
 });
+
+// Indus ID nikalo
+const indusId = cleanIndusId(
+
+    row["Indus ID"] ||
+    row["Indus Id"] ||
+    row["INDUS ID"]
+);
+const firestoreId = row.firestoreId;
+// Remark column
+html += `
+<td style="min-width:220px;">
+    <textarea
+        id="remark_${firestoreId}"
+        rows="2"
+        style="width:100%;padding:5px;"
+        placeholder="Enter Remark...">${row.remark || ""}</textarea>
+
+    <br>
+
+    <button
+       onclick="updatePendingRemark('${firestoreId}')"
+        style="
+            margin-top:5px;
+            background:#16a34a;
+            color:white;
+            border:none;
+            padding:5px 10px;
+            border-radius:5px;
+            cursor:pointer;
+        ">
+        💾 Update
+    </button>
+    <div style="
+margin-top:8px;
+font-size:12px;
+color:#666;
+line-height:18px;
+">
+
+<b>Updated By:</b> ${row.remarkBy || "-"}
+
+<br>
+
+<b>Updated On:</b> ${
+row.remarkTime
+? new Date(row.remarkTime).toLocaleString()
+: "-"
+}
+
+</div>
+</td>
+`;
 
 html+="</tr>";
 
@@ -3020,6 +3266,41 @@ function closeTechPendingPopup(){
 
     // Popup band hone ke baad technician list fir se bana do
     showPendingTechMenu();
+
+}
+// ================= UPDATE REMARK =================
+
+async function updatePendingRemark(firestoreId){
+
+   const input = document.getElementById("remark_" + firestoreId);
+
+    if(!input){
+        alert("Remark box not found");
+        return;
+    }
+
+    const remark = input.value.trim();
+
+    try{
+console.log("Firestore ID =", firestoreId);
+    await db.collection("pendingSites")
+.doc(firestoreId)
+.update({
+
+    remark: remark,
+    remarkBy: currentUser,
+    remarkTime: new Date().toISOString()
+
+});
+        alert("✅ Remark Updated");
+
+    }catch(err){
+
+    console.error(err);
+
+    alert("❌ " + err.message);
+
+}
 
 }
 // ================= CLOSE POPUPS WHEN CLICK OUTSIDE =================
