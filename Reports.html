@@ -287,6 +287,9 @@ box-shadow:0 10px 20px rgba(0,0,0,.4);
 🔍 Search
 </button>
 
+<button onclick="openImportModal()">
+📂 Import Report
+</button>
 
 <button onclick="openDownloadOptions()">
 📥 Download
@@ -593,6 +596,53 @@ Close
 </div>
 
 </div>
+<!-- IMPORT REPORT MODAL -->
+
+<div class="modal" id="importModal">
+
+<div class="modal-box" style="max-width:550px;">
+
+<div class="modal-title">
+📂 Import Reports
+</div>
+
+<label>Select CSV / XLSX File</label>
+
+<input
+type="file"
+id="importFile"
+accept=".csv,.xlsx,.xls">
+
+<br><br>
+
+<div id="importStatus"
+style="
+padding:10px;
+text-align:center;
+font-weight:bold;
+">
+No File Selected
+</div>
+
+<div class="button-group">
+
+<button
+class="submit"
+onclick="startImport()">
+📤 Import
+</button>
+
+<button
+class="close"
+onclick="closeImportModal()">
+Close
+</button>
+
+</div>
+
+</div>
+
+</div>
 <!-- DOWNLOAD MODAL -->
 
 <div class="modal" id="downloadModal">
@@ -702,9 +752,10 @@ query,
 orderBy,
 deleteDoc,
 doc,
-updateDoc
+updateDoc,
+serverTimestamp,
+writeBatch
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
-
 /* =========================
    NEW FIREBASE PROJECT
 ========================= */
@@ -784,6 +835,22 @@ window.location.href =
 "dashboard.html";
 
 };
+window.openImportModal = function(){
+
+document.getElementById("importModal").style.display = "flex";
+
+document.getElementById("importStatus").innerHTML =
+"No File Selected";
+
+document.getElementById("importFile").value = "";
+
+}
+
+window.closeImportModal = function(){
+
+document.getElementById("importModal").style.display = "none";
+
+}
 window.refreshData = async function(){
 
 let btns = document.querySelectorAll(".navbar button");
@@ -804,6 +871,174 @@ alert("❌ Refresh Failed");
 }
 
 btns.forEach(btn => btn.disabled = false);
+
+};
+function normalizeImportDate(value){
+
+    if(!value) return "";
+
+    // Excel Serial Number
+    if(typeof value === "number"){
+
+        const d = XLSX.SSF.parse_date_code(value);
+
+        return `${d.y}-${String(d.m).padStart(2,"0")}-${String(d.d).padStart(2,"0")}`;
+
+    }
+
+    let txt = String(value).trim();
+
+    // DD-MM-YYYY or DD/MM/YYYY
+    if(txt.includes("-") || txt.includes("/")){
+
+        let s = txt.replace(/\//g,"-").split("-");
+
+        if(s.length===3){
+
+            if(s[0].length===4){
+
+                return `${s[0]}-${s[1].padStart(2,"0")}-${s[2].padStart(2,"0")}`;
+
+            }else{
+
+                return `${s[2]}-${s[1].padStart(2,"0")}-${s[0].padStart(2,"0")}`;
+
+            }
+
+        }
+
+    }
+
+    return txt;
+
+}
+window.startImport = async function(){
+
+    const file = document.getElementById("importFile").files[0];
+
+    if(!file){
+        alert("Select CSV/XLSX File");
+        return;
+    }
+
+    const reader = new FileReader();
+
+    reader.onload = async function(e){
+
+        try{
+
+            const data = new Uint8Array(e.target.result);
+
+            const workbook = XLSX.read(data,{type:"array"});
+
+            const sheetName = workbook.SheetNames[0];
+
+            const sheet = workbook.Sheets[sheetName];
+
+            const rows = XLSX.utils.sheet_to_json(sheet,{
+                defval:""
+            });
+
+            if(rows.length===0){
+                alert("File Empty");
+                return;
+            }
+
+            // Required Header Check
+            const firstRow = rows[0];
+
+            const required = [
+                "AREA",
+                "Indus Id",
+                "Escort Team",
+                "Date"
+            ];
+
+            for(const h of required){
+
+                if(!(h in firstRow)){
+                    alert("Missing Column : " + h);
+                    return;
+                }
+
+            }
+
+            const importData = [];
+
+            rows.forEach(row=>{
+
+                importData.push({
+
+                    area : String(row["AREA"] || "").trim(),
+
+                    indusId : String(row["Indus Id"] || "").trim(),
+
+                    name : String(row["Escort Team"] || "").trim(),
+
+                    escortTeam : String(row["Escort Team"] || "").trim(),
+
+                    date : normalizeImportDate(row["Date"]),
+
+                    type : "Import",
+
+                    imported : true
+
+                });
+
+            });
+
+            // Firestore Save
+            const batch = writeBatch(db);
+
+            importData.forEach(row=>{
+
+                const ref = doc(collection(db,"reports"));
+
+                batch.set(ref,{
+
+                    area: row.area,
+
+                    indusId: row.indusId,
+
+                    name: row.name,
+
+                    escortTeam: row.escortTeam,
+
+                    date: row.date,
+
+                    type: "Import",
+
+                    imported: true,
+
+                    createdAt: serverTimestamp()
+
+                });
+
+            });
+
+            await batch.commit();
+
+            document.getElementById("importStatus").innerHTML =
+            "✅ Import Completed : " + importData.length;
+
+            alert(importData.length + " Reports Imported Successfully");
+
+            closeImportModal();
+
+            await loadData();
+
+        }
+        catch(err){
+
+            console.error(err);
+
+            alert("Import Failed : " + err.message);
+
+        }
+
+    };
+
+    reader.readAsArrayBuffer(file);
 
 };
 /* DATE */
@@ -1911,6 +2146,19 @@ font-weight:bold;
 <p>📌 Type: ${x.type}</p>
 
 `;
+if(x.type === "Import"){
+
+html += `
+
+<p>🏢 Area : ${x.area || "-"}</p>
+
+<p>🆔 Indus ID : ${x.indusId || "-"}</p>
+
+<p>👷 Escort Team : ${x.escortTeam || x.name || "-"}</p>
+
+`;
+
+}
 
 if(x.type==="GPS"){
 
@@ -2777,6 +3025,7 @@ resultBox.innerHTML = html;
 loadData();
 
 </script>
+<script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
 <script src="https://upload-widget.cloudinary.com/global/all.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 </body>
