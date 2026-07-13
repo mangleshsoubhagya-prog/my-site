@@ -2899,55 +2899,21 @@ function getPendingData(){
 
     });
 
-}
-async function deleteImportedCSV(){
+}function deleteImportedCSV(){
 
     showDeleteProjectMenu();
-return;
-
-    try{
-
-        const snapshot = await db.collection("pendingSites").get();
-
-        const batch = db.batch();
-
-        snapshot.forEach(doc=>{
-            batch.delete(doc.ref);
-        });
-
-        await batch.commit();
-
-        try{
-            await db.collection("pendingMeta")
-            .doc("header")
-            .delete();
-        }catch(e){}
-
-        excelData = [];
-        originalHeaders = [];
-
-        document.getElementById("csvFile").value = "";
-
-        document.getElementById("excelCount").innerText = "0";
-        document.getElementById("completedCount").innerText = "0";
-        document.getElementById("pendingCount").innerText = "0";
-
-        alert("✅ CSV Deleted Successfully");
-
-    }catch(err){
-
-        console.error(err);
-
-        alert(err.message);
-
-    }
 
 }
+
+
 async function showDeleteProjectMenu(){
 
     const projects = [...new Set(
-        excelData.map(x => x.projectId).filter(Boolean)
+        excelData.map(x =>
+            (x.projectId || x.Project || x.project || "")
+        ).filter(Boolean)
     )].sort();
+
 
     let html = `
     <div style="
@@ -2959,76 +2925,64 @@ async function showDeleteProjectMenu(){
     padding:20px;
     ">
 
-    <h2>🗑 Select Project</h2>
+    <h2>🗑 Delete CSV Project</h2>
     `;
+
 
     projects.forEach(project=>{
 
-    const reportIds = new Set();
+        html += `
 
-    allReportsData.forEach(r=>{
-        reportIds.add(cleanIndusId(r.indusId));
+        <div style="
+        padding:15px;
+        border-bottom:1px solid #ddd;
+        display:flex;
+        justify-content:space-between;
+        align-items:center;
+        ">
+
+            <span>
+            📁 ${project}
+            </span>
+
+
+            <button
+            onclick="deleteProject('${project}')"
+            style="
+            background:#dc2626;
+            color:white;
+            border:none;
+            padding:7px 12px;
+            border-radius:6px;
+            cursor:pointer;
+            ">
+            🗑 Delete
+            </button>
+
+
+        </div>
+
+        `;
+
     });
 
-    const pendingCount = excelData.filter(item=>{
-
-        if((item.projectId || "") !== project) return false;
-
-        const id = cleanIndusId(
-            item["Indus ID"] ||
-            item["Indus Id"] ||
-            item["INDUS ID"]
-        );
-
-        return !reportIds.has(id);
-
-    }).length;
-html += `
-<div
-style="
-padding:15px;
-border-bottom:1px solid #eee;
-display:flex;
-justify-content:space-between;
-align-items:center;
-">
-
-    <span
-    onclick="selectProject('${project}')"
-    style="
-    cursor:pointer;
-    flex:1;
-    ">
-        📁 ${project}
-    </span>
-
-    <button
-    onclick="event.stopPropagation();downloadProjectList('${project}')"
-    style="
-    background:#16a34a;
-    color:white;
-    border:none;
-    padding:6px 12px;
-    border-radius:6px;
-    cursor:pointer;
-    ">
-        📥 Excel
-    </button>
-
-</div>
-`;
-
-});
 
     html += `
+
     <br>
-    <button onclick="this.parentElement.parentElement.remove()">
+
+    <button onclick="this.closest('.deletePopup').remove()">
     Close
     </button>
+
     </div>
+
     `;
 
+
     const popup=document.createElement("div");
+
+    popup.className="deletePopup";
 
     popup.style.position="fixed";
     popup.style.left="0";
@@ -3041,43 +2995,71 @@ align-items:center;
     popup.style.justifyContent="center";
     popup.style.zIndex="999999";
 
-    popup.appendChild(document.createRange().createContextualFragment(html));
+
+    popup.innerHTML=html;
 
     document.body.appendChild(popup);
 
 }
+
+
+
 async function deleteProject(projectId){
 
-    if(!confirm("Delete Project : " + projectId + " ?")) return;
+
+    if(!confirm(
+        "Delete Project : " + projectId + " ?"
+    )) return;
+
 
     try{
+
 
         const snap = await db.collection("pendingSites")
         .where("projectId","==",projectId)
         .get();
 
+
+
         const batch = db.batch();
 
+
         snap.forEach(doc=>{
+
             batch.delete(doc.ref);
+
         });
+
+
 
         await batch.commit();
 
-        alert("✅ Project Deleted");
+
+
+        // pendingMeta भी project wise delete करना हो तो बाद में करेंगे
+
+
+        alert(
+            "✅ "+projectId+" Deleted Successfully"
+        );
+
 
         location.reload();
 
-    }catch(err){
+
+
+    }
+    catch(err){
 
         console.error(err);
 
-        alert(err.message);
+        alert(
+            "Delete Error : "+err.message
+        );
 
     }
 
 }
-
 function showTechPendingPopup(name){
 
     document.getElementById("techPendingBody").innerHTML = `
