@@ -714,11 +714,17 @@ Import CSV
 
 </div>
 <!-- Total Excel Records -->
-<div class="card">
-    <h3>📋 Total List</h3>
-    <div class="value" id="excelCount">0</div>
-</div>
+<div class="card"
+onclick="showTotalListPopup()"
+style="cursor:pointer;">
 
+    <h3>📋 Total List</h3>
+
+    <div class="value" id="excelCount">0</div>
+
+    <small>Click to Download</small>
+
+</div>
 <div class="card"
 onclick="showCompletedPopup()"
 style="cursor:pointer;">
@@ -2462,7 +2468,6 @@ function showCompletedPopup(){
     }
 
     document.getElementById("completedList").innerHTML=html;
-
     document.getElementById("completedPopup").style.display="flex";
 
 }
@@ -2541,6 +2546,10 @@ let techs={};
 
 excelData.forEach(item=>{
 
+if (selectedProject && (item.projectId || "") !== selectedProject){
+    return;
+}
+
 const id=cleanIndusId(
 item["Indus ID"]||
 item["Indus Id"]||
@@ -2558,7 +2567,7 @@ const tech = (
 ).trim();
 
 if(!techs[tech]){
-techs[tech]=[];
+    techs[tech]=[];
 }
 
 techs[tech].push(item);
@@ -2583,10 +2592,24 @@ display:flex;
 justify-content:space-between;
 ">
 
-<span>👷 ${name}</span>
+<div>
+    <span>👷 ${name}</span>
+    <br>
+    <small>${techs[name].length} Pending</small>
+</div>
 
-<b>${techs[name].length}</b>
-
+<button
+onclick="event.stopPropagation();downloadPendingTechExcel('${name}')"
+style="
+background:#16a34a;
+color:white;
+border:none;
+padding:6px 12px;
+border-radius:6px;
+cursor:pointer;
+">
+📥 Excel
+</button>
 </div>
 
 `;
@@ -2620,7 +2643,11 @@ item["Tech Name"] ||
 ""
 ).trim();
 
-return !reportIds.has(id) && techName === name;
+return (
+    !reportIds.has(id) &&
+    techName === name &&
+    (!selectedProject || (item.projectId || "") === selectedProject)
+);
 });
 
 showTechPendingPopup(name);
@@ -2937,21 +2964,61 @@ async function showDeleteProjectMenu(){
 
     projects.forEach(project=>{
 
-        html += `
-        <div
-        onclick="deleteProject('${project}')"
-        style="
-        padding:12px;
-        margin:8px 0;
-        border:1px solid #ddd;
-        border-radius:8px;
-        cursor:pointer;
-        ">
-        📁 ${project}
-        </div>
-        `;
+    const reportIds = new Set();
 
+    allReportsData.forEach(r=>{
+        reportIds.add(cleanIndusId(r.indusId));
     });
+
+    const pendingCount = excelData.filter(item=>{
+
+        if((item.projectId || "") !== project) return false;
+
+        const id = cleanIndusId(
+            item["Indus ID"] ||
+            item["Indus Id"] ||
+            item["INDUS ID"]
+        );
+
+        return !reportIds.has(id);
+
+    }).length;
+html += `
+<div
+style="
+padding:15px;
+border-bottom:1px solid #eee;
+display:flex;
+justify-content:space-between;
+align-items:center;
+">
+
+    <span
+    onclick="selectProject('${project}')"
+    style="
+    cursor:pointer;
+    flex:1;
+    ">
+        📁 ${project}
+    </span>
+
+    <button
+    onclick="event.stopPropagation();downloadProjectList('${project}')"
+    style="
+    background:#16a34a;
+    color:white;
+    border:none;
+    padding:6px 12px;
+    border-radius:6px;
+    cursor:pointer;
+    ">
+        📥 Excel
+    </button>
+
+</div>
+`;
+
+});
 
     html += `
     <br>
@@ -3047,7 +3114,7 @@ function showTechPendingPopup(name){
             border:none;
             border-radius:8px;
             cursor:pointer;">
-                📥 Download
+                📥 Download Excel
             </button>
 
         </div>
@@ -3231,6 +3298,14 @@ if(selectedTechPending.length===0){
 alert("No Pending Data");
 return;
 }
+const projectPending = selectedTechPending.filter(row =>
+    !selectedProject || (row.projectId || "") === selectedProject
+);
+
+if(projectPending.length === 0){
+    alert("No Pending Data");
+    return;
+}
 
 const headers =
 originalHeaders.length
@@ -3239,7 +3314,7 @@ originalHeaders.length
 
 const rows = [
 headers,
-...selectedTechPending.map(row =>
+...projectPending.map(row =>
 headers.map(h => row[h] ?? "")
 )
 ];
@@ -3256,7 +3331,7 @@ selectedTechName
 
 XLSX.writeFile(
 wb,
-selectedTechName + "_Pending.xlsx"
+selectedProject + "_" + selectedTechName + "_Pending.xlsx"
 );
 
 }
@@ -3266,6 +3341,247 @@ function closeTechPendingPopup(){
 
     // Popup band hone ke baad technician list fir se bana do
     showPendingTechMenu();
+
+}
+function showTotalListPopup(){
+
+    document.getElementById("totalListPopup").style.display="flex";
+
+    const projects = [...new Set(
+        excelData.map(x => x.projectId).filter(Boolean)
+    )].sort();
+
+    let html = "";
+
+    // All Projects
+    html += `
+    <div
+    style="
+    padding:12px;
+    margin-bottom:10px;
+    border:1px solid #ddd;
+    border-radius:10px;
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    ">
+
+        <span><b>📁 All Projects</b></span>
+
+        <button onclick="downloadAllProjects()">
+        ⬇ Download
+        </button>
+<button
+onclick="downloadCompletedList()"
+style="
+background:#16a34a;
+color:white;
+border:none;
+padding:8px 12px;
+border-radius:6px;
+cursor:pointer;
+margin-left:10px;
+">
+✅ Completed
+</button>
+    </div>
+    `;
+
+    projects.forEach(project=>{
+
+        const total =
+        excelData.filter(x=>x.projectId===project).length;
+
+        html += `
+        <div
+        style="
+        padding:12px;
+        margin-bottom:10px;
+        border:1px solid #ddd;
+        border-radius:10px;
+        display:flex;
+        justify-content:space-between;
+        align-items:center;
+        ">
+
+            <div>
+
+                <b>📁 ${project}</b>
+
+                <br>
+
+                ${total} Records
+
+            </div>
+
+            <button
+            onclick="downloadProjectList('${project}')">
+            ⬇ Download
+            </button>
+
+        </div>
+        `;
+
+    });
+
+    document.getElementById("totalListBody").innerHTML = html;
+
+}
+
+function closeTotalListPopup(){
+
+    document.getElementById("totalListPopup").style.display="none";
+
+}
+function downloadAllProjects(){
+
+    if(excelData.length === 0){
+        alert("No Data Found");
+        return;
+    }
+
+    const headers = originalHeaders.length
+        ? originalHeaders
+        : Object.keys(excelData[0]);
+
+    const rows = [
+        headers,
+        ...excelData.map(row =>
+            headers.map(h => row[h] ?? "")
+        )
+    ];
+
+    const ws = XLSX.utils.aoa_to_sheet(rows);
+
+    const wb = XLSX.utils.book_new();
+
+    XLSX.utils.book_append_sheet(wb, ws, "All Projects");
+
+    XLSX.writeFile(wb, "Total_List.xlsx");
+
+}
+
+function downloadProjectList(project){
+
+    const data = excelData.filter(row =>
+        (row.projectId || "") === project
+    );
+
+    if(data.length === 0){
+        alert("No Data Found");
+        return;
+    }
+
+    const headers = originalHeaders.length
+        ? originalHeaders
+        : Object.keys(data[0]);
+
+    const rows = [
+        headers,
+        ...data.map(row =>
+            headers.map(h => row[h] ?? "")
+        )
+    ];
+
+    const ws = XLSX.utils.aoa_to_sheet(rows);
+
+    const wb = XLSX.utils.book_new();
+
+    XLSX.utils.book_append_sheet(wb, ws, project);
+
+    XLSX.writeFile(wb, project + "_List.xlsx");
+
+}
+function downloadCompletedList(){
+
+    const reportIds = new Set();
+
+    allReportsData.forEach(r=>{
+        reportIds.add(cleanIndusId(r.indusId));
+    });
+
+    const completed = excelData.filter(item=>{
+
+        const id = cleanIndusId(
+            item["Indus ID"] ||
+            item["Indus Id"] ||
+            item["INDUS ID"]
+        );
+
+        return reportIds.has(id);
+
+    });
+
+    if(completed.length===0){
+        alert("No Completed Data");
+        return;
+    }
+
+    const headers = originalHeaders.length
+        ? originalHeaders
+        : Object.keys(completed[0]);
+
+    const rows = [
+        headers,
+        ...completed.map(row =>
+            headers.map(h => row[h] ?? "")
+        )
+    ];
+
+    const ws = XLSX.utils.aoa_to_sheet(rows);
+
+    const wb = XLSX.utils.book_new();
+
+    XLSX.utils.book_append_sheet(wb, ws, "Completed");
+
+    XLSX.writeFile(wb, "Completed_List.xlsx");
+
+}
+function downloadPendingProject(project){
+
+    const reportIds = new Set();
+
+    allReportsData.forEach(r=>{
+        reportIds.add(cleanIndusId(r.indusId));
+    });
+
+    const pending = excelData.filter(item=>{
+
+        if((item.projectId || "") !== project) return false;
+
+        const id = cleanIndusId(
+            item["Indus ID"] ||
+            item["Indus Id"] ||
+            item["INDUS ID"]
+        );
+
+        return !reportIds.has(id);
+
+    });
+
+    if(pending.length===0){
+        alert("No Pending Data");
+        return;
+    }
+
+    const headers = originalHeaders.length
+        ? originalHeaders
+        : Object.keys(pending[0]);
+
+    const rows = [
+        headers,
+        ...pending.map(row =>
+            headers.map(h => row[h] ?? "")
+        )
+    ];
+
+    const ws = XLSX.utils.aoa_to_sheet(rows);
+
+    const wb = XLSX.utils.book_new();
+
+    XLSX.utils.book_append_sheet(wb, ws, "Pending");
+
+    XLSX.writeFile(wb, project + "_Pending.xlsx");
 
 }
 // ================= UPDATE REMARK =================
@@ -3497,11 +3813,41 @@ border-radius:15px;
 <div id="completedList"></div>
 
 <br>
+<div style="
+display:flex;
+gap:10px;
+margin-top:20px;
+">
 
-<button onclick="closeCompletedPopup()">
-Close
+<button
+onclick="downloadCompletedList()"
+style="
+flex:1;
+padding:12px;
+background:#16a34a;
+color:white;
+border:none;
+border-radius:10px;
+cursor:pointer;
+">
+📥 Download Excel
 </button>
 
+<button
+onclick="closeCompletedPopup()"
+style="
+flex:1;
+padding:12px;
+background:#ef4444;
+color:white;
+border:none;
+border-radius:10px;
+cursor:pointer;
+">
+❌ Close
+</button>
+
+</div>
 </div>
 
 </div>
@@ -3716,5 +4062,54 @@ Pending By Tech
 </div>
 
 </div>
+<div id="totalListPopup"
+style="
+display:none;
+position:fixed;
+top:0;
+left:0;
+width:100%;
+height:100%;
+background:rgba(0,0,0,.6);
+justify-content:center;
+align-items:center;
+z-index:999999;
+">
+
+<div
+style="
+background:white;
+width:90%;
+max-width:600px;
+max-height:80vh;
+overflow:auto;
+border-radius:15px;
+padding:20px;
+">
+
+<h2>📋 Download Total List</h2>
+
+<div id="totalListBody"></div>
+
+<br>
+
+<button
+onclick="closeTotalListPopup()"
+style="
+width:100%;
+padding:12px;
+background:#ef4444;
+color:white;
+border:none;
+border-radius:10px;
+cursor:pointer;
+">
+Close
+</button>
+
+</div>
+
+</div>
+
 </body>
 </html>
