@@ -1596,26 +1596,6 @@ document.getElementById("sensorNo").value;
 saveData.indusId =
 document.getElementById("indusId").value;
 
-/* CSV */
-
-let csvFile =
-document.getElementById("csvFile").files[0];
-
-if(csvFile){
-
-document.getElementById("csvStatus").innerHTML =
-"⏳ Uploading CSV...";
-
-saveData.csvFile =
-await uploadRawFile(csvFile);
-
-saveData.csvFileName =
-csvFile.name;
-
-document.getElementById("csvStatus").innerHTML =
-"✅ CSV Uploaded";
-
-}
 
 /* VIDEO LINK */
 
@@ -1664,6 +1644,24 @@ document.getElementById("reportPhotoStatus").innerHTML =
 
 }
 
+/* CSV FOR GPS & SENSOR */
+
+const csvFile = document.getElementById("csvFile").files[0];
+
+if (csvFile) {
+
+    document.getElementById("csvStatus").innerHTML =
+    "⏳ Uploading CSV...";
+
+    const csvUrl = await uploadRawFile(csvFile);
+
+    saveData.csvFile = csvUrl;
+    saveData.csvFileName = csvFile.name;
+
+    document.getElementById("csvStatus").innerHTML =
+    "✅ CSV Uploaded";
+
+}
 /* FIREBASE SAVE */
 
 await addDoc(
@@ -1993,28 +1991,97 @@ document.getElementById("viewSection").style.display =
 if(list.length===0){
 
 window.selectedDate = date;
-
 document.getElementById("viewSection").innerHTML =
 `
-<h3>No Reports</h3>
-<br>
+
+<div style="
+background:#fff;
+border-radius:16px;
+padding:25px;
+box-shadow:0 8px 25px rgba(0,0,0,.12);
+text-align:center;
+">
+
+<div style="
+font-size:55px;
+margin-bottom:10px;
+">
+📋
+</div>
+
+<h2 style="
+margin:0;
+color:#374151;
+">
+No Reports Found
+</h2>
+
+<p style="
+color:#6b7280;
+margin:10px 0 25px;
+">
+There are no reports available for <b>${date}</b>
+</p>
+
+<div style="
+display:flex;
+justify-content:center;
+gap:15px;
+flex-wrap:wrap;
+">
 
 <button
-class="submit"
-onclick="openModalForDate('${date}')">
-➕ Add Entry
+onclick="openModalForDate('${date}')"
+style="
+display:flex;
+align-items:center;
+gap:8px;
+background:linear-gradient(135deg,#2563eb,#1d4ed8);
+color:#fff;
+border:none;
+padding:12px 22px;
+border-radius:12px;
+font-size:15px;
+font-weight:600;
+cursor:pointer;
+box-shadow:0 5px 15px rgba(37,99,235,.35);
+">
+
+<span style="font-size:18px;">➕</span>
+<span>Add Entry</span>
+
+</button>
+<button
+onclick="closeModal()"
+style="
+display:flex;
+align-items:center;
+gap:8px;
+background:linear-gradient(135deg,#ef4444,#dc2626);
+color:#fff;
+border:none;
+padding:12px 22px;
+border-radius:12px;
+font-size:15px;
+font-weight:600;
+cursor:pointer;
+box-shadow:0 5px 15px rgba(220,38,38,.35);
+transition:.25s;
+">
+
+<span style="font-size:18px;">✖</span>
+<span>Close</span>
+
 </button>
 
-<button
-class="close"
-onclick="closeModal()">
-Close
-</button>
+</div>
+
+</div>
+
 `;
-
 return;
-
 }
+
 let html = `
 
 <div style="
@@ -2022,33 +2089,87 @@ display:flex;
 justify-content:space-between;
 align-items:center;
 margin-bottom:20px;
+padding:15px 20px;
+background:#ffffff;
+border-radius:14px;
+box-shadow:0 4px 15px rgba(0,0,0,.08);
 gap:10px;
 flex-wrap:wrap;
 ">
 
-<h2>${date}</h2>
+<div>
 
-<div style="display:flex;gap:10px;">
+<h2 style="
+margin:0;
+font-size:22px;
+font-weight:700;
+color:#1f2937;
+">
+📅 ${date}
+</h2>
 
-<button
-class="submit"
-onclick="openModalForDate('${date}')">
-➕ Add More
-</button>
-
-<button
-class="close"
-onclick="closeModal()">
-
-Close
-
-</button>
+<p style="
+margin:4px 0 0;
+font-size:13px;
+color:#6b7280;
+">
+Working Report
+</p>
 
 </div>
 
+<div style="
+display:flex;
+align-items:center;
+gap:12px;
+">
+
+<button
+onclick="openModalForDate('${date}')"
+style="
+display:flex;
+align-items:center;
+gap:6px;
+background:linear-gradient(135deg,#2563eb,#1d4ed8);
+color:#fff;
+border:none;
+padding:10px 18px;
+border-radius:10px;
+font-size:14px;
+font-weight:600;
+cursor:pointer;
+box-shadow:0 4px 12px rgba(37,99,235,.35);
+transition:.25s;
+">
+
+<span style="font-size:18px;">＋</span>
+<span>Add More</span>
+
+</button>
+<button
+onclick="closeModal()"
+style="
+width:42px;
+height:42px;
+border:none;
+border-radius:50%;
+background:linear-gradient(135deg,#ef4444,#dc2626);
+color:#fff;
+font-size:22px;
+font-weight:bold;
+cursor:pointer;
+box-shadow:0 5px 15px rgba(220,38,38,.35);
+transition:.25s;
+">
+
+✕
+
+</button>
 </div>
 
+</div>
 `;
+
 list.forEach(x=>{
 
 html += `
