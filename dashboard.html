@@ -716,35 +716,83 @@ Import CSV
 <!-- Total Excel Records -->
 <div class="card"
 onclick="showTotalListPopup()"
-style="cursor:pointer;">
+ style="
+        width:100%;
+        margin-top:10px;
+        background:#5fe0cf;
+        color:rgb(19, 17, 17);
+        border:none;
+        padding:10px;
+        border-radius:8px;
+        cursor:pointer;
+        font-weight:bold;
+    ">
 
     <h3>📋 Total List</h3>
 
     <div class="value" id="excelCount">0</div>
 
-    <small>Click to Download</small>
 
 </div>
 <div class="card"
 onclick="showCompletedPopup()"
-style="cursor:pointer;">
+ style="
+        width:100%;
+        margin-top:10px;
+        background:#1cd344;
+        color:rgb(19, 18, 18);
+        border:none;
+        padding:10px;
+        border-radius:8px;
+        cursor:pointer;
+        font-weight:bold;
+    ">
 
     <h3>✅ Completed</h3>
 
     <div class="value" id="completedCount">0</div>
 
-    <small>Click to View</small>
 
 </div>
 <div class="card"
-onclick="showProjectMenu()"
-style="cursor:pointer;">
+onclick="
+currentMode='pending';
+showProjectMenu();
+"
+ style="
+        width:100%;
+        margin-top:10px;
+        background:#f3f71f;
+        color:rgb(15, 15, 15);
+        border:none;
+        padding:10px;
+        border-radius:8px;
+        cursor:pointer;
+        font-weight:bold;
+    ">
 
     <h3>⏳ Pending</h3>
 
     <div class="value" id="pendingCount">0</div>
 
-    <small>Click to View</small>
+</div>
+<div class="card"
+onclick="currentMode='hold';showProjectMenu();"
+ style="
+        width:100%;
+        margin-top:10px;
+        background:#e53935;
+        color:rgb(19, 17, 17);
+        border:none;
+        padding:10px;
+        border-radius:8px;
+        cursor:pointer;
+        font-weight:bold;
+    ">
+
+    <h3>⚠ Hold / Issue</h3>
+
+    <div class="value" id="holdCount">0</div>
 
 </div>
 </div>
@@ -953,6 +1001,8 @@ let originalHeaders = [];
 let selectedTechPending = [];
 let selectedTechName = "";
 let selectedProject = "";
+
+let allPendingTechData = {};
 
 let monthOffset = 0;
 let selectedReportDate = new Date();
@@ -1164,19 +1214,30 @@ function listenPendingSites(){
 snapshot.forEach(doc=>{
 
     const d = doc.data();
+if(d.data){
 
-    if(d.data){
+    let row = {
+        ...d.data
+    };
 
-        // Firestore Document ID save karo
-        d.data.firestoreId = doc.id;
-        d.data.projectId = d.projectId || "";
-        d.data.remark = d.remark || "";
-        d.data.remarkBy = d.remarkBy || "";
-        d.data.remarkTime = d.remarkTime || "";
 
-        excelData.push(d.data);
+    // Firestore fields merge
+    row.firestoreId = doc.id;
 
-    }
+    row.projectId = d.projectId || "";
+
+    row.remark = d.remark || "";
+
+    row.remarkBy = d.remarkBy || "";
+
+    row.remarkTime = d.remarkTime || "";
+
+    row.pendingStatus = d.pendingStatus || "";
+
+
+    excelData.push(row);
+
+}
 
 });
 
@@ -1190,7 +1251,7 @@ snapshot.forEach(doc=>{
         }
 
         document.getElementById("excelCount").innerText=excelData.length;
-
+        console.log("Excel Data Sample:", excelData[0]);
         updateCompletedPending();
 
     });
@@ -1205,6 +1266,46 @@ function cleanIndusId(value) {
 
     return match ? match.join("") : "";
 
+}
+function getSiteType(item, reportIds){
+
+    const id = cleanIndusId(
+        item["Indus ID"] ||
+        item["Indus Id"] ||
+        item["INDUS ID"] ||
+        item["INDUS_ID"] ||
+        item["IndusID"]
+    );
+
+    // Report me mil gaya
+    if(reportIds.has(id)){
+        return "completed";
+    }
+
+    const pendingStatus = String(
+    item.pendingStatus || ""
+).trim();
+
+const remark = String(
+    item.remark || ""
+).trim();
+
+const csvRemark = String(
+    item["Remark"] ||
+    item["REMARK"] ||
+    item["remark"] ||
+    ""
+).trim();
+
+if (
+    pendingStatus === "Hold" ||
+    remark !== "" ||
+    csvRemark !== ""
+){
+    return "hold";
+}
+
+return "pending";
 }
 
 function updateCompletedPending() {
@@ -1227,31 +1328,29 @@ function updateCompletedPending() {
         }
 
     });
+let completed = 0;
+let pending = 0;
+let hold = 0;
 
-    let completed = 0;
+excelData.forEach(item => {
 
-    excelData.forEach(item => {
+    const type = getSiteType(item, reportIds);
 
-        const excelId = cleanIndusId(
-            item["Indus ID"] ||
-            item["Indus Id"] ||
-            item["INDUS ID"] ||
-            item["INDUS_ID"] ||
-            item["IndusID"]
-        );
+    if(type === "completed"){
+        completed++;
+    }
+    else if(type === "pending"){
+        pending++;
+    }
+    else if(type === "hold"){
+        hold++;
+    }
 
-        if (reportIds.has(excelId)) {
-            completed++;
-        }
+});
 
-    });
-
-    document.getElementById("completedCount").innerText = completed;
-    document.getElementById("pendingCount").innerText = excelData.length - completed;
-
-    console.log("Report IDs :", [...reportIds]);
-    console.log("Excel Total :", excelData.length);
-    console.log("Completed :", completed);
+document.getElementById("completedCount").innerText = completed;
+document.getElementById("pendingCount").innerText = pending;
+document.getElementById("holdCount").innerText = hold;
 }
 // ---------------- MONTH RANGE ----------------
  function getSalaryMonthRange() {
@@ -2521,19 +2620,39 @@ function selectProject(project){
 
 }
 function showPendingTechMenu(){
-
 document.getElementById("techPendingBody").innerHTML = `
 <div style="
+display:flex;
+justify-content:space-between;
+align-items:center;
 padding:12px;
-font-weight:bold;
 background:#f5f5f5;
 border-bottom:1px solid #ddd;
 ">
-Pending By Tech
+
+<div style="font-weight:bold;font-size:18px;">
+${currentMode === "hold" ? "⚠ Hold By Tech" : "⏳ Pending By Tech"}
+</div>
+
+<button
+onclick="downloadAllPendingExcel()"
+style="
+background:#16a34a;
+color:white;
+border:none;
+padding:8px 14px;
+border-radius:8px;
+cursor:pointer;
+font-weight:bold;
+">
+📥 Download All
+</button>
+
 </div>
 
 <div id="pendingTechList"></div>
 `;
+
 document.getElementById("pendingTechPopup").style.display="flex";
 
 const reportIds=new Set();
@@ -2556,7 +2675,59 @@ item["Indus Id"]||
 item["INDUS ID"]
 );
 
+// Completed hai to skip
 if(reportIds.has(id)) return;
+
+// CSV Remark
+const csvRemark = String(
+    item["Remark"] ||
+    item["REMARK"] ||
+    item["remark"] ||
+    ""
+).trim();
+
+// Firestore Hold Status
+const pendingStatus = String(
+    item.pendingStatus || ""
+).trim();
+
+// Firestore Remark
+const remark = String(
+    item.remark || ""
+).trim();
+let isPending = false;
+let isHold = false;
+
+if (
+    pendingStatus === "Hold" ||
+    remark !== "" ||
+    csvRemark !== ""
+){
+    isHold = true;
+}
+else{
+    isPending = true;
+}
+// ---------------- FILTER ----------------
+
+// Hold by Firestore
+if (
+    pendingStatus === "Hold" ||
+    remark !== "" ||
+    csvRemark !== ""
+) {
+    isHold = true;
+}
+else {
+    isPending = true;
+}
+
+// Mode Check
+if(currentMode === "pending" && !isPending) return;
+
+if(currentMode === "hold" && !isHold) return;
+
+// ---------------- TECH ----------------
 
 const tech = (
     item["FSC Name"] ||
@@ -2573,6 +2744,8 @@ if(!techs[tech]){
 techs[tech].push(item);
 
 });
+
+allPendingTechData = techs;
 
 let html="";
 
@@ -2627,27 +2800,65 @@ allReportsData.forEach(r=>{
 reportIds.add(cleanIndusId(r.indusId));
 });
 
-selectedTechPending=excelData.filter(item=>{
+selectedTechPending = excelData.filter(item=>{
 
-const id=cleanIndusId(
-item["Indus ID"]||
-item["Indus Id"]||
-item["INDUS ID"]
-);
+    const id = cleanIndusId(
+        item["Indus ID"] ||
+        item["Indus Id"] ||
+        item["INDUS ID"] ||
+        item["INDUS_ID"] ||
+        item["IndusID"]
+    );
 
-const techName = (
-item["FSC Name"] ||
-item["FSC NAME"] ||
-item["Fsc Name"] ||
-item["Tech Name"] ||
-""
+    const techName = (
+        item["FSC Name"] ||
+        item["FSC NAME"] ||
+        item["Fsc Name"] ||
+        item["Tech Name"] ||
+        ""
+    ).trim();
+
+    // CSV Remark
+    const csvRemark = String(
+        item["Remark"] ||
+        item["REMARK"] ||
+        item["remark"] ||
+        ""
+    ).trim();
+
+    // Firestore Hold Status
+    const pendingStatus = String(
+    item.pendingStatus || ""
 ).trim();
 
-return (
-    !reportIds.has(id) &&
-    techName === name &&
-    (!selectedProject || (item.projectId || "") === selectedProject)
-);
+const remark = String(
+    item.remark || ""
+).trim();
+
+let isPending = false;
+let isHold = false;
+
+if (
+    pendingStatus === "Hold" ||
+    remark !== "" ||
+    csvRemark !== ""
+){
+    isHold = true;
+}
+else{
+    isPending = true;
+}
+
+    return (
+        !reportIds.has(id) &&
+        techName === name &&
+        (!selectedProject || (item.projectId || "") === selectedProject) &&
+        (
+            (currentMode === "pending" && isPending) ||
+            (currentMode === "hold" && isHold)
+        )
+    );
+
 });
 
 showTechPendingPopup(name);
@@ -2795,7 +3006,74 @@ function downloadPendingExcel() {
     // Download
     XLSX.writeFile(wb, "Pending_Sites.xlsx");
 
-}// ================= PENDING MAP =================
+}
+
+function downloadPendingTechExcel(techName){
+
+    let techData = [];
+
+    if(allPendingTechData[techName]){
+
+        techData = allPendingTechData[techName];
+
+    }
+
+
+    if(techData.length === 0){
+
+        alert("No Data Found");
+
+        return;
+    }
+let headers = originalHeaders.length
+    ? [...originalHeaders]
+    : Object.keys(pending[0]);
+
+
+// Remark column add karo
+if(!headers.includes("Remark")){
+    headers.push("Remark");
+}
+
+const sheetData = [
+    headers,
+    ...techData.map(row =>
+       headers.map(header => {
+
+    if(header === "Remark"){
+
+        return row.remark || "";
+
+    }
+
+    return row[header] ?? "";
+
+})
+    )
+];
+
+
+const ws = XLSX.utils.aoa_to_sheet(sheetData);
+
+
+const wb = XLSX.utils.book_new();
+
+
+XLSX.utils.book_append_sheet(
+    wb,
+    ws,
+    techName
+);
+
+
+XLSX.writeFile(
+    wb,
+    techName + "_Pending.xlsx"
+);
+
+
+}
+// ================= PENDING MAP =================
 
 let map;
 
@@ -3581,13 +3859,15 @@ async function updatePendingRemark(firestoreId){
 
     try{
 console.log("Firestore ID =", firestoreId);
-    await db.collection("pendingSites")
+await db.collection("pendingSites")
 .doc(firestoreId)
 .update({
 
     remark: remark,
     remarkBy: currentUser,
-    remarkTime: new Date().toISOString()
+    remarkTime: new Date().toISOString(),
+
+    pendingStatus: remark ? "Hold" : ""
 
 });
         alert("✅ Remark Updated");
