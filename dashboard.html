@@ -795,6 +795,25 @@ onclick="currentMode='hold';showProjectMenu();"
     <div class="value" id="holdCount">0</div>
 
 </div>
+<div class="card"
+onclick="showAssignList()"
+style="
+        width:100%;
+        margin-top:10px;
+        background:#3b82f6;
+        color:white;
+        border:none;
+        padding:10px;
+        border-radius:8px;
+        cursor:pointer;
+        font-weight:bold;
+">
+
+    <h3>👷 Assign List</h3>
+
+    <div class="value" id="assignCount">0</div>
+
+</div>
 </div>
    
 
@@ -1003,6 +1022,7 @@ let selectedTechName = "";
 let selectedProject = "";
 
 let allPendingTechData = {};
+let assignedSitesData = [];
 
 let monthOffset = 0;
 let selectedReportDate = new Date();
@@ -1106,6 +1126,107 @@ function listenAttendance(){
         loadSalarySummary();
 
     });
+
+}
+function showAssignList(){
+
+    let assigned = excelData.filter(item => item.assigned);
+
+    if(assigned.length===0){
+        alert("No Assigned Tech");
+        return;
+    }
+
+    let html = `
+    <div style="
+    background:white;
+    padding:20px;
+    max-height:80vh;
+    overflow:auto;
+    ">
+
+    <h2>👤 Assign List</h2>
+
+    <table border="1"
+    style="
+    width:100%;
+    border-collapse:collapse;
+    text-align:left;
+    ">
+
+    <tr>
+        <th>Tech</th>
+        <th>Assigned To</th>
+        <th>Project</th>
+        <th>Time</th>
+    </tr>
+    `;
+
+    assigned.forEach(item=>{
+
+        const tech =
+            item["FSC Name"] ||
+            item["FSC NAME"] ||
+            item["Fsc Name"] ||
+            item["Tech Name"] ||
+            "-";
+
+        html += `
+        <tr>
+
+            <td>${tech}</td>
+
+            <td>${item.assignedTo || "-"}</td>
+
+            <td>${item.projectId || "-"}</td>
+
+            <td>${
+                item.assignedTime
+                ? new Date(item.assignedTime).toLocaleString()
+                : "-"
+            }</td>
+
+        </tr>
+        `;
+
+    });
+
+    html += `
+    </table>
+
+    <br>
+
+    <button
+    onclick="this.parentElement.parentElement.remove()"
+    style="
+    background:#ef4444;
+    color:white;
+    border:none;
+    padding:10px 25px;
+    border-radius:8px;
+    cursor:pointer;
+    ">
+    Close
+    </button>
+
+    </div>
+    `;
+
+    const popup = document.createElement("div");
+
+    popup.style.position="fixed";
+    popup.style.left="0";
+    popup.style.top="0";
+    popup.style.width="100%";
+    popup.style.height="100%";
+    popup.style.background="rgba(0,0,0,.4)";
+    popup.style.zIndex="999999";
+
+    popup.appendChild(
+        document.createRange().createContextualFragment(html)
+    );
+
+    document.body.appendChild(popup);
 
 }
 function listenReports(){
@@ -1233,6 +1354,9 @@ if(d.data){
     row.remarkTime = d.remarkTime || "";
 
     row.pendingStatus = d.pendingStatus || "";
+    row.assigned = d.assigned || false;
+    row.assignedTo = d.assignedTo || "";
+    row.assignedTime = d.assignedTime || "";
 
 
     excelData.push(row);
@@ -1253,6 +1377,34 @@ if(d.data){
         document.getElementById("excelCount").innerText=excelData.length;
         console.log("Excel Data Sample:", excelData[0]);
         updateCompletedPending();
+
+    });
+
+}
+function listenAssignedSites(){
+
+    db.collection("pendingSites")
+    .onSnapshot(snapshot=>{
+
+        assignedSitesData = [];
+
+        snapshot.forEach(doc=>{
+
+            const d = doc.data();
+
+            if(d.assignedTo){
+
+                assignedSitesData.push({
+                    id: doc.id,
+                    ...d
+                });
+
+            }
+
+        });
+
+        document.getElementById("assignCount").innerText =
+        assignedSitesData.length;
 
     });
 
@@ -1854,8 +2006,9 @@ document.getElementById("user").textContent = currentUser;
     listenReports();
     initProfilePhoto();
     loadUserProfiles();
-   loadUsersManagement();
-   listenPendingSites();
+    loadUsersManagement();
+    listenPendingSites();
+    listenAssignedSites();
    db.collection("users").onSnapshot(snapshot=>{
 
     document.getElementById("totalUsers").innerText =
@@ -2478,18 +2631,6 @@ reader.readAsBinaryString(file);
 
 }
 
-
-function openPendingMap() {
-  window.location.href="pending-map.html";
-}
-
-function logout(){
-
-localStorage.clear();
-
-window.location.href = "login.html";
-
-}
 window.deleteUser = async function(id){
 
 if(userRole !== "admin"){
@@ -2517,7 +2658,6 @@ alert("❌ Error Deleting User");
 }
 
 }
-console.log("Theme :", localStorage.getItem("dashboardTheme"));
 function showCompletedPopup(){
 
     const reportMap = {};
@@ -2745,7 +2885,6 @@ techs[tech].push(item);
 
 });
 
-allPendingTechData = techs;
 
 let html="";
 
@@ -2771,24 +2910,64 @@ justify-content:space-between;
     <small>${techs[name].length} Pending</small>
 </div>
 
+${techs[name].some(item => item.assigned) ? `
+
+<div style="display:flex;flex-direction:column;gap:5px;">
+
 <button
-onclick="event.stopPropagation();downloadPendingTechExcel('${name}')"
 style="
 background:#16a34a;
 color:white;
 border:none;
 padding:6px 12px;
 border-radius:6px;
-cursor:pointer;
+font-weight:bold;
 ">
-📥 Excel
+✅ Assigned
 </button>
+
+<button
+onclick="event.stopPropagation();unassignTech('${name}')"
+style="
+background:#ef4444;
+color:white;
+border:none;
+padding:6px 12px;
+border-radius:6px;
+cursor:pointer;
+font-weight:bold;
+">
+❌ Unassign
+</button>
+
+</div>
+
+`
+:
+`
+
+<button
+onclick="event.stopPropagation();openAssignPopup('${name}')"
+style="
+background:#2563eb;
+color:white;
+border:none;
+padding:6px 12px;
+border-radius:6px;
+cursor:pointer;
+font-weight:bold;
+">
+👤 Assign
+</button>
+
+`
+}
+
 </div>
 
 `;
 
 });
-
 document.getElementById("pendingTechList").innerHTML=html;
 
 }
@@ -3073,89 +3252,6 @@ XLSX.writeFile(
 
 
 }
-// ================= PENDING MAP =================
-
-let map;
-
-function openPendingMap() {
-
-    document.getElementById("mapModal").style.display = "block";
-
-    setTimeout(() => {
-
-        if (!map) {
-            map = L.map('map').setView([18.5204, 73.8567], 12);
-
-            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-                maxZoom: 19
-            }).addTo(map);
-        }
-
-        loadPendingMarkers();
-
-    }, 300);
-}
-
-function loadPendingMarkers() {
-
-    // Remove old markers
-    map.eachLayer(layer => {
-        if (layer instanceof L.Marker) {
-            map.removeLayer(layer);
-        }
-    });
-
-    // Report ID sirf EK baar banao
-    const reportIds = new Set();
-
-    allReportsData.forEach(r => {
-        reportIds.add(cleanIndusId(r.indusId));
-    });
-
-    excelData.forEach(item => {
-
-        const id = cleanIndusId(
-            item["Indus ID"] ||
-            item["Indus Id"] ||
-            item["INDUS ID"]
-        );
-
-        if(reportIds.has(id)) return;
-
-        const lat=parseFloat(
-item.Lat||
-item.LAT||
-item.Latitude
-);
-
-const lng=parseFloat(
-item.Long||
-item.LNG||
-item.Longitude
-);
-        if(isNaN(lat) || isNaN(lng)) return;
-
-        L.marker([lat,lng])
-        .addTo(map)
-        .bindPopup(`
-            <b>Pending Site</b><br>
-            ID : ${id}<br><br>
-
-            <button onclick="navigate(${lat},${lng})">
-            🚗 Navigate
-            </button>
-        `);
-
-    });
-
-}
-function navigate(lat, long) {
-    window.open(`https://www.google.com/maps/dir/?api=1&destination=${lat},${long}`);
-}
-
-function closeMapPopup() {
-    document.getElementById("mapModal").style.display = "none";
-}
 
 function getPendingData(){
 
@@ -3363,20 +3459,18 @@ function showTechPendingPopup(name){
             border-radius:8px;
             cursor:pointer;">
                 📋 Show Pending List
-            </button>
-
-            <button onclick="downloadTechPending()"
-            style="
-            flex:1;
-            padding:10px;
-            background:#16a34a;
-            color:white;
-            border:none;
-            border-radius:8px;
-            cursor:pointer;">
-                📥 Download Excel
-            </button>
-
+           <button
+           onclick="event.stopPropagation();downloadPendingTechExcel('${name}')"
+         style="
+         background:#16a34a;
+         color:white;
+         border:none;
+         padding:6px 12px;
+         border-radius:6px;
+         cursor:pointer;
+         ">
+         📥 Excel
+        </button>
         </div>
 
         <br>
@@ -3844,6 +3938,7 @@ function downloadPendingProject(project){
     XLSX.writeFile(wb, project + "_Pending.xlsx");
 
 }
+
 // ================= UPDATE REMARK =================
 
 async function updatePendingRemark(firestoreId){
@@ -3916,6 +4011,110 @@ window.onclick = function(e){
     }
 
 };
+function openAssignPopup(firestoreId, techName){
+
+    const assignName = prompt("Enter User Name");
+
+    if(!assignName) return;
+
+    saveAssignedTech(firestoreId, assignName);
+
+}
+
+let selectedAssignTech = "";
+
+function openAssignPopup(techName){
+
+    const assignName = prompt("Enter User Name");
+
+    if(!assignName) return;
+
+    saveAssignedTech(techName, assignName);
+
+}
+async function saveAssignedTech(techName, assignName){
+
+    try{
+
+        const batch = db.batch();
+
+        selectedTechPending.forEach(item=>{
+
+            if(!item.firestoreId) return;
+
+            const ref = db.collection("pendingSites")
+                          .doc(item.firestoreId);
+
+            batch.update(ref,{
+                assigned: true,
+                assignedTo: assignName,
+                assignedTime: Date.now()
+            });
+
+        });
+
+        await batch.commit();
+
+        alert("✅ Assigned Successfully");
+
+    }catch(err){
+
+        console.error(err);
+
+        alert("❌ Assign Failed");
+
+    }
+
+}
+async function unassignTech(techName){
+
+    if(!confirm("Do you want to Unassign this Tech?")) return;
+
+    try{
+
+        const batch = db.batch();
+
+        const techRows = excelData.filter(item=>{
+
+            const tech = (
+                item["FSC Name"] ||
+                item["FSC NAME"] ||
+                item["Fsc Name"] ||
+                item["Tech Name"] ||
+                ""
+            ).trim();
+
+            return tech === techName;
+
+        });
+
+        techRows.forEach(item=>{
+
+            if(!item.firestoreId) return;
+
+            batch.update(
+                db.collection("pendingSites").doc(item.firestoreId),
+                {
+                    assigned:false,
+                    assignedTo:"",
+                    assignedTime:""
+                }
+            );
+
+        });
+
+        await batch.commit();
+
+        alert("✅ Tech Unassigned Successfully");
+
+    }catch(err){
+
+        console.error(err);
+        alert("❌ Unassign Failed");
+
+    }
+
+}
 </script>
 <div id="presentUsersModal" style="
 display:none;
@@ -4152,7 +4351,7 @@ border:none;
 border-radius:10px;
 cursor:pointer;
 ">
-📥 Download
+📥 Download 
 </button>
 
 <button
@@ -4229,16 +4428,19 @@ CSV
 </button>
 
 <button
-onclick="downloadPendingExcel()"
+onclick="downloadTechPending()"
 style="
 width:100%;
 padding:12px;
+margin-bottom:15px;
 background:#2563eb;
 color:white;
 border:none;
 border-radius:10px;
+cursor:pointer;
+font-weight:bold;
 ">
-Excel
+📥 Download Excel
 </button>
 
 <br><br>
@@ -4257,21 +4459,6 @@ Close
 </button>
 
 </div>
-
-</div>
-<!-- ================= PENDING MAP POPUP ================= -->
-<div id="mapModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:#000000aa; z-index:999999;">
-
-  <div style="width:95%; height:95%; margin:2% auto; background:white; border-radius:15px; position:relative;">
-
-    <button onclick="closeMapPopup()" 
-      style="position:absolute; top:10px; right:10px; z-index:1000; padding:10px;">
-      ❌ Close
-    </button>
-
-    <div id="map" style="width:100%; height:100%;"></div>
-
-  </div>
 
 </div>
 <!-- Pending Tech Menu -->
