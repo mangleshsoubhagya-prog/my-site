@@ -1,981 +1,766 @@
 <!DOCTYPE html>
 <html>
 <head>
-  
-  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
 
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Modern Dashboard</title>
-<link rel="stylesheet" href="theme.css">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
 <style>
 
 *{
+box-sizing:border-box;
 margin:0;
 padding:0;
-box-sizing:border-box;
-font-family:'Poppins',sans-serif;
 }
 
 body{
+font-family:Poppins;
+background:linear-gradient(135deg,#667eea,#764ba2);
 min-height:100vh;
-background:linear-gradient(
-135deg,
-#0b1020,
-#111827,
-#1e3a8a,
-#0ea5e9
-);
-background-size:400% 400%;
-animation:bgMove 15s ease infinite;
-overflow-x:hidden;
+color:white;
 }
 
-@keyframes bgMove{
-0%{background-position:0% 50%;}
-50%{background-position:100% 50%;}
-100%{background-position:0% 50%;}
-}
+/* NAVBAR */
 
-.dashboard{
-display:flex;
-min-height:100vh;
-}
-
-/* =======================
-SIDEBAR
-======================= */
-
-.sidebar{
-width:270px;
-padding:25px;
-background:rgba(255,255,255,.08);
-backdrop-filter:blur(25px);
-border-right:1px solid rgba(255,255,255,.12);
-box-shadow:0 8px 32px rgba(0,0,0,.2);
-}
-
-.sidebar h2{
-color:#fff;
-font-size:28px;
-margin-bottom:30px;
-font-weight:700;
-}
-
-.sidebar a{
-display:flex;
-align-items:center;
-gap:12px;
-
-padding:14px 18px;
-margin-bottom:12px;
-
-text-decoration:none;
-color:#fff;
-
-border-radius:15px;
-
-background:rgba(255,255,255,.05);
-
-transition:.35s;
-}
-
-.sidebar a:hover{
-transform:translateX(8px);
-background:rgba(255,255,255,.15);
-box-shadow:0 10px 20px rgba(0,0,0,.15);
-}
-
-.sidebar a.active{
-background:linear-gradient(
-135deg,
-rgba(59,130,246,.8),
-rgba(147,51,234,.8)
-);
-}
-
-/* =======================
-MAIN
-======================= */
-
-.main{
-flex:1;
-padding:25px;
-}
-
-/* =======================
-WELCOME CARD
-======================= */
-
-.welcome-box{
+.navbar{
 display:flex;
 justify-content:space-between;
 align-items:center;
-
-padding:25px;
-margin-bottom:20px;
-
-background:rgba(255,255,255,.08);
-
-backdrop-filter:blur(20px);
-
-border:1px solid rgba(255,255,255,.15);
-
-border-radius:25px;
-
-color:#fff;
+padding:15px 20px;
+background:rgba(255,255,255,0.1);
+backdrop-filter:blur(10px);
+position:sticky;
+top:0;
+z-index:100;
 }
 
-.welcome-box h1{
-font-size:34px;
-font-weight:700;
+.navbar h2{
+font-size:22px;
 }
 
-.welcome-box p{
-opacity:.8;
-margin-top:5px;
+.navbar button{
+background:#22c55e;
+border:none;
+padding:10px 16px;
+border-radius:10px;
+color:white;
+font-weight:bold;
+cursor:pointer;
 }
 
-.date-box{
-padding:12px 20px;
-border-radius:15px;
+/* MONTH */
 
-background:rgba(255,255,255,.1);
-
-font-weight:600;
-}
-
-/* =======================
-CARDS
-======================= */
-
-.cards{
-display:grid;
-grid-template-columns:
-repeat(auto-fit,minmax(250px,1fr));
-
+.month-box{
+display:flex;
+justify-content:center;
+align-items:center;
 gap:20px;
-margin-bottom:20px;
+padding:15px;
 }
 
-.card{
-background:rgba(255,255,255,.08);
-
-backdrop-filter:blur(25px);
-
-border:1px solid rgba(255,255,255,.15);
-
-border-radius:24px;
-
-padding:25px;
-
+.month-box button{
+padding:8px 15px;
+border:none;
+border-radius:10px;
+background:#111827;
 color:white;
-
-box-shadow:
-0 8px 30px rgba(0,0,0,.2);
-
-transition:.35s;
-}
-
-.card:hover{
-transform:
-translateY(-8px)
-scale(1.02);
-
-box-shadow:
-0 20px 40px rgba(0,0,0,.25);
-}
-
-.card h3{
+cursor:pointer;
 font-size:18px;
-font-weight:500;
-opacity:.9;
 }
 
-.big-number{
-font-size:42px;
-font-weight:700;
-margin-top:15px;
+/* CALENDAR */
+
+#calendar{
+display:grid;
+grid-template-columns:repeat(7,1fr);
+gap:8px;
+padding:15px;
 }
 
-/* =======================
-SUMMARY
-======================= */
+.day{
+padding:15px 5px;
+text-align:center;
+border-radius:15px;
+font-weight:bold;
+cursor:pointer;
+transition:0.3s;
+}
 
-.summary{
+.day:hover{
+transform:scale(1.08);
+box-shadow:0 0 15px rgba(255,255,255,0.5);
+}
 
-background:rgba(255,255,255,.08);
+/* FAB */
 
-backdrop-filter:blur(25px);
+.fab{
+position:fixed;
+bottom:25px;
+right:25px;
+width:70px;
+height:70px;
+border-radius:50%;
+background:linear-gradient(135deg,#00c6ff,#0072ff);
+display:flex;
+align-items:center;
+justify-content:center;
+font-size:40px;
+cursor:pointer;
+z-index:1000;
+box-shadow:0 8px 20px rgba(0,0,0,0.3);
+}
 
-border:1px solid rgba(255,255,255,.15);
+/* MODAL */
 
+.modal{
+display:none;
+position:fixed;
+top:0;
+left:0;
+width:100%;
+height:100%;
+background:rgba(0,0,0,0.7);
+justify-content:center;
+align-items:center;
+padding:10px;
+z-index:2000;
+}
+
+.modal-box{
+width:100%;
+max-width:850px;
+max-height:95vh;
+overflow:auto;
+background:rgba(255,255,255,0.08);
+backdrop-filter:blur(20px);
 border-radius:25px;
-
 padding:25px;
-
-color:white;
-
-box-shadow:
-0 8px 30px rgba(0,0,0,.2);
+box-shadow:0 0 30px rgba(0,0,0,0.4);
 }
 
-.summary h3{
-font-size:24px;
-margin-bottom:15px;
+.modal-title{
+font-size:28px;
+font-weight:bold;
+margin-bottom:20px;
+text-align:center;
 }
 
-/* =======================
-SELECT
-======================= */
+/* FORM */
 
+.form-grid{
+display:grid;
+grid-template-columns:1fr 1fr;
+gap:15px;
+}
+
+.form-card{
+background:rgba(255,255,255,0.08);
+padding:15px;
+border-radius:18px;
+border:1px solid rgba(255,255,255,0.1);
+}
+
+.form-card label{
+display:block;
+margin-bottom:8px;
+font-size:14px;
+color:#ddd;
+}
+
+input,
 select{
 width:100%;
-max-width:300px;
-
-padding:12px;
-
-background:rgba(255,255,255,.12);
-
-border:1px solid rgba(255,255,255,.15);
-
-border-radius:15px;
-
+padding:14px;
+border:none;
+border-radius:12px;
+background:#111827;
 color:white;
-
+font-size:15px;
 outline:none;
 }
 
-option{
-background:#111827;
+.full{
+grid-column:span 2;
 }
 
-/* =======================
-PROFILE PHOTO
-======================= */
+/* BUTTONS */
 
-#profilePhoto{
-
-width:75px !important;
-height:75px !important;
-
-border-radius:50%;
-
-object-fit:cover;
-
-border:3px solid white;
-
-box-shadow:
-0 0 25px rgba(255,255,255,.4);
-
-cursor:pointer;
-
-transition:.35s;
-}
-
-#profilePhoto:hover{
-
-transform:
-scale(1.08)
-rotate(5deg);
-}
-
-/* =======================
-USER PANEL
-======================= */
-
-#userListContainer{
-
+.button-group{
+display:flex;
+gap:10px;
 margin-top:20px;
-
-background:rgba(255,255,255,.08);
-
-backdrop-filter:blur(25px);
-
-border:1px solid rgba(255,255,255,.15);
-
-border-radius:25px;
-
-padding:20px;
-
-color:white;
-
-box-shadow:
-0 8px 30px rgba(0,0,0,.2);
 }
 
-.employee-card{
-
-display:flex;
-
-align-items:center;
-
-gap:15px;
-
-padding:15px;
-
-margin-bottom:12px;
-
-border-radius:18px;
-
-background:rgba(255,255,255,.05);
-
-transition:.3s;
-}
-
-.employee-card:hover{
-
-background:rgba(255,255,255,.15);
-
-transform:translateX(5px);
-}
-
-.employee-card img{
-
-width:55px;
-height:55px;
-
-border-radius:50%;
-
-object-fit:cover;
-
-border:2px solid white;
-}
-
-/* =======================
-SCROLLBAR
-======================= */
-
-::-webkit-scrollbar{
-width:8px;
-}
-
-::-webkit-scrollbar-thumb{
-background:rgba(255,255,255,.3);
-border-radius:20px;
-}
-
-/* =======================
-IFRAME
-======================= */
-
-iframe{
-width:100%;
-height:90vh;
+.button-group button{
+flex:1;
+padding:14px;
 border:none;
-border-radius:20px;
-overflow:hidden;
-}
-
-/* =======================
-MOBILE
-======================= */
-
-@media(max-width:900px){
-
-.dashboard{
-flex-direction:column;
-}
-
-.sidebar{
-width:100%;
-}
-
-.welcome-box{
-flex-direction:column;
-gap:15px;
-text-align:center;
-}
-
-}
-
-@media(max-width:768px){
-
-.sidebar{
-width:260px;
-}
-
-.main{
-padding-left:10px;
-padding-top:80px;
-}
-
-#menuBtn{
-display:block;
-}
-
-}
-@media(max-width:480px){
-
-.sidebar h2{
-font-size:22px;
-text-align:center;
-}
-
-.welcome-box h1{
-font-size:24px;
-}
-
-.big-number{
-font-size:28px;
-}
-
-.welcome-box h1{
-font-size:28px;
-margin-bottom:5px;
-}
-
-.welcome-box p{
-opacity:.8;
-}
-
-.profile-box{
-display:flex;
-align-items:center;
-gap:15px;
-}
-
-#profilePhoto{
-width:80px !important;
-height:80px !important;
-border-radius:50%;
-cursor:pointer;
-object-fit:cover;
-border:3px solid white;
-}
-
-#userList{
-display:flex;
-flex-direction:column;
-gap:12px;
-}
-
-.user-item{
-display:flex;
-align-items:center;
-gap:15px;
-
-background:rgba(255,255,255,.08);
-
-padding:12px;
-
-border-radius:15px;
-}
-
-.user-item img{
-width:50px;
-height:50px;
-border-radius:50%;
-object-fit:cover;
-}
-
-iframe{
-width:100%;
-height:90vh;
-border:none;
-border-radius:20px;
-overflow:hidden;
-}
-
-}
-#menuBtn{
-position:fixed;
-top:20px;
-left:20px;
-z-index:9999;
-
-width:50px;
-height:50px;
-
-border:none;
-border-radius:15px;
-
-background:rgba(255,255,255,.15);
-backdrop-filter:blur(20px);
-
-color:white;
-font-size:24px;
+border-radius:14px;
+font-size:16px;
+font-weight:bold;
 cursor:pointer;
 }
 
-.sidebar{
-position:fixed;
-left:0;
-top:0;
-height:100vh;
-z-index:999;
-transition:.4s;
-}
-
-.sidebar.hide{
-transform:translateX(-100%);
-}
-
-.main{
-width:100%;
-padding-left:90px;
-}
-.topbar-glass{
-display:flex;
-justify-content:space-between;
-align-items:center;
-padding:25px;
-margin-bottom:25px;
-
-background:rgba(255,255,255,.12);
-backdrop-filter:blur(20px);
-
-border-radius:25px;
-
-border:1px solid rgba(255,255,255,.2);
-
+.submit{
+background:linear-gradient(135deg,#22c55e,#16a34a);
 color:white;
 }
-@media(min-width:769px){
 
-.sidebar{
-transform:translateX(0) !important;
+.close{
+background:linear-gradient(135deg,#ef4444,#dc2626);
+color:white;
 }
 
-#menuBtn{
+/* VIEW */
+
+#viewSection{
 display:none;
 }
 
-.main{
-padding-left:290px;
-}
-.dashboard-grid{
-display:grid;
-grid-template-columns:2fr 1fr;
-gap:20px;
-align-items:start;
+.report-card{
+background:#111827;
+padding:15px;
+border-radius:18px;
+margin-bottom:15px;
+position:relative;
 }
 
-
-@media(max-width:900px){
-
-.dashboard-grid{
-display:grid;
-grid-template-columns:2fr 1fr;
-gap:20px;
-align-items:start;
+.media{
+width:100%;
+margin-top:10px;
+border-radius:15px;
 }
-}
-#logoutBtn{
-padding:10px 15px;
+
+.delete-btn{
+position:absolute;
+top:10px;
+right:10px;
+width:35px;
+height:35px;
 border:none;
-border-radius:12px;
-background:#ef4444;
+border-radius:50%;
+background:red;
 color:white;
+font-weight:bold;
 cursor:pointer;
-font-weight:600;
 }
 
-#logoutBtn:hover{
-background:#dc2626;
+/* MOBILE */
+
+@media(max-width:700px){
+
+.form-grid{
+grid-template-columns:1fr;
 }
 
-.profile-box{
-display:flex;
-align-items:center;
-gap:12px;
-}
-}
-.summary{
-height:fit-content;
+.full{
+grid-column:span 1;
 }
 
+#calendar{
+grid-template-columns:repeat(4,1fr);
+}
+
+}
+#searchResults>div:hover{
+
+transform:scale(1.02);
+
+background:#1f2937 !important;
+
+box-shadow:0 10px 20px rgba(0,0,0,.4);
+
+}
 </style>
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
 </head>
+
 <body>
-  <button id="menuBtn" onclick="toggleSidebar()">
-☰
+    <div class="navbar">
+
+<h2>📊 Reports System</h2>
+
+<div style="display:flex;gap:10px;flex-wrap:wrap;">
+
+<button onclick="openSearchModal()">
+🔍 Search
 </button>
-<div class="dashboard">
-  
-<div class="sidebar">
-<h2>Bhavy Softech</h2>
-<a href="#" onclick="showPage('dashboard')">Dashboard</a>
-<a href="#" onclick="showPage('attendance')">Attendance</a>
-<a href="#" onclick="showPage('reports')">Reports</a>
-<a href="#" onclick="showPage('expense')">Expense</a>
-<a href="#" onclick="showPage('createid')" id="createIdMenu">Create ID</a>
-<a href="#" onclick="showPage('stock')">📦 Stock</a>
-<a href="themes.html">🎨 Themes</a>
-</div>
 
-<div class="main">
-  <div id="userInfo"></div>
-  <div id="dashboardSection">
+<button onclick="openImportModal()">
+📂 Import Report
+</button>
 
-    <!-- Top Bar -->
-    <div class="topbar-glass">
+<button onclick="openDownloadOptions()">
+📥 Download
+</button>
 
-        <div class="welcome-box">
-            <h1>👋 Welcome, <span id="user"></span></h1>
-            
-        </div>
-
-       <div class="profile-box">
-
-    <img id="profilePhoto"
-    src="https://cdn-icons-png.flaticon.com/512/149/149071.png">
-
-    <button onclick="logout()" id="logoutBtn">
-        🚪 Logout
-    </button>
-
-    <input
-    type="file"
-    id="photoInput"
-    accept="image/*"
-    style="display:none">
+<button onclick="refreshData()">
+🔄 Refresh
+</button>
 
 </div>
 
-    </div>
-
-
-
-    <!-- Stats Cards -->
-    <div class="cards">
-
-        <div class="card">
-            <h3>👥 Total Users</h3>
-            <div class="value" id="totalUsers">0</div>
-        </div>
-
-        <div class="card" onclick="showPresentUsers()" style="cursor:pointer;">
-    <h3>✅ Present Today</h3>
-    <div class="value" id="presentToday">0</div>
 </div>
 
-        <div class="card">
-        <h3>📦 Total Reports</h3>
-        <div class="value" id="totalReports">0</div>
-       </div>
+<div class="month-box">
 
-        <div class="card">
-            <h3>📈 Performance</h3>
-            <div class="value">95%</div>
-        </div>
-<!-- Excel Upload Card -->
-<div class="card" id="importCSVCard">
+<button onclick="prevMonth()">⬅</button>
 
-<h3>📥 Import Pending CSV</h3>
+<h3 id="monthLabel"></h3>
+
+<button onclick="nextMonth()">➡</button>
+
+</div>
+
+<div id="calendar"></div>
+
+<div class="fab" onclick="openModal()">+</div>
+
+<div class="modal" id="modal">
+
+<div class="modal-box">
+
+<div id="viewSection"></div>
+
+<div id="formSection">
+
+<div class="modal-title">
+💸 Entry Form
+</div>
+
+<div class="form-grid">
+
+<div class="form-card">
+<label>Date</label>
+<input type="date" id="date">
+</div>
+
+<div class="form-card">
+<label>Engineer Name</label>
+<input id="name">
+</div>
+
+<div class="form-card full">
+
+<label>Select Type</label>
+
+<select id="type" onchange="toggleFields()">
+
+<option value="">Select Type</option>
+
+<option value="GPS">GPS</option>
+
+<option value="Sensor">Sensor</option>
+
+</select>
+
+</div>
+
+<!-- GPS -->
+
+<div id="gpsFields" class="full" style="display:none;">
+
+<div class="form-grid">
+
+<div class="form-card">
+<label>Category</label>
+<input id="category" placeholder="Enter Category">
+</div>
+
+<div class="form-card">
+<label>RG No.</label>
+<input id="rgno" required>
+</div>
+
+<div class="form-card">
+<label>Asset Code</label>
+<input id="assetcode"  required>
+</div>
+
+<div class="form-card">
+<label>IMEI No.</label>
+<input id="imei" type="number" required>
+</div>
+
+<div class="form-card">
+<label>Sensor No.</label>
+<input id="gpsSensorNo" type="number" required>
+</div>
+
+<div class="form-card full">
+
+<label>Installation Photo</label>
 
 <input
-    type="file"
-    id="csvFile"
-    accept=".csv"
-    multiple
-    onchange="handleCSV(this)"
-    style="margin-top:15px;width:100%;">
+type="file"
+id="gpsPhoto"
+required
+accept="image/*"
+multiple
+onchange="handleFiles(this)">
+<div id="gpsPhotoStatus"
+style="margin-top:8px;font-size:13px;color:#fff;">
+</div>
+
+</div>
+
+</div>
+
+</div>
+
+<!-- SENSOR -->
+
+<div id="sensorFields" class="full" style="display:none;">
+
+<div class="form-grid">
+
+<div class="form-card">
+
+<label>Installation Type</label>
+
+<select id="installationType" required>
+
+<option value="">Select </option>
+
+<option>New Installation</option>
+
+<option>Rectification</option>
+
+<option>Replacement</option>
+
+</select>
+
+</div>
+<div class="form-card">
+<label>Indus ID</label>
+<input id="indusId" type="number" required>
+</div>
+
+<div class="form-card">
+<label>Used Wire</label>
+<input id="usedWire" type="number" required>
+</div>
+
+<div class="form-card">
+<label>Sensor No.</label>
+<input id="sensorNo" type="number" required>
+</div>
+
+<div class="form-card">
+
+<label>Installation Video </label>
+
+<button type="button" class="submit"
+onclick="document.getElementById('videoFile').click()">
+📤 Upload Video
+</button>
+
+<input type="hidden" id="videoLink">
+<div style="margin-top:10px;">
+
+  <div id="videoProgressContainer"
+       style="width:100%;height:10px;background:#111827;border-radius:10px;overflow:hidden;display:none;">
+    <div id="videoProgressBar"
+         style="height:10px;width:0%;background:linear-gradient(135deg,#00c6ff,#0072ff);"></div>
+  </div>
+
+  <div id="videoPercent"
+       style="margin-top:5px;font-size:13px;color:#fff;"></div>
+
+</div>
+
+
+<div id="videoStatus"
+style="margin-top:8px;font-size:13px;color:#fff;">
+No Video Uploaded
+</div>
+
+</div>
+
+<div class="form-card full">
+
+<label>Reports Photo</label>
+
+<input type="file"
+id="videoFile"
+accept="video/*"
+style="display:none"
+onchange="uploadVideo(this)">
+
+<input
+type="file"
+id="reportPhoto"
+required
+accept="image/*"
+multiple
+onchange="handleFiles(this)">
+<div id="reportPhotoStatus"
+style="margin-top:8px;font-size:13px;color:#fff;">
+</div>
+
+</div>
+
+</div>
+
+</div>
+<div class="form-card full" id="csvSection" style="display:none;">
+
+<label>CSV Upload</label>
+
+<input
+type="file"
+id="csvFile"
+accept=".csv"
+onchange="handleCSV(this)">
+
+<div id="csvStatus"
+style="margin-top:8px;font-size:13px;color:#fff;">
+No CSV Uploaded
+</div>
+
+</div>
+<div class="full">
+
+<div id="uploadStatus"
+style="
+margin-top:10px;
+text-align:center;
+font-weight:bold;
+"></div>
+
+</div>
+
+</div>
+
+<div class="button-group">
+
+<button
+class="submit"
+id="submitBtn"
+onclick="submitWorking()">
+
+Submit
+
+</button>
+
+<button
+class="close"
+onclick="closeModal()">
+
+Close
+
+</button>
+
+</div>
+
+</div>
+
+</div>
+
+</div>
+<!-- SEARCH MODAL -->
+
+<div class="modal" id="searchModal">
+
+<div class="modal-box" style="max-width:700px;">
+
+<div class="modal-title">
+🔍 Search Reports
+</div>
+
+<input
+type="text"
+id="searchInput"
+placeholder="Search by Site Name / Indus ID / Sensor No / RG No / IMEI..."
+style="margin-bottom:20px;">
+
+<div
+id="searchResults"
+style="
+max-height:450px;
+overflow:auto;
+">
+</div>
+
+<div class="button-group">
+
+<button
+class="close"
+onclick="closeSearchModal()">
+Close
+</button>
+
+</div>
+
+</div>
+
+</div>
+<!-- IMPORT REPORT MODAL -->
+
+<div class="modal" id="importModal">
+
+<div class="modal-box" style="max-width:550px;">
+
+<div class="modal-title">
+📂 Import Reports
+</div>
+
+<label>Select CSV / XLSX File</label>
+
+<input
+type="file"
+id="importFile"
+accept=".csv,.xlsx,.xls">
 
 <br><br>
 
-<button
-onclick="importPendingCSV()"
+<div id="importStatus"
 style="
-width:100%;
 padding:10px;
-border:none;
-border-radius:10px;
-background:#16a34a;
-color:white;
-cursor:pointer;
+text-align:center;
+font-weight:bold;
 ">
+No File Selected
+</div>
 
-Import CSV
+<div class="button-group">
 
-</button>
 <button
-    onclick="deleteImportedCSV()"
-    style="
-        width:100%;
-        margin-top:10px;
-        background:#e53935;
-        color:white;
-        border:none;
-        padding:10px;
-        border-radius:8px;
-        cursor:pointer;
-        font-weight:bold;
-    ">
-    🗑 Delete Imported CSV
+class="submit"
+onclick="startImport()">
+📤 Import
+</button>
+
+<button
+class="close"
+onclick="closeImportModal()">
+Close
 </button>
 
 </div>
-<!-- Total Excel Records -->
-<div class="card"
-onclick="showTotalListPopup()"
- style="
-        width:100%;
-        margin-top:10px;
-        background:#5fe0cf;
-        color:rgb(19, 17, 17);
-        border:none;
-        padding:10px;
-        border-radius:8px;
-        cursor:pointer;
-        font-weight:bold;
-    ">
-
-    <h3>📋 Total List</h3>
-
-    <div class="value" id="excelCount">0</div>
-
 
 </div>
-<div class="card"
-onclick="showCompletedPopup()"
- style="
-        width:100%;
-        margin-top:10px;
-        background:#1cd344;
-        color:rgb(19, 18, 18);
-        border:none;
-        padding:10px;
-        border-radius:8px;
-        cursor:pointer;
-        font-weight:bold;
-    ">
-
-    <h3>✅ Completed</h3>
-
-    <div class="value" id="completedCount">0</div>
-
 
 </div>
-<div class="card"
-onclick="
-currentMode='pending';
-showProjectMenu();
-"
- style="
-        width:100%;
-        margin-top:10px;
-        background:#f3f71f;
-        color:rgb(15, 15, 15);
-        border:none;
-        padding:10px;
-        border-radius:8px;
-        cursor:pointer;
-        font-weight:bold;
-    ">
+<!-- DOWNLOAD MODAL -->
 
-    <h3>⏳ Pending</h3>
+<div class="modal" id="downloadModal">
 
-    <div class="value" id="pendingCount">0</div>
+```
+<div class="modal-box" style="max-width:400px;">
 
-</div>
-<div class="card"
-onclick="currentMode='hold';showProjectMenu();"
- style="
-        width:100%;
-        margin-top:10px;
-        background:#e53935;
-        color:rgb(19, 17, 17);
-        border:none;
-        padding:10px;
-        border-radius:8px;
-        cursor:pointer;
-        font-weight:bold;
-    ">
-
-    <h3>⚠ Hold / Issue</h3>
-
-    <div class="value" id="holdCount">0</div>
-
-</div>
-<div class="card"
-onclick="showAssignList()"
-style="
-        width:100%;
-        margin-top:10px;
-        background:#3b82f6;
-        color:white;
-        border:none;
-        padding:10px;
-        border-radius:8px;
-        cursor:pointer;
-        font-weight:bold;
-">
-
-    <h3>👷 Assign List</h3>
-
-    <div class="value" id="assignCount">0</div>
-
-</div>
-</div>
-   
-
-
-    <!-- Dashboard Grid -->
-    <div class="dashboard-grid">
-
-        <!-- Left Side -->
-        <div>
-
-            <!-- Attendance Summary -->
-            <div class="summary">
-
-                <h2>📊 Attendance Summary</h2>
-
-                <br>
-
-                <div style="
-                display:flex;
-                justify-content:center;
-                gap:15px;
-                align-items:center;
-                ">
-
-                    <button onclick="prevMonth()">⬅</button>
-
-                    <span id="monthLabel"></span>
-
-                    <button onclick="nextMonth()">➡</button>
-
-                </div>
-
-                <br>
-
-               <select id="userFilter">
-               <option value="" selected disabled hidden>
-                👤 Select User
-               </option>
-                <option value="all">All Users</option>
-               </select>
-
-                <div id="salarySummary"
-                style="margin-top:20px">
-                </div>
-
-            </div>
-
-        </div>
-
-
-        
-
-    </div>
-    </div> <!-- dashboardSection close -->
-
-
-    <!-- Pages -->
-    <div id="attendanceSection" style="display:none">
-        <iframe src="attendance.html"></iframe>
+    <div class="modal-title">
+        📥 Download Reports
     </div>
 
-    <div id="reportsSection" style="display:none">
-        <iframe src="Reports.html"></iframe>
+    <div class="button-group" style="flex-direction:column;">
+
+        <button
+        class="submit"
+        onclick="downloadReportsByType('GPS')">
+            🛰 Download GPS Reports
+        </button>
+
+        <button
+        class="submit"
+        onclick="downloadReportsByType('Sensor')">
+            ⚙ Download Sensor Reports
+        </button>
+
+        <button
+        class="submit"
+        onclick="openCsvDownloadModal()">
+            📦 Download CSV Files
+        </button>
+
+        <button
+        class="close"
+        onclick="closeDownloadModal()">
+            Close
+        </button>
+
     </div>
 
-    <div id="expenseSection" style="display:none">
-        <iframe src="expence.html"></iframe>
+</div>
+```
+
+</div>
+
+<!-- CSV DOWNLOAD POPUP -->
+
+<div class="modal" id="csvDownloadModal">
+
+```
+<div class="modal-box" style="max-width:450px;">
+
+    <div class="modal-title">
+        📦 Download CSV Files
     </div>
-    <div
-    <div id="stockPage" class="page" style="display:none;">
-    <iframe
-        src="stock.html"
-        style="width:100%;height:100vh;border:none;">
-    </iframe>
+
+    <label>Select Type</label>
+
+    <select id="csvDownloadType">
+        <option value="">Select Type</option>
+        <option value="GPS">GPS</option>
+        <option value="Sensor">Sensor</option>
+    </select>
+
+    <br><br>
+
+    <label>Select Date</label>
+
+    <input
+    type="date"
+    id="csvDownloadDate">
+
+    <br><br>
+
+    <div class="button-group">
+
+        <button
+        class="submit"
+        onclick="downloadCsvZip()">
+            ⬇ Download CSV
+        </button>
+
+        <button
+        class="close"
+        onclick="closeCsvDownloadModal()">
+            Close
+        </button>
+
+    </div>
 
 </div>
-    <div id="createidSection" style="display:none">
-
-<div class="summary">
-
-<h2>➕ Create User ID</h2>
-
-<br>
-
-<input type="text" id="newUserName"
-placeholder="User ID"
-style="width:100%;padding:12px;margin-bottom:10px;border-radius:10px;">
-
-<input type="password" id="newPassword"
-placeholder="Password"
-style="width:100%;padding:12px;margin-bottom:10px;border-radius:10px;">
-
-<select id="newRole"
-style="width:100%;padding:12px;margin-bottom:10px;border-radius:10px;">
-
-    <option value="user">User</option>
-    <option value="admin">Admin</option>
-
-</select>
-
-<select id="newEnabled"
-style="width:100%;padding:12px;margin-bottom:10px;border-radius:10px;">
-
-    <option value="true">🟢 Enabled</option>
-    <option value="false">🔴 Disabled</option>
-
-</select>
-<button onclick="createUserID()"
-style="
-padding:12px 20px;
-background:#16a34a;
-color:white;
-border:none;
-border-radius:10px;
-cursor:pointer;
-width:100%;
-">
-Create User
-</button>
-<hr style="margin:20px 0">
-
-<h2>👥 User Management</h2>
-
-<div id="userManageList"></div>
-</div>
+```
 
 </div>
 
-</div>
+<script type="module">
 
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+import {
+initializeApp
+} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 
-<script>
- let currentUser = localStorage.getItem("user") || "";
-let userRole = localStorage.getItem("role") || "user";
-
-// ---------------- FIREBASE INIT ----------------
+import {
+getFirestore,
+collection,
+addDoc,
+getDocs,
+query,
+orderBy,
+deleteDoc,
+doc,
+updateDoc,
+serverTimestamp,
+writeBatch
+} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+/* =========================
+   NEW FIREBASE PROJECT
+========================= */
 
 const firebaseConfig = {
-  apiKey: "AIzaSyAbjZrPfGx0UTBAW4HndPxf9mMhhmg513s",
-  authDomain: "attendance-system-fc71c.firebaseapp.com",
-  projectId: "attendance-system-fc71c",
-  storageBucket: "attendance-system-fc71c.appspot.com",
-  appId: "1:57089003187:web:dc8864aa56701384d6aac6"
-};
-
-if (!localStorage.getItem("user")) {
-    window.location.href = "login.html";
-}
-
-// OLD PROJECT (Attendance)
-firebase.initializeApp(firebaseConfig);
-
-const db = firebase.firestore();
-
-// Old Reports bhi isi project me honge
-const oldReportsDB = db;
-
-
-// ---------------- NEW REPORTS PROJECT ----------------
-
-const reportsFirebaseConfig = {
   apiKey: "AIzaSyBHe44S_oU2ndgRlea4OI_nKt9N5oQ9XNE",
   authDomain: "reportssystem-4fad7.firebaseapp.com",
   projectId: "reportssystem-4fad7",
@@ -984,3581 +769,2386 @@ const reportsFirebaseConfig = {
   appId: "1:402469731114:web:dcf97312036971f2977c53"
 };
 
-// Second Firebase App
-const reportsApp = firebase.initializeApp(
-    reportsFirebaseConfig,
-    "reportsApp"
+/* =========================
+   OLD FIREBASE PROJECT
+========================= */
+
+const oldFirebaseConfig = {
+  apiKey: "AIzaSyAbjZrPfGx0UTBAW4HndPxf9mMhhmg513s",
+  authDomain: "attendance-system-fc71c.firebaseapp.com",
+  projectId: "attendance-system-fc71c",
+  storageBucket: "attendance-system-fc71c.appspot.com",
+  messagingSenderId: "57089003187",
+  appId: "1:57089003187:web:dc8864aa56701384d6aac6"
+};
+
+/* =========================
+   INITIALIZE BOTH PROJECTS
+========================= */
+
+// NEW PROJECT
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+
+// OLD PROJECT
+const oldApp = initializeApp(
+  oldFirebaseConfig,
+  "oldProject"
 );
 
-// New Reports Firestore
-const reportsDB = reportsApp.firestore();
+const oldDb = getFirestore(oldApp);
+console.log("NEW PROJECT:", db.app.options.projectId);
+console.log("OLD PROJECT:", oldDb.app.options.projectId);
+/* CLOUDINARY */
 
 const CLOUD_NAME = "dhs6u2y6l";
 const UPLOAD_PRESET = "expense_upload";
 
-function showSection(section){
+window.uploadedVideos = [];
 
+window.currentDate = new Date();
+window.allData = [];
+
+const currentUser =
+localStorage.getItem("user") || "Guest";
+
+window.currentUser = currentUser;
+// LOGIN CHECK
+if(!localStorage.getItem("user")){
+    window.location.replace("login.html");
 }
 
-document.querySelectorAll(".sidebar a").forEach(link => {
+const ADMIN_USERS = [
+"Admin",
+"Manglesh",
+"Bhavy"
+];
 
-    link.addEventListener("click", function(){
+const isAdmin =
+ADMIN_USERS.includes(currentUser);
 
-        document.querySelectorAll(".sidebar a")
-        .forEach(a => a.classList.remove("active"));
+/* DASHBOARD */
 
-        this.classList.add("active");
+window.goDashboard = function(){
 
-    });
-
-});
-// ---------------- GLOBAL DATA ----------------
-let allAttendanceData = [];
-let allReportsData = []; 
-let excelData = [];
-let originalHeaders = [];
-let selectedTechPending = [];
-let selectedTechName = "";
-let selectedProject = "";
-
-let allPendingTechData = {};
-let assignedSitesData = [];
-
-let monthOffset = 0;
-let selectedReportDate = new Date();
-
-function formatReportDate(date){
-    return date.toISOString().split("T")[0];
-}
-// ---------------- LOAD USERS ----------------
-async function loadUsers() {
-  let select = document.getElementById("userFilter");
-
-select.innerHTML = "";
-
-if(userRole === "admin"){
-   select.innerHTML = `
-      <option value="" selected disabled hidden>
-         👤 Select User
-      </option>
-      <option value="all">All Users</option>
-   `;
-}else{
-   select.innerHTML = `
-      <option value="" selected disabled hidden>
-         👤 Select User
-      </option>
-   `;
-}
-  try {
-   let snap = await db.collection("users").get();
-
-    let users = new Set();
-
-    snap.forEach(doc => {
-      let data = doc.data();
-      if (data.name) users.add(data.name);
-    });
-
-    let select = document.getElementById("userFilter");
-[...users].sort().forEach(name => {
-
-    if(userRole !== "admin" && name !== currentUser){
-        return;
-    }
-
-    let opt = document.createElement("option");
-    opt.value = name;
-    opt.textContent = name;
-    select.appendChild(opt);
-
-});
-
-  } catch (err) {
-    console.error(err);
-    document.getElementById("salarySummary").innerHTML =
-      "Error: " + err.message;
-  }
-}
-
-// ---------------- LIVE FIREBASE UPDATE ----------------
-function updateDashboardCards(){
-
-    // Total Users
-    let users =
-    [...new Set(allAttendanceData.map(x => x.name))];
-
-    document.getElementById("totalUsers").innerText =
-    users.length;
-
-    // Present Today
-    let today =
-    new Date().toISOString().split("T")[0];
-
-    let presentUsers =
-    [...new Set(
-        allAttendanceData
-        .filter(x => x.date === today)
-        .map(x => x.name)
-    )];
-
-    document.getElementById("presentToday").innerText =
-    presentUsers.length;
-
-document.getElementById("totalReports").innerText =
-allReportsData.length;
-}
-function listenAttendance(){
-
-    db.collection("attendance")
-    .onSnapshot(snapshot=>{
-
-        allAttendanceData = [];
-
-        snapshot.forEach(doc=>{
-
-            allAttendanceData.push(doc.data());
-
-        });
-
-        updateDashboardCards();
-        updateCompletedPending();
-        loadSalarySummary();
-
-    });
-
-}
-function showAssignList(){
-
-    let assigned = excelData.filter(item => item.assigned);
-
-    if(assigned.length===0){
-        alert("No Assigned Tech");
-        return;
-    }
-
-    let html = `
-    <div style="
-    background:white;
-    padding:20px;
-    max-height:80vh;
-    overflow:auto;
-    ">
-
-    <h2>👤 Assign List</h2>
-
-    <table border="1"
-    style="
-    width:100%;
-    border-collapse:collapse;
-    text-align:left;
-    ">
-
-    <tr>
-        <th>Tech</th>
-        <th>Assigned To</th>
-        <th>Project</th>
-        <th>Time</th>
-    </tr>
-    `;
-
-    assigned.forEach(item=>{
-
-        const tech =
-            item["FSC Name"] ||
-            item["FSC NAME"] ||
-            item["Fsc Name"] ||
-            item["Tech Name"] ||
-            "-";
-
-        html += `
-        <tr>
-
-            <td>${tech}</td>
-
-            <td>${item.assignedTo || "-"}</td>
-
-            <td>${item.projectId || "-"}</td>
-
-            <td>${
-                item.assignedTime
-                ? new Date(item.assignedTime).toLocaleString()
-                : "-"
-            }</td>
-
-        </tr>
-        `;
-
-    });
-
-    html += `
-    </table>
-
-    <br>
-
-    <button
-    onclick="this.parentElement.parentElement.remove()"
-    style="
-    background:#ef4444;
-    color:white;
-    border:none;
-    padding:10px 25px;
-    border-radius:8px;
-    cursor:pointer;
-    ">
-    Close
-    </button>
-
-    </div>
-    `;
-
-    const popup = document.createElement("div");
-
-    popup.style.position="fixed";
-    popup.style.left="0";
-    popup.style.top="0";
-    popup.style.width="100%";
-    popup.style.height="100%";
-    popup.style.background="rgba(0,0,0,.4)";
-    popup.style.zIndex="999999";
-
-    popup.appendChild(
-        document.createRange().createContextualFragment(html)
-    );
-
-    document.body.appendChild(popup);
-
-}
-function listenReports(){
-
-    let oldReports = [];
-    let newReports = [];
-
-    function mergeReports(){
-
-        const reportMap = new Map();
-
-        // New Project
-        newReports.forEach(report=>{
-
-            const id = cleanIndusId(report.indusId);
-
-            if(id){
-                reportMap.set(id, report);
-            }
-
-        });
-
-        // Old Project
-        oldReports.forEach(report=>{
-
-            const id = cleanIndusId(report.indusId);
-
-            if(id && !reportMap.has(id)){
-                reportMap.set(id, report);
-            }
-
-        });
-
-        allReportsData = [...reportMap.values()];
-
-        console.log("Old Reports :", oldReports.length);
-        console.log("New Reports :", newReports.length);
-        console.log("Merged :", allReportsData.length);
-        console.log("========== ALL REPORTS ==========");
-
-allReportsData.forEach(r => {
-    console.log(
-        "Name:", r.name,
-        "| Date:", r.date,
-        "| Indus:", r.indusId
-    );
-});
-
-console.log("========== END ==========");
-
-        updateDashboardCards();
-        updateCompletedPending();
-        
-
-    }
-
-    // New Project Listener
-reportsDB.collection("reports").onSnapshot(snapshot => {
-
-    console.log("TOTAL FIRESTORE DOCS :", snapshot.size);
-
-    newReports = [];
-
-    snapshot.forEach(doc => {
-
-        const d = doc.data();
-
-        // 👇 Manglesh ke reports check karo
-        if ((d.name || "").trim().toLowerCase() === "manglesh") {
-            console.log(
-                "MANGLESH REPORT",
-                d.date,
-                d.type,
-                d.indusId,   // agar indusNo nahi hai to indusId use karo
-                doc.id
-            );
-        }
-
-        newReports.push(d);
-
-    });
-
-    mergeReports();
-
-});
-    // Old Project Listener
-    oldReportsDB.collection("reports").onSnapshot(snapshot=>{
-
-        oldReports = [];
-
-        snapshot.forEach(doc=>{
-            oldReports.push(doc.data());
-        });
-
-        mergeReports();
-
-    });
-
-}
-function listenPendingSites(){
-
-    db.collection("pendingSites")
-    .onSnapshot(async snapshot=>{
-
-        excelData=[];
-snapshot.forEach(doc=>{
-
-    const d = doc.data();
-if(d.data){
-
-    let row = {
-        ...d.data
-    };
-
-
-    // Firestore fields merge
-    row.firestoreId = doc.id;
-
-    row.projectId = d.projectId || "";
-
-    row.remark = d.remark || "";
-
-    row.remarkBy = d.remarkBy || "";
-
-    row.remarkTime = d.remarkTime || "";
-
-    row.pendingStatus = d.pendingStatus || "";
-    row.assigned = d.assigned || false;
-    row.assignedTo = d.assignedTo || "";
-    row.assignedTime = d.assignedTime || "";
-
-
-    excelData.push(row);
-
-}
-
-});
-
-        // Header alag collection se load karo
-        const meta=await db.collection("pendingMeta")
-        .doc("header")
-        .get();
-
-        if(meta.exists){
-            originalHeaders=meta.data().headers || [];
-        }
-
-        document.getElementById("excelCount").innerText=excelData.length;
-        console.log("Excel Data Sample:", excelData[0]);
-        updateCompletedPending();
-
-    });
-
-}
-function listenAssignedSites(){
-
-    db.collection("pendingSites")
-    .onSnapshot(snapshot=>{
-
-        assignedSitesData = [];
-
-        snapshot.forEach(doc=>{
-
-            const d = doc.data();
-
-            if(d.assignedTo){
-
-                assignedSitesData.push({
-                    id: doc.id,
-                    ...d
-                });
-
-            }
-
-        });
-
-        document.getElementById("assignCount").innerText =
-        assignedSitesData.length;
-
-    });
-
-}
-function cleanIndusId(value) {
-
-    if (!value) return "";
-
-    // Sirf number nikalo
-    const match = String(value).match(/\d+/g);
-
-    return match ? match.join("") : "";
-
-}
-function getSiteType(item, reportIds){
-
-    const id = cleanIndusId(
-        item["Indus ID"] ||
-        item["Indus Id"] ||
-        item["INDUS ID"] ||
-        item["INDUS_ID"] ||
-        item["IndusID"]
-    );
-
-    // Report me mil gaya
-    if(reportIds.has(id)){
-        return "completed";
-    }
-
-    const pendingStatus = String(
-    item.pendingStatus || ""
-).trim();
-
-const remark = String(
-    item.remark || ""
-).trim();
-
-const csvRemark = String(
-    item["Remark"] ||
-    item["REMARK"] ||
-    item["remark"] ||
-    ""
-).trim();
-
-if (
-    pendingStatus === "Hold" ||
-    remark !== "" ||
-    csvRemark !== ""
-){
-    return "hold";
-}
-
-return "pending";
-}
-
-function updateCompletedPending() {
-
-    if (!excelData || excelData.length === 0) {
-        document.getElementById("completedCount").innerText = 0;
-        document.getElementById("pendingCount").innerText = 0;
-        return;
-    }
-
-    const reportIds = new Set();
-
-    // Firestore Reports se sabhi Indus IDs
-    allReportsData.forEach(report => {
-
-        const id = cleanIndusId(report.indusId);
-
-        if (id) {
-            reportIds.add(id);
-        }
-
-    });
-let completed = 0;
-let pending = 0;
-let hold = 0;
-
-excelData.forEach(item => {
-
-    const type = getSiteType(item, reportIds);
-
-    if(type === "completed"){
-        completed++;
-    }
-    else if(type === "pending"){
-        pending++;
-    }
-    else if(type === "hold"){
-        hold++;
-    }
-
-});
-
-document.getElementById("completedCount").innerText = completed;
-document.getElementById("pendingCount").innerText = pending;
-document.getElementById("holdCount").innerText = hold;
-}
-// ---------------- MONTH RANGE ----------------
- function getSalaryMonthRange() {
-
-    let today = new Date();
-
-    // Offset month apply
-    today.setMonth(today.getMonth() + monthOffset);
-
-    let start, end;
-
-    if (today.getDate() >= 26) {
-
-        start = new Date(
-            today.getFullYear(),
-            today.getMonth(),
-            26
-        );
-
-        end = new Date(
-            today.getFullYear(),
-            today.getMonth() + 1,
-            25
-        );
-
-    } else {
-
-        start = new Date(
-            today.getFullYear(),
-            today.getMonth() - 1,
-            26
-        );
-
-        end = new Date(
-            today.getFullYear(),
-            today.getMonth(),
-            25
-        );
-
-    }
-
-    return { start, end };
-}
-
-function formatDate(date) {
-  return date.getFullYear() + "-" +
-    String(date.getMonth() + 1).padStart(2, "0") + "-" +
-    String(date.getDate()).padStart(2, "0");
-}
-function getAttendanceCount(name){
-
-    let { start, end } = getSalaryMonthRange();
-
-    let startDate = formatDate(start);
-    let endDate = formatDate(end);
-
-    let userData = allAttendanceData.filter(x =>
-        x.name === name &&
-        x.date >= startDate &&
-        x.date <= endDate
-    );
-
-    let uniqueDates = [];
-
-    userData.forEach(x=>{
-        if(!uniqueDates.includes(x.date)){
-            uniqueDates.push(x.date);
-        }
-    });
-
-    uniqueDates.sort();
-
-    let attendance = uniqueDates.length;
-
-    let joiningDate =
-    uniqueDates.length
-    ? new Date(uniqueDates[0] + "T00:00:00")
-    : new Date();
-
-    let current = new Date(end);
-current.setHours(0,0,0,0);
-
-    let tempDate = new Date(joiningDate);
-
-    while(tempDate <= current){
-
-        if(tempDate.getDay() === 0){
-
-            let sunday = formatDate(tempDate);
-
-            let saturdayDate = new Date(tempDate);
-            saturdayDate.setDate(
-                saturdayDate.getDate()-1
-            );
-
-            let mondayDate = new Date(tempDate);
-            mondayDate.setDate(
-                mondayDate.getDate()+1
-            );
-
-            let saturday =
-            formatDate(saturdayDate);
-
-            let monday =
-            formatDate(mondayDate);
-
-            let satMarked =
-            uniqueDates.includes(saturday);
-
-            let sunMarked =
-            uniqueDates.includes(sunday);
-
-            let monMarked =
-            uniqueDates.includes(monday);
-
-            if(!sunMarked && satMarked && monMarked){
-                attendance++;
-            }
-
-            if(sunMarked){
-                attendance++;
-            }
-
-        }
-
-        tempDate.setDate(
-            tempDate.getDate()+1
-        );
-    }
-
-    return attendance;
-}
-// ---------------- SALARY SUMMARY ----------------
-function loadSalarySummary(){
-
-    let selectedUser = document.getElementById("userFilter").value;
-
-    if(selectedUser === ""){
-        document.getElementById("salarySummary").innerHTML = "";
-        return;
-    }
-
-if(selectedUser === "all" && userRole === "admin"){
-let { start, end } = getSalaryMonthRange();
-
-let startDate = formatDate(start);
-let endDate = formatDate(end);
-    let html = "";
-
-    const users = [...new Set(allAttendanceData.map(x=>x.name))];
-
-    users.forEach(user=>{
-
-        let userData = allAttendanceData.filter(x =>
-            x.name === user &&
-            x.date >= startDate &&
-            x.date <= endDate
-        );
-        let attendance =
-getAttendanceCount(user);
-
-        let salaryMap = {
-            "Manglesh":20000,
-            "Nityanand":13000,
-            "Arvind":13000,
-            "Alok":15000,
-            "Rajan":13000
-        };
-
-        let monthlySalary =
-        salaryMap[user] || 13000;
-
-        let totalDays =
-        Math.floor((end-start)/(1000*60*60*24))+1;
-
-        let perDay =
-        monthlySalary/totalDays;
-
-        let earned =
-        attendance*perDay;
-
-        html += `
-        <div style="
-        background:#16a34a;
-        color:white;
-        padding:15px;
-        border-radius:15px;
-        margin-bottom:15px;
-        ">
-            <h3>👷 ${user}</h3>
-            Attendance : ${attendance}<br>
-            Salary : ₹${monthlySalary}<br>
-            Per Day : ₹${Math.round(perDay)}<br>
-            Earned : ₹${Math.round(earned)}
-        </div>
-        `;
-    });
-
-    document.getElementById("salarySummary").innerHTML = html;
-
-    return;
-}
-if(selectedUser !== "all"){
-  let { start, end } = getSalaryMonthRange();
-
-  let startDate = formatDate(start);
-  let endDate = formatDate(end);
-  console.log(
-  "Selected User:",
-  selectedUser,
-  "Attendance:",
-  getAttendanceCount(selectedUser)
-);
-let attendance = getAttendanceCount(selectedUser);
-
-  let salaryMap = {
-    "Manglesh": 20000,
-    "Nityanand": 13000,
-    "Arvind": 13000,
-    "Alok": 15000,
-    "Rajan": 13000
-  };
-
-  let monthlySalary = salaryMap[selectedUser] || 13000;
-
-  let totalDays =
-Math.floor((end - start) / (1000 * 60 * 60 * 24)) + 1;
-  let perDay = monthlySalary / totalDays;
-  let earned = attendance * perDay;
-
-  document.getElementById("salarySummary").innerHTML = `
-    <div style="
-      background:linear-gradient(135deg,#16a34a,#22c55e);
-      padding:20px;
-      border-radius:20px;
-      color:white;
-    ">
-      <h2 style="text-align:center;">👷 ${selectedUser}</h2>
-
-      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin-top:10px">
-
-        <div style="background:rgba(255,255,255,.2);padding:10px;border-radius:10px;text-align:center">
-          <div>Attendance</div>
-          <h3>${attendance}</h3>
-        </div>
-
-        <div style="background:rgba(255,255,255,.2);padding:10px;border-radius:10px;text-align:center">
-          <div>Monthly Salary</div>
-          <h3>₹${monthlySalary}</h3>
-        </div>
-
-        <div style="background:rgba(255,255,255,.2);padding:10px;border-radius:10px;text-align:center">
-          <div>Per Day</div>
-          <h3>₹${Math.round(perDay)}</h3>
-        </div>
-
-        <div style="background:rgba(255,255,255,.2);padding:10px;border-radius:10px;text-align:center">
-          <div>Earned</div>
-          <h3>₹${Math.round(earned)}</h3>
-        </div>
-
-      </div>
-
-      <div style="margin-top:10px;background:white;color:#16a34a;padding:10px;border-radius:10px;text-align:center">
-        ${startDate} → ${endDate}
-      </div>
-    </div>
-  `;
-}}
-
-// ---------------- PROFILE PHOTO (FIXED) ----------------
-async function initProfilePhoto() {
-
-  const img = document.getElementById("profilePhoto");
-
-  try{
-
-    const docRef = await db
-    .collection("users")
-    .doc(currentUser)
-    .get();
-
-    if(
-      docRef.exists &&
-      docRef.data().profileImage
-    ){
-      img.src = docRef.data().profileImage;
-    }
-
-  }catch(e){
-    console.log(e);
-  }
-
-  img.addEventListener("click", () => {
-
-    const input =
-    document.getElementById("photoInput");
-
-    if(input){
-        input.click();
-    }
-
-});
-
-  document.getElementById("photoInput").onchange =
-  async function(){
-
-    let file = this.files[0];
-
-    if(!file) return;
-
-    try{
-
-      img.style.opacity = "0.5";
-
-      let formData = new FormData();
-
-      formData.append("file", file);
-
-      formData.append(
-        "upload_preset",
-        UPLOAD_PRESET
-      );
-
-      let response = await fetch(
-        `https://api.cloudinary.com/v1_1/${CLOUD_NAME}/image/upload`,
-        {
-          method:"POST",
-          body:formData
-        }
-      );
-
-      let data = await response.json();
-
-      if(!data.secure_url){
-        throw new Error("Upload Failed");
-      }
-
-      let imageUrl = data.secure_url;
-
-      img.src = imageUrl;
-
-      await db
-      .collection("users")
-      .doc(currentUser)
-      .set({
-        name: currentUser,
-        profileImage: imageUrl,
-        updatedAt: Date.now()
-      },{merge:true});
-
-      img.style.opacity = "1";
-
-      alert("✅ Profile Photo Updated");
-
-    }catch(err){
-
-      img.style.opacity = "1";
-
-      console.log(err);
-
-      alert("❌ Upload Failed");
-
-    }
-
-  };
-
-}
-
-// ---------------- IMPORT FIXED ----------------
-function handleImport() {
-
-  const fileInput = document.getElementById("importFile");
-  const file = fileInput.files[0];
-
-  if (!file) {
-    alert("Please select a file");
-    return;
-  }
-
-  const fileName = file.name.toLowerCase();
-
-  // ✅ allowed only csv + excel
-  const allowedExtensions = ["csv", "xlsx", "xls"];
-  const fileExtension = fileName.split(".").pop();
-
-  if (!allowedExtensions.includes(fileExtension)) {
-    alert("❌ Only CSV and Excel files are allowed!");
-    fileInput.value = "";
-    return;
-  }
-
-  const reader = new FileReader();
-
-  reader.onload = function (e) {
-
-    let data = [];
-
-    try {
-
-      // ---------------- CSV ----------------
-      if (fileExtension === "csv") {
-
-        const text = e.target.result;
-
-        const rows = text
-          .split("\n")
-          .map(r => r.trim())
-          .filter(r => r.length > 0)
-          .map(r => r.split(","));
-
-        const headers = rows[0];
-
-        data = rows.slice(1).map(row => {
-          let obj = {};
-          headers.forEach((h, i) => {
-            obj[h.trim()] = (row[i] || "").trim();
-          });
-          return obj;
-        });
-      }
-
-      // ---------------- EXCEL ----------------
-      else {
-
-        const workbook = XLSX.read(
-          new Uint8Array(e.target.result),
-          { type: "array" }
-        );
-
-        const sheetName = workbook.SheetNames[0];
-        const sheet = workbook.Sheets[sheetName];
-
-    
-      }
-
-      console.log("Imported Data:", data);
-
-      if (!data || data.length === 0) {
-        alert("❌ File is empty or invalid");
-        return;
-      }
-
-      // update dashboard
-      updateCounts(data);
-
-      alert("✅ Import Successful! Total Records: " + data.length);
-
-    } catch (error) {
-      console.error(error);
-      alert("❌ Import failed. Invalid file format.");
-    }
-  };
-
-  // ---------------- READ FILE ----------------
-  if (fileExtension === "csv") {
-    reader.readAsText(file);
-  } else {
-    reader.readAsArrayBuffer(file);
-  }
-}
-function applyTheme(){
-
-let theme =
-localStorage.getItem("dashboardTheme") || "blue";
-
-document.body.classList.remove(
-"blue-theme",
-"green-theme",
-"purple-theme",
-"dark-theme"
-);
-
-document.body.classList.add(theme + "-theme");
-
-}
-// ---------------- INIT ----------------
-window.onload = async function(){
-
-applyTheme();
-
-showPage("dashboard");
-
-await loadUsers();
-
-// baaki code...
- if(userRole !== "admin"){
-
-    document.getElementById("createIdMenu").style.display = "none";
-
-    document.getElementById("importCSVCard").style.display = "none";
-
-}
-  
-
-    document.getElementById("userInfo").innerHTML =
-    "👤 " + currentUser + " (" + userRole + ")";
-document.getElementById("user").textContent = currentUser;
-
-    listenAttendance();
-    listenReports();
-    initProfilePhoto();
-    loadUserProfiles();
-    loadUsersManagement();
-    listenPendingSites();
-    listenAssignedSites();
-   db.collection("users").onSnapshot(snapshot=>{
-
-    document.getElementById("totalUsers").innerText =
-    snapshot.size;
-
-}); 
-    updateMonthLabel();
-    loadSalarySummary();
-
-    document.getElementById("userFilter")
-    .addEventListener("change", loadSalarySummary);
+window.location.href =
+"dashboard.html";
 
 };
-async function loadUserProfiles(){
+window.openImportModal = function(){
 
-  if(userRole !== "admin"){
-    document.getElementById("userListContainer").style.display = "none";
-    return;
-  }
+document.getElementById("importModal").style.display = "flex";
 
-  let html = "";
+document.getElementById("importStatus").innerHTML =
+"No File Selected";
 
-  try{
-
-   db.collection("users").onSnapshot(snap => {
-
-  let html = "";
-
-  snap.forEach(doc => {
-
-    let data = doc.data();
-
-    let photo =
-      data.profileImage ||
-      "https://cdn-icons-png.flaticon.com/512/149/149071.png";
-
-    html += `
-      <div style="
-      display:flex;
-      align-items:center;
-      gap:15px;
-      padding:10px;
-      border-bottom:1px solid #eee;
-      ">
-        <img src="${photo}"
-        style="
-        width:50px;
-        height:50px;
-        border-radius:50%;
-        object-fit:cover;
-        border:2px solid #0f766e;
-        ">
-
-        <div>
-          <b>${data.name || doc.id}</b>
-        </div>
-      </div>
-    `;
-  });
-
-  document.getElementById("userList").innerHTML = html;
-
-});
-
-    
-    document.getElementById("userList").innerHTML = html;
-
-  }catch(err){
-
-    console.log(err);
-
-  }
-
-}
-function updateMonthLabel(){
-
-    let {start,end} = getSalaryMonthRange();
-
-    document.getElementById("monthLabel").innerHTML =
-    formatDate(start) + " ➜ " + formatDate(end);
-}
-
-function prevMonth(){
-
-    monthOffset--;
-
-    updateMonthLabel();
-    loadSalarySummary();
-}
-
-function nextMonth(){
-
-    monthOffset++;
-
-    updateMonthLabel();
-    loadSalarySummary();
-}
-// ================= PREVIOUS / NEXT REPORT DATE =================
-
-window.prevReportDate = function () {
-
-    selectedReportDate.setDate(
-        selectedReportDate.getDate() - 1
-    );
-
-    showPresentUsers();
-};
-
-window.nextReportDate = function () {
-
-    selectedReportDate.setDate(
-        selectedReportDate.getDate() + 1
-    );
-
-    showPresentUsers();
-};
-function toggleSidebar(){
-
-document
-.querySelector(".sidebar")
-.classList.toggle("hide");
-
-}
-function showPage(page){
-
-const dashboard = document.getElementById("dashboardSection");
-const attendance = document.getElementById("attendanceSection");
-const reports = document.getElementById("reportsSection");
-const expense = document.getElementById("expenseSection");
-const stock = document.getElementById("stockPage");
-const createid = document.getElementById("createidSection");
-
-/* Hide All */
-
-dashboard.style.display = "none";
-attendance.style.display = "none";
-reports.style.display = "none";
-expense.style.display = "none";
-
-if(stock)
-stock.style.display = "none";
-
-createid.style.display = "none";
-
-/* Show Selected */
-
-if(page==="dashboard"){
-
-    dashboard.style.display="block";
-
-}
-else if(page==="attendance"){
-
-    attendance.style.display="block";
-
-}
-else if(page==="reports"){
-
-    reports.style.display="block";
-
-}
-else if(page==="expense"){
-
-    expense.style.display="block";
-
-}
-else if(page==="stock"){
-
-    if(stock)
-    stock.style.display="block";
-
-}
-else if(page==="createid"){
-
-    if(userRole!=="admin"){
-
-        alert("Access Denied");
-
-        return;
-
-    }
-
-    createid.style.display="block";
+document.getElementById("importFile").value = "";
 
 }
 
-/* Mobile */
+window.closeImportModal = function(){
 
-if(window.innerWidth<=768){
-
-document.querySelector(".sidebar").classList.add("hide");
+document.getElementById("importModal").style.display = "none";
 
 }
+window.refreshData = async function(){
 
-window.scrollTo(0,0);
+let btns = document.querySelectorAll(".navbar button");
 
-}
-window.showPresentUsers = function () {
-
-    if (userRole !== "admin") {
-        alert("Only Admin Can View");
-        return;
-    }
-
-   const today = formatReportDate(selectedReportDate);
-
-    // Today's Present Users
-    const users = [
-        ...new Set(
-            allAttendanceData
-                .filter(x => x.date === today)
-                .map(x => (x.name || "").trim())
-        )
-    ];
-
-    // Report Count
-    let reportCount = {};
-    let totalReports = 0;
-
-    // allReportsData = Old + New Reports
-    allReportsData.forEach(report => {
-
-        if (report.date !== today) return;
-
-        const key = (report.name || "")
-            .trim()
-            .toLowerCase();
-
-        if (!reportCount[key]) {
-            reportCount[key] = 0;
-        }
-
-        reportCount[key]++;
-        totalReports++;
-
-    });
-
-    let html = "";
-
-    users.forEach((name, index) => {
-
-        const key = name.trim().toLowerCase();
-
-        html += `
-        <div style="
-            padding:12px;
-            margin-bottom:10px;
-            background:#f3f4f6;
-            border-radius:10px;
-            color:black;
-            font-weight:bold;
-        ">
-            ${index + 1}. ${name}
-            <br>
-            📦 Report Count : ${reportCount[key] || 0}
-        </div>
-        `;
-
-    });
-
-    html += `
-        <hr>
-        <b>Total Present Users :</b> ${users.length}
-        <br><br>
-        <b>Total Reports :</b> ${totalReports}
-    `;
-
-   document.getElementById("presentUsersList").innerHTML = html;
-
-document.getElementById("reportDateLabel").innerText = today;
-
-document.getElementById("presentUsersModal").style.display = "flex";
-};
-
-window.closePresentUsers = function () {
-    document.getElementById("presentUsersModal").style.display = "none";
-};
-
-window.addEventListener("load", () => {
-    if (window.innerWidth <= 768) {
-        document.querySelector(".sidebar").classList.add("hide");
-    }
-});
-
-window.showPresentUsersPopup = function () {
-    document.getElementById("presentPopup").style.display = "flex";
-    loadPresentUsers();
-};
-window.closePresentPopup = function(){
-
-document.getElementById("presentPopup").style.display =
-"none";
-
-};
-
-window.prevAttendanceDate = function(){
-
-selectedAttendanceDate.setDate(
-selectedAttendanceDate.getDate()-1
-);
-
-loadPresentUsers();
-
-};
-
-window.nextAttendanceDate = function(){
-
-selectedAttendanceDate.setDate(
-selectedAttendanceDate.getDate()+1
-);
-
-loadPresentUsers();
-
-};
-
-window.loadPresentUsers = function(){
-
-let dateStr =
-selectedAttendanceDate.toISOString().split("T")[0];
-
-document.getElementById("attendancePopupDate").innerHTML =
-dateStr;
-
-let users = {};
-
-allAttendanceData.forEach(x=>{
-
-if(x.date === dateStr){
-
-if(!users[x.name]){
-users[x.name] = 0;
-}
-
-users[x.name]++;
-
-}
-
-});
-
-let html = "";
-
-let index = 1;
-
-for(let name in users){
-
-html += `
-<div style="
-padding:10px;
-margin-bottom:10px;
-background:#f3f4f6;
-border-radius:10px;
-">
-
-${index}. ${name}
-&nbsp;&nbsp;
-Count - ${users[name]}
-
-</div>
-`;
-
-index++;
-
-}
-
-if(html===""){
-
-html =
-"<h3 style='text-align:center'>No Attendance Found</h3>";
-
-}
-
-document.getElementById("presentUsersList").innerHTML =
-html;
-
-};
-async function createUserID(){
-
-if(userRole !== "admin"){
-alert("Only Admin Can Create Users");
-return;
-}
-
-let name =
-document.getElementById("newUserName").value.trim();
-
-let password =
-document.getElementById("newPassword").value.trim();
-
-let role =
-document.getElementById("newRole").value;
-
-let enabled =
-document.getElementById("newEnabled").value === "true";
-
-if(!name || !password){
-alert("Fill all fields");
-return;
-}
-try{
-await db.collection("users")
-.doc(name)
-.set({
-    name:name,
-    password:password,
-    role:role,
-    enabled:enabled,
-    createdAt:Date.now(),
-    profileImage:""
-});
-
-alert("✅ User Created Successfully");
-await loadUsers();
-
-document.getElementById("newUserName").value="";
-document.getElementById("newPassword").value="";
-
-}catch(err){
-
-console.log(err);
-alert("❌ Error Creating User");
-
-}
-
-}
-
-function loadUsersManagement(){
-
-db.collection("users")
-.onSnapshot(snapshot=>{
-
-let html = "";
-
-snapshot.forEach(doc=>{
-
-let data = doc.data();
-
-let enabled =
-data.enabled !== false;
-
-html += `
-
-<div style="
-display:flex;
-justify-content:space-between;
-align-items:center;
-padding:15px;
-margin-bottom:10px;
-background:rgba(255,255,255,.08);
-border-radius:15px;
-">
-
-<div>
-<b>👤 User :</b> ${data.name}<br>
-<b>🔑 Password :</b> ${data.password}<br>
-<b>🛡 Role :</b> ${data.role}
-</div>
-
-<label style="
-display:flex;
-align-items:center;
-gap:10px;
-cursor:pointer;
-font-weight:bold;
-">
-
-<button
-onclick="deleteUser('${doc.id}')"
-style="
-background:#e53935;
-color:white;
-border:none;
-padding:8px 12px;
-border-radius:8px;
-cursor:pointer;
-margin-left:10px;
-">
-🗑 Delete
-</button>
-
-<input
-type="checkbox"
-${enabled ? "checked" : ""}
-onchange="toggleUser('${doc.id}', ${enabled})">
-
-<span>
-${enabled ? "🟢 ON" : "🔴 OFF"}
-</span>
-
-</label>
-
-</div>
-
-`;
-
-});
-
-document.getElementById("userManageList").innerHTML =
-html || "<h3>No Users Found</h3>";
-
-});
-
-}
-
-async function toggleUser(id,currentStatus){
+btns.forEach(btn => btn.disabled = true);
 
 try{
 
-db.collection("users")
-.doc(id)
-.update({
+await loadData();
 
-enabled: !currentStatus
+alert("✅ Data Refreshed");
 
-});
+}
+catch(e){
 
-}catch(err){
-
-console.log(err);
-alert("❌ Update Failed");
+alert("❌ Refresh Failed");
 
 }
 
+btns.forEach(btn => btn.disabled = false);
+
+};
+function normalizeImportDate(value){
+
+    if(!value) return "";
+
+    // Excel Serial Number
+    if(typeof value === "number"){
+
+        const d = XLSX.SSF.parse_date_code(value);
+
+        return `${d.y}-${String(d.m).padStart(2,"0")}-${String(d.d).padStart(2,"0")}`;
+
+    }
+
+    let txt = String(value).trim();
+
+    // DD-MM-YYYY or DD/MM/YYYY
+    if(txt.includes("-") || txt.includes("/")){
+
+        let s = txt.replace(/\//g,"-").split("-");
+
+        if(s.length===3){
+
+            if(s[0].length===4){
+
+                return `${s[0]}-${s[1].padStart(2,"0")}-${s[2].padStart(2,"0")}`;
+
+            }else{
+
+                return `${s[2]}-${s[1].padStart(2,"0")}-${s[0].padStart(2,"0")}`;
+
+            }
+
+        }
+
+    }
+
+    return txt;
+
 }
-async function importPendingCSV() {
+window.startImport = async function(){
 
-    const file = document.getElementById("csvFile").files[0];
+    const file = document.getElementById("importFile").files[0];
 
-    if (!file) {
-        alert("Please select CSV file");
+    if(!file){
+        alert("Select CSV/XLSX File");
         return;
     }
 
     const reader = new FileReader();
 
-    reader.onload = async function (e) {
+    reader.onload = async function(e){
 
-        const text = e.target.result;
+        try{
 
-        const workbook = XLSX.read(text, {
-            type: "binary"
-        });
+            const data = new Uint8Array(e.target.result);
 
-        const sheet =
-            workbook.Sheets[workbook.SheetNames[0]];
+            const workbook = XLSX.read(data,{type:"array"});
 
-   const data = XLSX.utils.sheet_to_json(sheet,{
-    defval:""
-});
-// Project ID = File Name
-const projectId = file.name.replace(/\.[^/.]+$/, "");
-console.log("Project ID =", projectId);
-// Excel data memory me save karo
-excelData = data;
+            const sheetName = workbook.SheetNames[0];
 
-// Header save karo
-originalHeaders = Object.keys(data[0]);
+            const sheet = workbook.Sheets[sheetName];
 
-// Count update
-document.getElementById("excelCount").innerText = excelData.length;
+            const rows = XLSX.utils.sheet_to_json(sheet,{
+                defval:""
+            });
 
-// Card update
-updateCompletedPending();
-        if (data.length === 0) {
-            alert("CSV is empty");
-            return;
-        }
-
-        let added = 0;
-        let skipped = 0;
-
-        for (const row of data) {
-             row.projectId = projectId;
-
-            const indusId =
-                String(
-                    row["Indus ID"] ||
-                    row["Indus Id"] ||
-                    ""
-                ).trim();
-
-            if (!indusId) continue;
-
-            const docRef =
-                db.collection("pendingSites")
-                  .doc(indusId);
-
-            const doc =
-                await docRef.get();
-
-            if (doc.exists) {
-                skipped++;
-                continue;
+            if(rows.length===0){
+                alert("File Empty");
+                return;
             }
 
-   await docRef.set({
-    projectId: projectId,   // 👈 New
-    indusId: indusId,
-    data: row,
-    status: "Pending",
-    createdAt: Date.now()
-});
+            // Required Header Check
+            const firstRow = rows[0];
 
-await db.collection("pendingMeta")
-.doc("header")
-.set({
-    headers: originalHeaders
-});
-            added++;
+            const required = [
+                "AREA",
+                "Indus Id",
+                "Escort Team",
+                "Date"
+            ];
+
+            for(const h of required){
+
+                if(!(h in firstRow)){
+                    alert("Missing Column : " + h);
+                    return;
+                }
+
+            }
+
+            const importData = [];
+
+            rows.forEach(row=>{
+
+                importData.push({
+
+                    area : String(row["AREA"] || "").trim(),
+
+                    indusId : String(row["Indus Id"] || "").trim(),
+
+                    name : String(row["Escort Team"] || "").trim(),
+
+                    escortTeam : String(row["Escort Team"] || "").trim(),
+
+                    date : normalizeImportDate(row["Date"]),
+
+                    type : "Import",
+
+                    imported : true
+
+                });
+
+            });
+
+            // Firestore Save
+            const batch = writeBatch(db);
+
+            importData.forEach(row=>{
+
+                const ref = doc(collection(db,"reports"));
+
+                batch.set(ref,{
+
+                    area: row.area,
+
+                    indusId: row.indusId,
+
+                    name: row.name,
+
+                    escortTeam: row.escortTeam,
+
+                    date: row.date,
+
+                    type: "Import",
+
+                    imported: true,
+
+                    createdAt: serverTimestamp()
+
+                });
+
+            });
+
+            await batch.commit();
+
+            document.getElementById("importStatus").innerHTML =
+            "✅ Import Completed : " + importData.length;
+
+            alert(importData.length + " Reports Imported Successfully");
+
+            closeImportModal();
+
+            await loadData();
+
+        }
+        catch(err){
+
+            console.error(err);
+
+            alert("Import Failed : " + err.message);
 
         }
 
-        alert(
-            "✅ Import Complete\n\n" +
-            "Added : " + added +
-            "\nSkipped : " + skipped
-        );
-
     };
-reader.readAsBinaryString(file);
 
-}
+    reader.readAsArrayBuffer(file);
 
-window.deleteUser = async function(id){
+};
+/* DATE */
 
-if(userRole !== "admin"){
-alert("Only Admin Can Delete Users");
+window.fixDate = function(d){
+
+let date = new Date(d);
+
+return `${date.getFullYear()}-${String(date.getMonth()+1).padStart(2,'0')}-${String(date.getDate()).padStart(2,'0')}`;
+
+};
+
+/* MODAL */
+
+window.openModal = function(){
+
+document.getElementById("modal").style.display =
+"flex";
+
+document.getElementById("formSection").style.display =
+"block";
+
+document.getElementById("viewSection").style.display =
+"none";
+
+document.getElementById("date").value = "";
+
+document.getElementById("name").value =
+currentUser;
+
+};
+
+window.closeModal = function(){
+
+document.getElementById("modal").style.display =
+"none";
+
+};
+
+/* TYPE */
+
+window.toggleFields = function(){
+
+let type =
+document.getElementById("type").value;
+
+document.getElementById("gpsFields").style.display =
+type==="GPS" ? "block" : "none";
+
+document.getElementById("sensorFields").style.display =
+type==="Sensor" ? "block" : "none";
+
+document.getElementById("csvSection").style.display =
+(type==="Sensor" || type==="GPS")
+? "block"
+: "none";
+
+};
+/* FILE HANDLE */
+
+/* MULTIPLE FILE HANDLE */
+
+window.handleFiles = async function(input){
+
+let files = Array.from(input.files);
+
+if(files.length < 1){
+alert("Minimum 1 Photo Required");
+input.value = "";
 return;
 }
 
-let ok = confirm("Delete user '" + id + "' ?");
+if(files.length > 5){
+alert("Maximum 5 Photos Allowed");
+input.value = "";
+return;
 
-if(!ok) return;
+};
+
+document.getElementById("uploadStatus").innerHTML =
+"⏳ Processing Photos...";
+
+let compressedFiles = [];
+
+for(let file of files){
+
+if(file.type.startsWith("image/")){
+let compressed = await compressImage(file);
+compressedFiles.push(compressed);
+}else{
+compressedFiles.push(file);
+}
+
+}
+
+input.compressedFiles = compressedFiles;
+
+// 🔥 IMPORTANT FIX
+input.setAttribute("data-ready", "true");
+
+document.getElementById("uploadStatus").innerHTML =
+`✅ ${compressedFiles.length} Photos Ready`;
+
+};
+window.handleCSV = function(input){
+
+const file = input.files[0];
+
+if(!file){
+
+document.getElementById("csvStatus").innerHTML =
+"❌ No CSV Uploaded";
+
+return;
+}
+
+document.getElementById("csvStatus").innerHTML =
+`✅ ${file.name} Uploaded`;
+
+};
+/* IMAGE COMPRESS */
+
+async function compressImage(file){
+
+return new Promise(resolve=>{
+
+let img = new Image();
+
+let reader = new FileReader();
+
+reader.onload = e=>{
+
+img.src = e.target.result;
+
+};
+
+img.onload = ()=>{
+
+let canvas =
+document.createElement("canvas");
+
+let ctx =
+canvas.getContext("2d");
+
+let maxWidth = 1280;
+
+let scale =
+maxWidth / img.width;
+
+canvas.width = maxWidth;
+
+canvas.height =
+img.height * scale;
+
+ctx.drawImage(
+img,
+0,
+0,
+canvas.width,
+canvas.height
+);
+
+canvas.toBlob(blob=>{
+
+resolve(
+new File(
+[blob],
+file.name,
+{
+type:"image/jpeg"
+}
+)
+);
+
+},
+"image/jpeg",
+0.7);
+
+};
+
+reader.readAsDataURL(file);
+
+});
+
+}
+
+/* CLOUDINARY IMAGE */
+/* CLOUDINARY IMAGE */
+
+async function uploadToCloudinary(file){
+
+let formData = new FormData();
+
+formData.append("file", file);
+formData.append("upload_preset", UPLOAD_PRESET);
+
+let response = await fetch(
+`https://api.cloudinary.com/v1_1/${CLOUD_NAME}/image/upload`,
+{
+method:"POST",
+body:formData
+}
+);
+
+let data = await response.json();
+
+if(data.error){
+throw data.error.message;
+}
+
+return data.secure_url;
+
+}
+
+/* CSV UPLOAD */
+
+async function uploadRawFile(file){
+
+let formData = new FormData();
+
+formData.append("file", file);
+formData.append("upload_preset", UPLOAD_PRESET);
+
+let response = await fetch(
+`https://api.cloudinary.com/v1_1/${CLOUD_NAME}/raw/upload`,
+{
+method:"POST",
+body:formData
+}
+);
+
+let data = await response.json();
+
+if(data.error){
+throw data.error.message;
+}
+
+return data.secure_url;
+
+}
+/* VIDEO UPLOADER */
+/* VIDEO UPLOADER FINAL FIX */
+window.uploadVideo = function(input){
+
+let file = input.files[0];
+if(!file){
+alert("No video selected");
+return;
+}
+
+let progressContainer = document.getElementById("videoProgressContainer");
+let progressBar = document.getElementById("videoProgressBar");
+let percentText = document.getElementById("videoPercent");
+let status = document.getElementById("videoStatus");
+
+progressContainer.style.display = "block";
+progressBar.style.width = "0%";
+percentText.innerText = "0%";
+status.innerHTML = "⏳ Uploading...";
+
+let formData = new FormData();
+formData.append("file", file);
+formData.append("upload_preset", UPLOAD_PRESET);
+
+let xhr = new XMLHttpRequest();
+
+xhr.open(
+  "POST",
+  `https://api.cloudinary.com/v1_1/${CLOUD_NAME}/video/upload`
+);
+
+// PROGRESS BAR
+xhr.upload.onprogress = function(e){
+
+if(e.lengthComputable){
+
+let percent = Math.round((e.loaded / e.total) * 100);
+
+progressBar.style.width = percent + "%";
+percentText.innerText = percent + "% Uploaded";
+
+}
+
+};
+
+// SUCCESS
+xhr.onload = function(){
+
+let data = JSON.parse(xhr.responseText);
+
+if(data.secure_url){
+
+window.tempVideo = {
+url: data.secure_url,
+public_id: data.public_id
+};
+
+document.getElementById("videoLink").value = data.secure_url;
+
+// PREVIEW
+status.innerHTML = `
+<video src="${data.secure_url}" controls
+style="width:100%;margin-top:10px;border-radius:10px;"></video>
+
+<br>
+
+<button type="button" class="close"
+onclick="removeVideo()" style="margin-top:10px;">
+❌ Remove Video
+</button>
+`;
+
+progressBar.style.width = "100%";
+percentText.innerText = "Upload Complete";
+
+}else{
+status.innerHTML = "❌ Upload Failed";
+}
+
+};
+
+// ERROR
+xhr.onerror = function(){
+status.innerHTML = "❌ Upload Failed";
+alert("Video upload failed");
+};
+
+xhr.send(formData);
+
+};
+
+window.removeVideo = function(){
+
+window.tempVideo = null;
+
+document.getElementById("videoFile").value = "";
+document.getElementById("videoLink").value = "";
+
+document.getElementById("videoStatus").innerHTML =
+"No Video Uploaded";
+
+document.getElementById("videoProgressContainer").style.display = "none";
+document.getElementById("videoProgressBar").style.width = "0%";
+document.getElementById("videoPercent").innerText = "";
+
+};
+window.closeModal = function(){
+
+document.getElementById("modal").style.display = "none";
+
+// CLEAN VIDEO TEMP DATA
+window.tempVideo = null;
+
+document.getElementById("videoFile").value = "";
+document.getElementById("videoLink").value = "";
+document.getElementById("videoStatus").innerHTML = "No Video Uploaded";
+
+document.getElementById("videoProgressContainer").style.display = "none";
+document.getElementById("videoProgressBar").style.width = "0%";
+document.getElementById("videoPercent").innerText = "";
+
+};
+/* SUBMIT */
+
+window.submitWorking = async function(){
+
+/* VALIDATION */
+
+let type =
+document.getElementById("type").value;
+
+if(!document.getElementById("date").value){
+alert("Select Date");
+return;
+}
+
+if(!document.getElementById("name").value){
+alert("Enter Engineer Name");
+return;
+}
+
+if(!type){
+alert("Select Type");
+return;
+}
+
+/* GPS */
+
+if(type==="GPS"){
+    if(!document.getElementById("category").value){
+alert("Enter Category");
+return;
+}
+
+if(!document.getElementById("rgno").value){
+alert("Enter RG No.");
+return;
+}
+
+if(!document.getElementById("assetcode").value){
+alert("Enter Asset Code");
+return;
+}
+
+if(!document.getElementById("imei").value){
+alert("Enter IMEI No.");
+return;
+}
+
+if(!document.getElementById("gpsSensorNo").value){
+alert("Enter Sensor No.");
+return;
+}
+
+if(!document.getElementById("gpsPhoto").files[0]){
+alert("Upload Installation Photo");
+return;
+}
+
+}
+
+/* SENSOR */
+
+if(type==="Sensor"){
+
+if(!document.getElementById("installationType").value){
+alert("Select Installation Type");
+return;
+}
+
+if(!document.getElementById("indusId").value){
+alert("Enter Indus ID");
+return;
+}
+
+if(!document.getElementById("usedWire").value){
+alert("Enter Used Wire");
+return;
+}
+
+if(!document.getElementById("sensorNo").value){
+alert("Enter Sensor No.");
+return;
+}
+
+if(!document.getElementById("videoLink").value){
+alert("Upload Video");
+return;
+}
+
+if(!document.getElementById("reportPhoto").files[0]){
+alert("Upload Reports Photo");
+return;
+}
+
+}
+
+let btn =
+document.getElementById("submitBtn");
+
+btn.disabled = true;
+
+btn.innerHTML =
+"Saving...";
 
 try{
 
-await db.collection("users")
-.doc(id)
-.delete();
+let type =
+document.getElementById("type").value;
 
-alert("✅ User Deleted Successfully");
+let saveData = {
 
-}catch(err){
+date:
+fixDate(
+document.getElementById("date").value
+),
 
-console.log(err);
-alert("❌ Error Deleting User");
+name:
+document.getElementById("name").value,
+
+type:type,
+
+createdAt:Date.now()
+
+};
+
+/* GPS */
+
+if(type==="GPS"){
+saveData.category =
+document.getElementById("category").value;
+
+saveData.rgno =
+document.getElementById("rgno").value;
+
+saveData.assetcode =
+document.getElementById("assetcode").value;
+
+saveData.imei =
+document.getElementById("imei").value;
+
+saveData.sensorNo =
+document.getElementById("gpsSensorNo").value;
+
+let photo =
+document.getElementById("gpsPhoto");
+
+if(photo.files.length > 0){
+
+document.getElementById("gpsPhotoStatus").innerHTML =
+"⏳ Uploading Photos...";
+
+saveData.photos = [];
+
+let filesToUpload = [];
+
+if (photo.compressedFiles && photo.compressedFiles.length > 0) {
+    filesToUpload = photo.compressedFiles;
+} 
+else if (photo.files && photo.files.length > 0) {
+    filesToUpload = Array.from(photo.files);
+} 
+else {
+    alert("No photo selected");
+    return;
+}
+
+for(let file of filesToUpload){
+
+let url =
+await uploadToCloudinary(file);
+
+saveData.photos.push(url);
+
+}
+
+document.getElementById("gpsPhotoStatus").innerHTML =
+"✅ Photos Uploaded";
+
+}
+}
+
+/* SENSOR */
+if(type==="Sensor"){
+
+saveData.installationType =
+document.getElementById("installationType").value;
+
+saveData.usedWire =
+document.getElementById("usedWire").value;
+
+saveData.sensorNo =
+document.getElementById("sensorNo").value;
+
+saveData.indusId =
+document.getElementById("indusId").value;
+
+
+/* VIDEO LINK */
+
+saveData.video =
+window.tempVideo
+? window.tempVideo.url
+: "";
+
+/* PHOTO */
+
+let photo =
+document.getElementById("reportPhoto");
+if(photo.files.length > 0){
+
+document.getElementById("reportPhotoStatus").innerHTML =
+"⏳ Uploading Photos...";
+
+saveData.photos = [];
+
+let filesToUpload = [];
+
+if(photo.compressedFiles && photo.compressedFiles.length){
+    filesToUpload = photo.compressedFiles;
+}
+else if(photo.files && photo.files.length){
+    filesToUpload = Array.from(photo.files);
+}
+else{
+    alert("No photo selected");
+    return;
+}
+
+for(let file of filesToUpload){
+
+let url =
+await uploadToCloudinary(file);
+
+saveData.photos.push(url);
+
+}
+
+document.getElementById("reportPhotoStatus").innerHTML =
+"✅ Photos Uploaded";
 
 }
 
 }
-function showCompletedPopup(){
 
-    const reportMap = {};
+/* CSV FOR GPS & SENSOR */
 
-    allReportsData.forEach(r=>{
+const csvFile = document.getElementById("csvFile").files[0];
 
-        const id =
-        cleanIndusId(r.indusId);
+if (csvFile) {
 
-        reportMap[id]=r;
+    document.getElementById("csvStatus").innerHTML =
+    "⏳ Uploading CSV...";
 
-    });
+    const csvUrl = await uploadRawFile(csvFile);
 
-    let html="";
+    saveData.csvFile = csvUrl;
+    saveData.csvFileName = csvFile.name;
 
-    excelData.forEach(item=>{
+    document.getElementById("csvStatus").innerHTML =
+    "✅ CSV Uploaded";
 
-        const id=
-        cleanIndusId(
-        item["Indus ID"]||
-        item["Indus Id"]||
-        item["INDUS ID"]);
+}
+/* FIREBASE SAVE */
 
-        if(reportMap[id]){
+await addDoc(
+collection(db,"reports"),
+saveData
+);
 
-            html+=`
-            <div style="
-            padding:10px;
-            margin-bottom:10px;
-            border:1px solid #ddd;
-            border-radius:10px;
-            ">
+alert("✅ Saved Successfully");
 
-            <b>Indus ID :</b> ${id}<br>
+resetForm();
 
-            <b>Date :</b> ${reportMap[id].date || "-"}
+closeModal();
 
-            </div>
-            `;
+loadData();
 
-        }
+}
+catch(e){
 
-    });
+console.log(e);
 
-    if(html===""){
-        html="<h3>No Completed Records</h3>";
-    }
-
-    document.getElementById("completedList").innerHTML=html;
-    document.getElementById("completedPopup").style.display="flex";
+alert("❌ Error : " + e);
 
 }
 
-function closeCompletedPopup(){
+btn.disabled = false;
 
-document.getElementById("completedPopup").style.display="none";
+btn.innerHTML = "Submit";
+
+};
+
+/* RESET */
+
+window.resetForm = function(){
+
+document.getElementById("type").value = "";
+
+document.getElementById("gpsFields").style.display = "none";
+document.getElementById("sensorFields").style.display = "none";
+
+document.querySelectorAll("input").forEach(x=>{
+if(x.type !== "date"){
+x.value = "";
+}
+});
+
+document.getElementById("gpsPhoto").value = "";
+document.getElementById("reportPhoto").value = "";
+document.getElementById("videoFile").value = "";
+
+// CLEAR TEMP VIDEO
+window.tempVideo = null;
+
+// CLEAR UI
+document.getElementById("videoStatus").innerHTML = "No Video Uploaded";
+document.getElementById("gpsPhotoStatus").innerHTML = "";
+document.getElementById("reportPhotoStatus").innerHTML = "";
+document.getElementById("uploadStatus").innerHTML = "";
+
+document.getElementById("videoProgressContainer").style.display = "none";
+document.getElementById("videoProgressBar").style.width = "0%";
+document.getElementById("videoPercent").innerText = "";
+
+};
+/* LOAD DATA */
+window.loadData = async function(){
+
+allData = [];
+
+try{
+
+// NEW PROJECT
+const newSnap = await getDocs(
+query(
+collection(db,"reports"),
+orderBy("createdAt","desc")
+)
+);
+console.log("NEW RECORDS:", newSnap.size);
+newSnap.forEach(docSnap=>{
+
+let data = {
+id: docSnap.id,
+source: "new",
+...docSnap.data()
+};
+console.log(
+"REPORT NAME =",
+data.name,
+"| LOGIN =",
+currentUser
+);
+
+if(isAdmin){
+allData.push(data);
+}else{
+const reportUser =
+(data.name || "").trim().toLowerCase();
+
+const loginUser =
+(currentUser || "").trim().toLowerCase();
+
+if(reportUser === loginUser){
+allData.push(data);
+}
+}
+
+});
+
+// OLD PROJECT
+const oldSnap = await getDocs(
+query(
+collection(oldDb,"reports"),
+orderBy("createdAt","desc")
+)
+);
+console.log("OLD RECORDS:", oldSnap.size);
+oldSnap.forEach(docSnap=>{
+
+let data = {
+id: docSnap.id,
+source: "old",
+...docSnap.data()
+};
+
+if(isAdmin){
+allData.push(data);
+}else{
+const reportUser =
+(data.name || "").trim().toLowerCase();
+
+const loginUser =
+(currentUser || "").trim().toLowerCase();
+
+if(reportUser === loginUser){
+allData.push(data);
+}
+}
+
+});
+
+allData.sort(
+(a,b)=>(b.createdAt||0)-(a.createdAt||0)
+);
+
+console.log("TOTAL RECORDS:", allData.length);
+
+renderCalendar();
 
 }
-function showProjectMenu(){
-    const projects = [...new Set(
-    excelData.map(x =>
-        (x.projectId || x.Project || x.project || "Default Project").trim()
-    )
-   )].sort();
+catch(err){
 
-    let html = `
-    <div style="padding:15px;font-weight:bold;font-size:20px;">
-        📂 Select Project
-    </div>
-    `;
+console.error(err);
 
-    projects.forEach(project=>{
-
-        html += `
-        <div
-        onclick="selectProject('${project}')"
-        style="
-        padding:15px;
-        cursor:pointer;
-        border-bottom:1px solid #eee;
-        display:flex;
-        justify-content:space-between;
-        ">
-            <span>📁 ${project}</span>
-        </div>
-        `;
-
-    });
-
-    document.getElementById("techPendingBody").innerHTML = html;
-
-    document.getElementById("pendingTechPopup").style.display="flex";
+alert(
+"Load Error : " +
+err.message
+);
 
 }
-function selectProject(project){
 
-    selectedProject = project;
+};
+/* CALENDAR */
 
-    showPendingTechMenu();
+window.renderCalendar = function(){
+
+let year =
+currentDate.getFullYear();
+
+let month =
+currentDate.getMonth();
+
+document.getElementById("monthLabel").innerHTML =
+currentDate.toLocaleString(
+"default",
+{
+month:"long",
+year:"numeric"
+}
+);
+
+let firstDay =
+new Date(year,month,1).getDay();
+
+let days =
+new Date(year,month+1,0).getDate();
+
+let html = "";
+
+for(let i=0;i<firstDay;i++){
+
+html += "<div></div>";
 
 }
-function showPendingTechMenu(){
-document.getElementById("techPendingBody").innerHTML = `
-<div style="
+
+for(let d=1; d<=days; d++){
+
+let date =
+`${year}-${String(month+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+
+let found =
+allData.some(
+x=>fixDate(x.date)===date
+);
+let reports =
+allData.filter(
+x=>fixDate(x.date)===date
+);
+
+let total =
+reports.length;
+
+let names =
+[...new Set(reports.map(x=>x.name))].join(", ");
+
+html += `
+
+<div
+class="day"
+onclick="showDay('${date}')"
+style="
+background:${found ? '#22c55e' : '#ef4444'};
+padding:10px;
+min-height:90px;
 display:flex;
+flex-direction:column;
 justify-content:space-between;
 align-items:center;
-padding:12px;
-background:#f5f5f5;
-border-bottom:1px solid #ddd;
+font-size:12px;
 ">
 
-<div style="font-weight:bold;font-size:18px;">
-${currentMode === "hold" ? "⚠ Hold By Tech" : "⏳ Pending By Tech"}
-</div>
-
-<button
-onclick="downloadAllPendingExcel()"
-style="
-background:#16a34a;
-color:white;
-border:none;
-padding:8px 14px;
-border-radius:8px;
-cursor:pointer;
+<div style="
+font-size:18px;
 font-weight:bold;
 ">
-📥 Download All
+${d}
+</div>
+
+${
+found
+?
+
+`
+
+<div style="
+font-size:11px;
+text-align:center;
+line-height:1.3;
+word-break:break-word;
+">
+
+👤 ${names}
+
+<br>
+
+📦 ${total} Report
+
+</div>
+
+`
+
+:
+
+`<div style="font-size:10px;">No Data</div>`
+
+}
+
+</div>
+
+`;
+
+}
+
+document.getElementById("calendar").innerHTML =
+html;
+
+};
+window.openSearchResult = function(reportId){
+
+const report = allData.find(x => x.id === reportId);
+
+if(!report){
+alert("Report Not Found");
+return;
+}
+
+// Search Popup बंद
+closeSearchModal();
+
+// उसी Date का Report Popup खोलो
+window.selectedSearchReportId = report.id;
+
+showDay(report.date);
+
+};
+
+/* SHOW DAY */
+
+window.showDay = function(date){
+
+let list;
+
+if(window.selectedSearchReportId){
+
+list = allData.filter(x =>
+x.id === window.selectedSearchReportId
+);
+
+window.selectedSearchReportId = null;
+
+}else{
+
+list = allData.filter(x =>
+fixDate(x.date) === date
+);
+
+}
+
+document.getElementById("modal").style.display =
+"flex";
+
+document.getElementById("formSection").style.display =
+"none";
+
+document.getElementById("viewSection").style.display =
+"block";
+
+if(list.length===0){
+
+window.selectedDate = date;
+document.getElementById("viewSection").innerHTML =
+`
+
+<div style="
+background:#fff;
+border-radius:16px;
+padding:25px;
+box-shadow:0 8px 25px rgba(0,0,0,.12);
+text-align:center;
+">
+
+<div style="
+font-size:55px;
+margin-bottom:10px;
+">
+📋
+</div>
+
+<h2 style="
+margin:0;
+color:#374151;
+">
+No Reports Found
+</h2>
+
+<p style="
+color:#6b7280;
+margin:10px 0 25px;
+">
+There are no reports available for <b>${date}</b>
+</p>
+
+<div style="
+display:flex;
+justify-content:center;
+gap:15px;
+flex-wrap:wrap;
+">
+
+<button
+onclick="openModalForDate('${date}')"
+style="
+display:flex;
+align-items:center;
+gap:8px;
+background:linear-gradient(135deg,#2563eb,#1d4ed8);
+color:#fff;
+border:none;
+padding:12px 22px;
+border-radius:12px;
+font-size:15px;
+font-weight:600;
+cursor:pointer;
+box-shadow:0 5px 15px rgba(37,99,235,.35);
+">
+
+<span style="font-size:18px;">➕</span>
+<span>Add Entry</span>
+
+</button>
+<button
+onclick="closeModal()"
+style="
+display:flex;
+align-items:center;
+gap:8px;
+background:linear-gradient(135deg,#ef4444,#dc2626);
+color:#fff;
+border:none;
+padding:12px 22px;
+border-radius:12px;
+font-size:15px;
+font-weight:600;
+cursor:pointer;
+box-shadow:0 5px 15px rgba(220,38,38,.35);
+transition:.25s;
+">
+
+<span style="font-size:18px;">✖</span>
+<span>Close</span>
+
 </button>
 
 </div>
 
-<div id="pendingTechList"></div>
+</div>
+
 `;
-
-document.getElementById("pendingTechPopup").style.display="flex";
-
-const reportIds=new Set();
-
-allReportsData.forEach(r=>{
-reportIds.add(cleanIndusId(r.indusId));
-});
-
-let techs={};
-
-excelData.forEach(item=>{
-
-if (selectedProject && (item.projectId || "") !== selectedProject){
-    return;
+return;
 }
 
-const id=cleanIndusId(
-item["Indus ID"]||
-item["Indus Id"]||
-item["INDUS ID"]
-);
+let html = `
 
-// Completed hai to skip
-if(reportIds.has(id)) return;
-
-// CSV Remark
-const csvRemark = String(
-    item["Remark"] ||
-    item["REMARK"] ||
-    item["remark"] ||
-    ""
-).trim();
-
-// Firestore Hold Status
-const pendingStatus = String(
-    item.pendingStatus || ""
-).trim();
-
-// Firestore Remark
-const remark = String(
-    item.remark || ""
-).trim();
-let isPending = false;
-let isHold = false;
-
-if (
-    pendingStatus === "Hold" ||
-    remark !== "" ||
-    csvRemark !== ""
-){
-    isHold = true;
-}
-else{
-    isPending = true;
-}
-// ---------------- FILTER ----------------
-
-// Hold by Firestore
-if (
-    pendingStatus === "Hold" ||
-    remark !== "" ||
-    csvRemark !== ""
-) {
-    isHold = true;
-}
-else {
-    isPending = true;
-}
-
-// Mode Check
-if(currentMode === "pending" && !isPending) return;
-
-if(currentMode === "hold" && !isHold) return;
-
-// ---------------- TECH ----------------
-
-const tech = (
-    item["FSC Name"] ||
-    item["FSC NAME"] ||
-    item["Fsc Name"] ||
-    item["Tech Name"] ||
-    "No Name"
-).trim();
-
-if(!techs[tech]){
-    techs[tech]=[];
-}
-
-techs[tech].push(item);
-
-});
-
-
-let html="";
-
-Object.keys(techs)
-.sort()
-.forEach(name=>{
-
-html+=`
-
-<div
-onclick="openTechPending('${name}')"
-style="
-padding:12px;
-cursor:pointer;
-border-bottom:1px solid #eee;
+<div style="
 display:flex;
 justify-content:space-between;
+align-items:center;
+margin-bottom:20px;
+padding:15px 20px;
+background:#ffffff;
+border-radius:14px;
+box-shadow:0 4px 15px rgba(0,0,0,.08);
+gap:10px;
+flex-wrap:wrap;
 ">
 
 <div>
-    <span>👷 ${name}</span>
-    <br>
-    <small>${techs[name].length} Pending</small>
-</div>
 
-${techs[name].some(item => item.assigned) ? `
-
-<div style="display:flex;flex-direction:column;gap:5px;">
-
-<button
-style="
-background:#16a34a;
-color:white;
-border:none;
-padding:6px 12px;
-border-radius:6px;
-font-weight:bold;
+<h2 style="
+margin:0;
+font-size:22px;
+font-weight:700;
+color:#1f2937;
 ">
-✅ Assigned
-</button>
+📅 ${date}
+</h2>
 
-<button
-onclick="event.stopPropagation();unassignTech('${name}')"
-style="
-background:#ef4444;
-color:white;
-border:none;
-padding:6px 12px;
-border-radius:6px;
-cursor:pointer;
-font-weight:bold;
+<p style="
+margin:4px 0 0;
+font-size:13px;
+color:#6b7280;
 ">
-❌ Unassign
-</button>
+Working Report
+</p>
 
 </div>
 
-`
-:
-`
-
-<button
-onclick="event.stopPropagation();openAssignPopup('${name}')"
-style="
-background:#2563eb;
-color:white;
-border:none;
-padding:6px 12px;
-border-radius:6px;
-cursor:pointer;
-font-weight:bold;
-">
-👤 Assign
-</button>
-
-`
-}
-
-</div>
-
-`;
-
-});
-document.getElementById("pendingTechList").innerHTML=html;
-
-}
-function openTechPending(name){
-selectedTechName = name;
-const reportIds=new Set();
-
-allReportsData.forEach(r=>{
-reportIds.add(cleanIndusId(r.indusId));
-});
-
-selectedTechPending = excelData.filter(item=>{
-
-    const id = cleanIndusId(
-        item["Indus ID"] ||
-        item["Indus Id"] ||
-        item["INDUS ID"] ||
-        item["INDUS_ID"] ||
-        item["IndusID"]
-    );
-
-    const techName = (
-        item["FSC Name"] ||
-        item["FSC NAME"] ||
-        item["Fsc Name"] ||
-        item["Tech Name"] ||
-        ""
-    ).trim();
-
-    // CSV Remark
-    const csvRemark = String(
-        item["Remark"] ||
-        item["REMARK"] ||
-        item["remark"] ||
-        ""
-    ).trim();
-
-    // Firestore Hold Status
-    const pendingStatus = String(
-    item.pendingStatus || ""
-).trim();
-
-const remark = String(
-    item.remark || ""
-).trim();
-
-let isPending = false;
-let isHold = false;
-
-if (
-    pendingStatus === "Hold" ||
-    remark !== "" ||
-    csvRemark !== ""
-){
-    isHold = true;
-}
-else{
-    isPending = true;
-}
-
-    return (
-        !reportIds.has(id) &&
-        techName === name &&
-        (!selectedProject || (item.projectId || "") === selectedProject) &&
-        (
-            (currentMode === "pending" && isPending) ||
-            (currentMode === "hold" && isHold)
-        )
-    );
-
-});
-
-showTechPendingPopup(name);
-
-}
-
-function showPendingPopup(){
-
-document.getElementById("pendingPopup").style.display="flex";
-
-}
-
-function closePendingPopup(){
-
-document.getElementById("pendingPopup").style.display="none";
-
-}
-
-function showDownloadOptions(){
-
-closePendingPopup();
-
-document.getElementById("downloadPopup").style.display="flex";
-
-}
-
-function closeDownloadPopup(){
-
-document.getElementById("downloadPopup").style.display="none";
-
-}
-function downloadPendingCSV() {
-
-    const reportIds = new Set();
-
-    allReportsData.forEach(r => {
-        reportIds.add(cleanIndusId(r.indusId));
-    });
-
-    const pending = excelData.filter(item => {
-
-        const id = cleanIndusId(
-            item["Indus ID"] ||
-            item["Indus Id"] ||
-            item["INDUS ID"]
-        );
-
-        return !reportIds.has(id);
-    });
-
-    if (pending.length === 0) {
-        alert("No Pending Records");
-        return;
-    }
-
-    const headers = originalHeaders.length
-        ? originalHeaders
-        : Object.keys(pending[0]);
-        const rows = pending.map(item => {
-
-    let obj = {};
-
-    headers.forEach(h => {
-        obj[h] = item[h] ?? "";
-    });
-
-    return obj;
-
-});
-
-const ws = XLSX.utils.json_to_sheet(rows,{
-    header: headers,
-    skipHeader:false
-});
-
-    const csvRows = [];
-
-    csvRows.push(headers.join(","));
-
-    pending.forEach(row => {
-
-        csvRows.push(
-            headers.map(h => `"${row[h] ?? ""}"`).join(",")
-        );
-
-    });
-
-    const blob = new Blob(
-        [csvRows.join("\n")],
-        { type: "text/csv;charset=utf-8;" }
-    );
-
-    const link = document.createElement("a");
-    link.href = URL.createObjectURL(blob);
-    link.download = "Pending_Sites.csv";
-    link.click();
-
-}
-function downloadPendingExcel() {
-
-    const reportIds = new Set();
-
-    allReportsData.forEach(r => {
-        reportIds.add(cleanIndusId(r.indusId));
-    });
-
-    const pending = excelData.filter(item => {
-
-        const id = cleanIndusId(
-            item["Indus ID"] ||
-            item["Indus Id"] ||
-            item["INDUS ID"]
-        );
-
-        return !reportIds.has(id);
-
-    });
-
-    if (pending.length === 0) {
-        alert("No Pending Records");
-        return;
-    }
-
-    // Original Header Order
-    const headers = originalHeaders.length
-        ? originalHeaders
-        : Object.keys(pending[0]);
-
-    // Data Original Header Order me Convert
-    const sheetData = [
-        headers,
-        ...pending.map(row =>
-            headers.map(header => row[header] ?? "")
-        )
-    ];
-
-    // Excel Sheet
-    const ws = XLSX.utils.aoa_to_sheet(sheetData);
-
-    // Workbook
-    const wb = XLSX.utils.book_new();
-
-    XLSX.utils.book_append_sheet(wb, ws, "Pending Sites");
-
-    // Download
-    XLSX.writeFile(wb, "Pending_Sites.xlsx");
-
-}
-
-function downloadPendingTechExcel(techName){
-
-    let techData = [];
-
-    if(allPendingTechData[techName]){
-
-        techData = allPendingTechData[techName];
-
-    }
-
-
-    if(techData.length === 0){
-
-        alert("No Data Found");
-
-        return;
-    }
-let headers = originalHeaders.length
-    ? [...originalHeaders]
-    : Object.keys(pending[0]);
-
-
-// Remark column add karo
-if(!headers.includes("Remark")){
-    headers.push("Remark");
-}
-
-const sheetData = [
-    headers,
-    ...techData.map(row =>
-       headers.map(header => {
-
-    if(header === "Remark"){
-
-        return row.remark || "";
-
-    }
-
-    return row[header] ?? "";
-
-})
-    )
-];
-
-
-const ws = XLSX.utils.aoa_to_sheet(sheetData);
-
-
-const wb = XLSX.utils.book_new();
-
-
-XLSX.utils.book_append_sheet(
-    wb,
-    ws,
-    techName
-);
-
-
-XLSX.writeFile(
-    wb,
-    techName + "_Pending.xlsx"
-);
-
-
-}
-
-function getPendingData(){
-
-    const reportIds = new Set();
-
-    allReportsData.forEach(r=>{
-        reportIds.add(cleanIndusId(r.indusId));
-    });
-
-    return excelData.filter(item=>{
-
-        const id = cleanIndusId(
-            item["Indus ID"] ||
-            item["Indus Id"] ||
-            item["INDUS ID"]
-        );
-
-        return !reportIds.has(id);
-
-    });
-
-}function deleteImportedCSV(){
-
-    showDeleteProjectMenu();
-
-}
-
-
-async function showDeleteProjectMenu(){
-
-    const projects = [...new Set(
-        excelData.map(x =>
-            (x.projectId || x.Project || x.project || "")
-        ).filter(Boolean)
-    )].sort();
-
-
-    let html = `
-    <div style="
-    background:white;
-    width:400px;
-    max-height:80vh;
-    overflow:auto;
-    border-radius:10px;
-    padding:20px;
-    ">
-
-    <h2>🗑 Delete CSV Project</h2>
-    `;
-
-
-    projects.forEach(project=>{
-
-        html += `
-
-        <div style="
-        padding:15px;
-        border-bottom:1px solid #ddd;
-        display:flex;
-        justify-content:space-between;
-        align-items:center;
-        ">
-
-            <span>
-            📁 ${project}
-            </span>
-
-
-            <button
-            onclick="deleteProject('${project}')"
-            style="
-            background:#dc2626;
-            color:white;
-            border:none;
-            padding:7px 12px;
-            border-radius:6px;
-            cursor:pointer;
-            ">
-            🗑 Delete
-            </button>
-
-
-        </div>
-
-        `;
-
-    });
-
-
-    html += `
-
-    <br>
-
-    <button onclick="this.closest('.deletePopup').remove()">
-    Close
-    </button>
-
-    </div>
-
-    `;
-
-
-    const popup=document.createElement("div");
-
-    popup.className="deletePopup";
-
-    popup.style.position="fixed";
-    popup.style.left="0";
-    popup.style.top="0";
-    popup.style.width="100%";
-    popup.style.height="100%";
-    popup.style.background="rgba(0,0,0,.5)";
-    popup.style.display="flex";
-    popup.style.alignItems="center";
-    popup.style.justifyContent="center";
-    popup.style.zIndex="999999";
-
-
-    popup.innerHTML=html;
-
-    document.body.appendChild(popup);
-
-}
-
-
-
-async function deleteProject(projectId){
-
-
-    if(!confirm(
-        "Delete Project : " + projectId + " ?"
-    )) return;
-
-
-    try{
-
-
-        const snap = await db.collection("pendingSites")
-        .where("projectId","==",projectId)
-        .get();
-
-
-
-        const batch = db.batch();
-
-
-        snap.forEach(doc=>{
-
-            batch.delete(doc.ref);
-
-        });
-
-
-
-        await batch.commit();
-
-
-
-        // pendingMeta भी project wise delete करना हो तो बाद में करेंगे
-
-
-        alert(
-            "✅ "+projectId+" Deleted Successfully"
-        );
-
-
-        location.reload();
-
-
-
-    }
-    catch(err){
-
-        console.error(err);
-
-        alert(
-            "Delete Error : "+err.message
-        );
-
-    }
-
-}
-function showTechPendingPopup(name){
-
-    document.getElementById("techPendingBody").innerHTML = `
-    
-    <div style="padding:20px;">
-
-        <h2>👷 ${name}</h2>
-
-        <div style="margin:15px 0;font-size:18px;">
-            Total Pending :
-            <b>${selectedTechPending.length}</b>
-        </div>
-
-        <div style="display:flex;gap:10px;flex-wrap:wrap;">
-
-            <button onclick="showTechPendingList()"
-            style="
-            flex:1;
-            padding:10px;
-            background:#2563eb;
-            color:white;
-            border:none;
-            border-radius:8px;
-            cursor:pointer;">
-                📋 Show Pending List
-           <button
-           onclick="event.stopPropagation();downloadPendingTechExcel('${name}')"
-         style="
-         background:#16a34a;
-         color:white;
-         border:none;
-         padding:6px 12px;
-         border-radius:6px;
-         cursor:pointer;
-         ">
-         📥 Excel
-        </button>
-        </div>
-
-        <br>
-
-        <button onclick="closeTechPendingPopup()"
-        style="
-        width:100%;
-        padding:12px;
-        background:#ef4444;
-        color:white;
-        border:none;
-        border-radius:8px;
-        cursor:pointer;">
-        
-            ❌ Close
-        </button>
-
-    </div>
-    `;
-
-    // Popup ko Flex se open karo
-    document.getElementById("pendingTechPopup").style.display = "flex";
-
-}
-function showTechPendingList(){
-
-if(selectedTechPending.length===0){
-alert("No Pending Data");
-return;
-}
-
-let html=`
 <div style="
-background:white;
-padding:20px;
-max-height:80vh;
-overflow:auto;
+display:flex;
+align-items:center;
+gap:12px;
 ">
-
-<h2>${selectedTechName}</h2>
-
-<table border="1"
-style="
-width:100%;
-border-collapse:collapse;
-">
-
-<tr>
-`;
-
-const headers=originalHeaders.length
-?originalHeaders
-:Object.keys(selectedTechPending[0]);
-
-headers.forEach(h=>{
-html+=`<th>${h}</th>`;
-});
-
-html += "<th>Remark</th>";
-
-selectedTechPending.forEach(row=>{
-
-html+="<tr>";
-
-headers.forEach(h=>{
-html+=`<td>${row[h] ?? ""}</td>`;
-});
-
-// Indus ID nikalo
-const indusId = cleanIndusId(
-
-    row["Indus ID"] ||
-    row["Indus Id"] ||
-    row["INDUS ID"]
-);
-const firestoreId = row.firestoreId;
-// Remark column
-html += `
-<td style="min-width:220px;">
-    <textarea
-        id="remark_${firestoreId}"
-        rows="2"
-        style="width:100%;padding:5px;"
-        placeholder="Enter Remark...">${row.remark || ""}</textarea>
-
-    <br>
-
-    <button
-       onclick="updatePendingRemark('${firestoreId}')"
-        style="
-            margin-top:5px;
-            background:#16a34a;
-            color:white;
-            border:none;
-            padding:5px 10px;
-            border-radius:5px;
-            cursor:pointer;
-        ">
-        💾 Update
-    </button>
-    <div style="
-margin-top:8px;
-font-size:12px;
-color:#666;
-line-height:18px;
-">
-
-<b>Updated By:</b> ${row.remarkBy || "-"}
-
-<br>
-
-<b>Updated On:</b> ${
-row.remarkTime
-? new Date(row.remarkTime).toLocaleString()
-: "-"
-}
-
-</div>
-</td>
-`;
-
-html+="</tr>";
-
-});
-
-html+=`
-</table>
-
-<br>
 
 <button
-onclick="this.parentElement.parentElement.remove()"
+onclick="openModalForDate('${date}')"
 style="
-display:block;
-margin:20px auto 5px;
-padding:12px 35px;
-background:linear-gradient(135deg,#ef4444,#dc2626);
-color:white;
+display:flex;
+align-items:center;
+gap:6px;
+background:linear-gradient(135deg,#2563eb,#1d4ed8);
+color:#fff;
 border:none;
+padding:10px 18px;
 border-radius:10px;
-font-size:16px;
+font-size:14px;
 font-weight:600;
 cursor:pointer;
-box-shadow:0 5px 15px rgba(239,68,68,.35);
-transition:.3s;
-"
-onmouseover="
-this.style.transform='scale(1.05)';
-this.style.boxShadow='0 8px 20px rgba(239,68,68,.5)';
-"
-onmouseout="
-this.style.transform='scale(1)';
-this.style.boxShadow='0 5px 15px rgba(239,68,68,.35)';
+box-shadow:0 4px 12px rgba(37,99,235,.35);
+transition:.25s;
 ">
-❌ Close
+
+<span style="font-size:18px;">＋</span>
+<span>Add More</span>
+
 </button>
+<button
+onclick="closeModal()"
+style="
+width:42px;
+height:42px;
+border:none;
+border-radius:50%;
+background:linear-gradient(135deg,#ef4444,#dc2626);
+color:#fff;
+font-size:22px;
+font-weight:bold;
+cursor:pointer;
+box-shadow:0 5px 15px rgba(220,38,38,.35);
+transition:.25s;
+">
+
+✕
+
+</button>
+</div>
 
 </div>
 `;
 
-const popup=document.createElement("div");
+list.forEach(x=>{
 
-popup.style.position="fixed";
-popup.style.left="0";
-popup.style.top="0";
-popup.style.width="100%";
-popup.style.height="100%";
-popup.style.background="rgba(0,0,0,.4)";
-popup.style.zIndex="999999";
+html += `
 
-popup.appendChild(document.createRange().createContextualFragment(html));
+<div class="report-card">
 
-document.body.appendChild(popup);
 
-}
-function downloadTechPending(){
+<div style="
+display:flex;
+justify-content:space-between;
+align-items:center;
+margin-bottom:10px;
+">
 
-if(selectedTechPending.length===0){
-alert("No Pending Data");
-return;
-}
-const projectPending = selectedTechPending.filter(row =>
-    !selectedProject || (row.projectId || "") === selectedProject
-);
+<h3>👤 ${x.name}</h3>
 
-if(projectPending.length === 0){
-    alert("No Pending Data");
-    return;
-}
+${isAdmin ? `
+<div style="display:flex;gap:8px;flex-wrap:wrap;">
 
-const headers =
-originalHeaders.length
-? originalHeaders
-: Object.keys(selectedTechPending[0]);
-
-const rows = [
-headers,
-...projectPending.map(row =>
-headers.map(h => row[h] ?? "")
-)
-];
-
-const ws = XLSX.utils.aoa_to_sheet(rows);
-
-const wb = XLSX.utils.book_new();
-
-XLSX.utils.book_append_sheet(
-wb,
-ws,
-selectedTechName
-);
-
-XLSX.writeFile(
-wb,
-selectedProject + "_" + selectedTechName + "_Pending.xlsx"
-);
-
-}
-function closeTechPendingPopup(){
-
-    document.getElementById("pendingTechPopup").style.display = "none";
-
-    // Popup band hone ke baad technician list fir se bana do
-    showPendingTechMenu();
-
-}
-function showTotalListPopup(){
-
-    document.getElementById("totalListPopup").style.display="flex";
-
-    const projects = [...new Set(
-        excelData.map(x => x.projectId).filter(Boolean)
-    )].sort();
-
-    let html = "";
-
-    // All Projects
-    html += `
-    <div
-    style="
-    padding:12px;
-    margin-bottom:10px;
-    border:1px solid #ddd;
-    border-radius:10px;
-    display:flex;
-    justify-content:space-between;
-    align-items:center;
-    ">
-
-        <span><b>📁 All Projects</b></span>
-
-        <button onclick="downloadAllProjects()">
-        ⬇ Download
-        </button>
 <button
-onclick="downloadCompletedList()"
+onclick="deleteEntry('${x.id}')"
 style="
-background:#16a34a;
+background:red;
 color:white;
 border:none;
 padding:8px 12px;
-border-radius:6px;
+border-radius:10px;
 cursor:pointer;
-margin-left:10px;
+font-weight:bold;
 ">
-✅ Completed
+🗑 Delete
 </button>
-    </div>
-    `;
 
-    projects.forEach(project=>{
+${isAdmin ? `
+<div style="display:flex;gap:8px;flex-wrap:wrap;">
 
-        const total =
-        excelData.filter(x=>x.projectId===project).length;
+${
+x.csvFile
+?
+`
+<button
+onclick="downloadFile('${x.csvFile}')"
+style="
+background:#22c55e;
+color:white;
+border:none;
+padding:8px 12px;
+border-radius:10px;
+cursor:pointer;
+font-weight:bold;
+">
+📥 Download CSV
+</button>
 
-        html += `
-        <div
-        style="
-        padding:12px;
-        margin-bottom:10px;
-        border:1px solid #ddd;
-        border-radius:10px;
-        display:flex;
-        justify-content:space-between;
-        align-items:center;
-        ">
+<button
+onclick="replaceCSV('${x.id}','${x.source}')"
+style="
+background:#f59e0b;
+color:white;
+border:none;
+padding:8px 12px;
+border-radius:10px;
+cursor:pointer;
+font-weight:bold;
+">
+✏ Change CSV
+</button>
+`
+:
+`
+<button
+onclick="replaceCSV('${x.id}','${x.source}')"
+style="
+background:#ef4444;
+color:white;
+border:none;
+padding:8px 12px;
+border-radius:10px;
+cursor:pointer;
+font-weight:bold;
+">
+📤 Upload CSV
+</button>
+`
+}
 
-            <div>
+</div>
+` : ""}
 
-                <b>📁 ${project}</b>
+</div>
+` : ""}
 
-                <br>
+</div>
 
-                ${total} Records
+<p>📌 Type: ${x.type}</p>
 
-            </div>
+`;
+if(x.type === "Import"){
 
-            <button
-            onclick="downloadProjectList('${project}')">
-            ⬇ Download
-            </button>
+html += `
 
-        </div>
-        `;
+<p>🏢 Area : ${x.area || "-"}</p>
 
-    });
+<p>🆔 Indus ID : ${x.indusId || "-"}</p>
 
-    document.getElementById("totalListBody").innerHTML = html;
+<p>👷 Escort Team : ${x.escortTeam || x.name || "-"}</p>
+
+`;
 
 }
 
-function closeTotalListPopup(){
+if(x.type==="GPS"){
 
-    document.getElementById("totalListPopup").style.display="none";
+html += `
+<p>📂 Category: ${x.category || ""}</p>
 
-}
-function downloadAllProjects(){
+<p>🛰 RG No: ${x.rgno || ""}</p>
 
-    if(excelData.length === 0){
-        alert("No Data Found");
-        return;
-    }
+<p>🏢 Asset Code: ${x.assetcode || ""}</p>
 
-    const headers = originalHeaders.length
-        ? originalHeaders
-        : Object.keys(excelData[0]);
+<p>📱 IMEI: ${x.imei || ""}</p>
 
-    const rows = [
-        headers,
-        ...excelData.map(row =>
-            headers.map(h => row[h] ?? "")
-        )
-    ];
+<p>🔢 Sensor No: ${x.sensorNo || ""}</p>
 
-    const ws = XLSX.utils.aoa_to_sheet(rows);
+`;
 
-    const wb = XLSX.utils.book_new();
+if(x.photos && x.photos.length){
 
-    XLSX.utils.book_append_sheet(wb, ws, "All Projects");
+x.photos.forEach((photo,index)=>{
 
-    XLSX.writeFile(wb, "Total_List.xlsx");
+html += `
 
-}
+<img src="${photo}" class="media" onclick="openMedia('${photo}')">
 
-function downloadProjectList(project){
+<br><br>
 
-    const data = excelData.filter(row =>
-        (row.projectId || "") === project
-    );
+<button
+class="submit"
+onclick="downloadFile('${photo}')">
+⬇ Download Photo
+</button>
 
-    if(data.length === 0){
-        alert("No Data Found");
-        return;
-    }
+${isAdmin ? `
+<br><br>
+<button
+class="submit"
+onclick="changePhoto('${x.id}', ${index})">
+✏️ Change Photo
+</button>
+` : ""}
+<br><br>
 
-    const headers = originalHeaders.length
-        ? originalHeaders
-        : Object.keys(data[0]);
-
-    const rows = [
-        headers,
-        ...data.map(row =>
-            headers.map(h => row[h] ?? "")
-        )
-    ];
-
-    const ws = XLSX.utils.aoa_to_sheet(rows);
-
-    const wb = XLSX.utils.book_new();
-
-    XLSX.utils.book_append_sheet(wb, ws, project);
-
-    XLSX.writeFile(wb, project + "_List.xlsx");
-
-}
-function downloadCompletedList(){
-
-    const reportIds = new Set();
-
-    allReportsData.forEach(r=>{
-        reportIds.add(cleanIndusId(r.indusId));
-    });
-
-    const completed = excelData.filter(item=>{
-
-        const id = cleanIndusId(
-            item["Indus ID"] ||
-            item["Indus Id"] ||
-            item["INDUS ID"]
-        );
-
-        return reportIds.has(id);
-
-    });
-
-    if(completed.length===0){
-        alert("No Completed Data");
-        return;
-    }
-
-    const headers = originalHeaders.length
-        ? originalHeaders
-        : Object.keys(completed[0]);
-
-    const rows = [
-        headers,
-        ...completed.map(row =>
-            headers.map(h => row[h] ?? "")
-        )
-    ];
-
-    const ws = XLSX.utils.aoa_to_sheet(rows);
-
-    const wb = XLSX.utils.book_new();
-
-    XLSX.utils.book_append_sheet(wb, ws, "Completed");
-
-    XLSX.writeFile(wb, "Completed_List.xlsx");
-
-}
-function downloadPendingProject(project){
-
-    const reportIds = new Set();
-
-    allReportsData.forEach(r=>{
-        reportIds.add(cleanIndusId(r.indusId));
-    });
-
-    const pending = excelData.filter(item=>{
-
-        if((item.projectId || "") !== project) return false;
-
-        const id = cleanIndusId(
-            item["Indus ID"] ||
-            item["Indus Id"] ||
-            item["INDUS ID"]
-        );
-
-        return !reportIds.has(id);
-
-    });
-
-    if(pending.length===0){
-        alert("No Pending Data");
-        return;
-    }
-
-    const headers = originalHeaders.length
-        ? originalHeaders
-        : Object.keys(pending[0]);
-
-    const rows = [
-        headers,
-        ...pending.map(row =>
-            headers.map(h => row[h] ?? "")
-        )
-    ];
-
-    const ws = XLSX.utils.aoa_to_sheet(rows);
-
-    const wb = XLSX.utils.book_new();
-
-    XLSX.utils.book_append_sheet(wb, ws, "Pending");
-
-    XLSX.writeFile(wb, project + "_Pending.xlsx");
-
-}
-
-// ================= UPDATE REMARK =================
-
-async function updatePendingRemark(firestoreId){
-
-   const input = document.getElementById("remark_" + firestoreId);
-
-    if(!input){
-        alert("Remark box not found");
-        return;
-    }
-
-    const remark = input.value.trim();
-
-    try{
-console.log("Firestore ID =", firestoreId);
-await db.collection("pendingSites")
-.doc(firestoreId)
-.update({
-
-    remark: remark,
-    remarkBy: currentUser,
-    remarkTime: new Date().toISOString(),
-
-    pendingStatus: remark ? "Hold" : ""
+`;
 
 });
-        alert("✅ Remark Updated");
 
-    }catch(err){
+}
+}
 
-    console.error(err);
+if(x.type==="Sensor"){
 
-    alert("❌ " + err.message);
+html += `
+
+<p>⚙ Installation:
+${x.installationType || ""}</p>
+
+<p>🧵 Used Wire: ${x.usedWire || ""}</p>
+
+<p>🔢 Sensor No: ${x.sensorNo || ""}</p>
+
+<p>🔢 Indus Id: ${x.indusId || ""}</p>
+
+${isAdmin ? `
+<br>
+
+<button
+class="submit"
+onclick="editSensorDetails('${x.id}','${x.source}')">
+✏ Edit Details
+</button>
+
+<br><br>
+` : ""}
+
+`;
+if(x.video){
+
+html += `
+
+<video
+src="${x.video}"
+controls
+class="media"
+style="max-height:500px;object-fit:contain;"
+onclick="openMedia('${x.video}')">
+</video>
+
+<br><br>
+
+<button
+class="submit"
+onclick="downloadFile('${x.video}')">
+⬇ Download Video
+</button>
+
+`;
 
 }
 
+if(x.photos && x.photos.length){
+
+x.photos.forEach((photo,index)=>{
+
+html += `
+
+<img src="${photo}" class="media" onclick="openMedia('${photo}')">
+
+<br><br>
+
+<button
+class="submit"
+onclick="downloadFile('${photo}')">
+⬇ Download Photo
+</button>
+
+${isAdmin ? `
+<br><br>
+<button
+class="submit"
+onclick="changePhoto('${x.id}', ${index})">
+✏️ Change Photo
+</button>
+` : ""}
+
+<br><br>
+
+`;
+
+});
+
 }
-// ================= CLOSE POPUPS WHEN CLICK OUTSIDE =================
+}
+if(x.csvFile){
 
-window.onclick = function(e){
+html += `
+<div style="
+background:#22c55e;
+padding:5px 10px;
+border-radius:20px;
+display:inline-block;
+font-size:12px;
+font-weight:bold;
+margin-bottom:10px;
+">
+📦 CSV Uploaded
+</div>
 
-    // Pending Tech Popup
-    if(e.target == document.getElementById("pendingTechPopup")){
-        document.getElementById("pendingTechPopup").style.display="none";
-    }
+<p>📄 ${x.csvFileName || "CSV File"}</p>
 
-    // Completed Popup
-    if(e.target == document.getElementById("completedPopup")){
-        document.getElementById("completedPopup").style.display="none";
-    }
+<br>
 
-    // Pending Popup
-    if(e.target == document.getElementById("pendingPopup")){
-        document.getElementById("pendingPopup").style.display="none";
-    }
+<button
+class="submit"
+onclick="downloadFile('${x.csvFile}')">
+📥 Download CSV
+</button>
 
-    // Download Popup
-    if(e.target == document.getElementById("downloadPopup")){
-        document.getElementById("downloadPopup").style.display="none";
-    }
+<br><br>
+`;
 
-    // Map Popup
-    if(e.target == document.getElementById("mapModal")){
-        document.getElementById("mapModal").style.display="none";
-    }
+}else{
 
-    // Present Users
-    if(e.target == document.getElementById("presentUsersModal")){
-        document.getElementById("presentUsersModal").style.display="none";
-    }
+html += `
+<div style="
+background:#ef4444;
+padding:5px 10px;
+border-radius:20px;
+display:inline-block;
+font-size:12px;
+font-weight:bold;
+margin-bottom:10px;
+">
+❌ No CSV Uploaded
+</div>
+
+<br><br>
+`;
+}
+
+html += `</div>`;
+});
+
+
+document.getElementById("viewSection").innerHTML =
+html;
 
 };
-function openAssignPopup(firestoreId, techName){
 
-    const assignName = prompt("Enter User Name");
+window.editSensorDetails = async function(reportId, source){
 
-    if(!assignName) return;
+if(!isAdmin){
+alert("Only Admin Allowed");
+return;
+}
 
-    saveAssignedTech(firestoreId, assignName);
+const report = allData.find(x=>x.id===reportId);
+
+if(!report) return;
+
+const usedWire = prompt(
+"Used Wire",
+report.usedWire || ""
+);
+
+if(usedWire===null) return;
+
+const sensorNo = prompt(
+"Sensor No",
+report.sensorNo || ""
+);
+
+if(sensorNo===null) return;
+
+const indusId = prompt(
+"Indus ID",
+report.indusId || ""
+);
+
+if(indusId===null) return;
+
+try{
+
+const database =
+source==="old"
+? oldDb
+: db;
+
+await updateDoc(
+doc(database,"reports",reportId),
+{
+usedWire,
+sensorNo,
+indusId
+}
+);
+
+alert("✅ Details Updated");
+
+await loadData();
+
+showDay(report.date);
+
+}
+catch(e){
+
+console.log(e);
+
+alert("❌ Update Failed");
 
 }
 
-let selectedAssignTech = "";
+};
 
-function openAssignPopup(techName){
+window.openModalForDate = function(date){
+document.getElementById("modal").style.display = "flex";
 
-    const assignName = prompt("Enter User Name");
+document.getElementById("formSection").style.display =
+"block";
 
-    if(!assignName) return;
+document.getElementById("viewSection").style.display =
+"none";
 
-    saveAssignedTech(techName, assignName);
+document.getElementById("date").value = date;
+
+document.getElementById("name").value =
+currentUser;
+
+};
+window.replaceCSV = async function(reportId, source){
+
+if(!isAdmin){
+    alert("Only Admin Allowed");
+    return;
+}
+
+const input = document.createElement("input");
+input.type = "file";
+input.accept = ".csv";
+
+input.onchange = async function(){
+
+const file = input.files[0];
+if(!file) return;
+
+try{
+
+alert("Uploading CSV...");
+
+const csvUrl = await uploadRawFile(file);
+
+const database =
+source === "old"
+? oldDb
+: db;
+
+await updateDoc(
+doc(database,"reports",reportId),
+{
+csvFile: csvUrl,
+csvFileName: file.name
+}
+);
+
+alert("✅ CSV Changed Successfully");
+
+await loadData();
 
 }
-async function saveAssignedTech(techName, assignName){
+catch(e){
 
-    try{
+console.error(e);
 
-        const batch = db.batch();
-
-        selectedTechPending.forEach(item=>{
-
-            if(!item.firestoreId) return;
-
-            const ref = db.collection("pendingSites")
-                          .doc(item.firestoreId);
-
-            batch.update(ref,{
-                assigned: true,
-                assignedTo: assignName,
-                assignedTime: Date.now()
-            });
-
-        });
-
-        await batch.commit();
-
-        alert("✅ Assigned Successfully");
-
-    }catch(err){
-
-        console.error(err);
-
-        alert("❌ Assign Failed");
-
-    }
+alert("❌ Upload Failed");
 
 }
-async function unassignTech(techName){
 
-    if(!confirm("Do you want to Unassign this Tech?")) return;
+};
 
-    try{
+input.click();
 
-        const batch = db.batch();
+};
+/* DELETE */
 
-        const techRows = excelData.filter(item=>{
+window.deleteEntry = async function(id){
 
-            const tech = (
-                item["FSC Name"] ||
-                item["FSC NAME"] ||
-                item["Fsc Name"] ||
-                item["Tech Name"] ||
-                ""
-            ).trim();
+if(!isAdmin){
 
-            return tech === techName;
+alert("❌ Only Admin Can Delete");
 
-        });
-
-        techRows.forEach(item=>{
-
-            if(!item.firestoreId) return;
-
-            batch.update(
-                db.collection("pendingSites").doc(item.firestoreId),
-                {
-                    assigned:false,
-                    assignedTo:"",
-                    assignedTime:""
-                }
-            );
-
-        });
-
-        await batch.commit();
-
-        alert("✅ Tech Unassigned Successfully");
-
-    }catch(err){
-
-        console.error(err);
-        alert("❌ Unassign Failed");
-
-    }
+return;
 
 }
-</script>
-<div id="presentUsersModal" style="
-display:none;
-position:fixed;
-top:0;
-left:0;
-width:100%;
-height:100%;
-background:rgba(0,0,0,.7);
-z-index:99999;
-justify-content:center;
-align-items:center;
-">
 
-<div style="
-background:white;
+if(!confirm("Delete Entry?")) return;
+
+try{
+
+await deleteDoc(
+doc(db,"reports",id)
+);
+
+alert("✅ Deleted");
+
+closeModal();
+
+loadData();
+
+}
+catch(e){
+
+console.log(e);
+
+alert("❌ Delete Failed");
+
+}
+
+};
+
+/* DOWNLOAD CSV */
+
+/* DOWNLOAD OPTIONS */
+
+window.openDownloadOptions = function(){
+
+document.getElementById("downloadModal").style.display =
+"flex";
+
+};
+
+window.closeDownloadModal = function(){
+
+document.getElementById("downloadModal").style.display =
+"none";
+
+};
+window.openCsvDownloadModal = function(){
+    document.getElementById("csvDownloadModal").style.display = "flex";
+}
+
+window.closeCsvDownloadModal = function(){
+    document.getElementById("csvDownloadModal").style.display = "none";
+}
+/* DOWNLOAD CSV */
+
+window.downloadReportsByType = function(type){
+
+let rows = [[
+"Date",
+"Name",
+"Type",
+"Category",
+"RG No",
+"Asset Code",
+"IMEI",
+"Sensor No",
+"Installation Type",
+"Used Wire",
+"Indus ID",
+"Video Link",
+"Photos"
+]];
+
+/* FILTER DATA */
+
+let filtered =
+allData.filter(x => x.type === type);
+
+filtered.forEach(x=>{
+
+rows.push([
+
+x.date || "",
+x.name || "",
+x.type || "",
+x.category || "",
+/* GPS */
+x.rgno || "",
+x.assetcode || "",
+x.imei || "",
+
+/* COMMON */
+x.sensorNo || "",
+
+/* SENSOR */
+x.installationType || "",
+x.usedWire || "",
+x.indusId || "",
+
+/* VIDEO */
+x.video || "",
+
+/* PHOTOS */
+x.photos ? x.photos.join(" | ") : ""
+
+]);
+
+});
+
+/* CSV */
+
+let csv =
+rows.map(row =>
+
+row.map(value =>
+
+`"${String(value).replace(/"/g,'""')}"`
+
+).join(",")
+
+).join("\n");
+
+/* DOWNLOAD */
+
+let blob =
+new Blob(
+[csv],
+{
+type:"text/csv"
+}
+);
+
+let a =
+document.createElement("a");
+
+a.href =
+URL.createObjectURL(blob);
+
+a.download =
+`${type}_reports.csv`;
+
+a.click();
+
+closeDownloadModal();
+
+};
+
+/* MONTH */
+
+window.prevMonth = function(){
+
+currentDate.setMonth(
+currentDate.getMonth()-1
+);
+
+renderCalendar();
+
+};
+window.downloadFile = function(url){
+
+const link = document.createElement("a");
+
+link.href = url.replace(
+"/upload/",
+"/upload/fl_attachment/"
+);
+
+link.target = "_self";
+
+document.body.appendChild(link);
+
+link.click();
+
+document.body.removeChild(link);
+
+};
+
+window.changePhoto = async function(reportId, photoIndex){
+
+const input = document.createElement("input");
+input.type = "file";
+input.accept = "image/*";
+
+input.onchange = async function(){
+
+const file = input.files[0];
+if(!file) return;
+
+try{
+
+alert("Uploading New Photo...");
+
+const newUrl = await uploadToCloudinary(file);
+
+const report = allData.find(x => x.id === reportId);
+
+if(!report || !report.photos) return;
+
+report.photos[photoIndex] = newUrl;
+
+await updateDoc(
+doc(db,"reports",reportId),
+{
+photos: report.photos
+}
+);
+
+alert("✅ Photo Updated");
+
+loadData();
+showDay(report.date);
+
+}
+catch(e){
+
+console.log(e);
+alert("❌ Update Failed");
+
+}
+
+};
+
+input.click();
+
+};
+
+// =====================
+// इसके नीचे paste करना है
+// =====================
+
+window.nextMonth = function(){
+
+currentDate.setMonth(
+currentDate.getMonth()+1
+);
+
+renderCalendar();
+
+};
+window.downloadCsvZip = async function(){
+
+const selectedDate =
+document.getElementById("csvDownloadDate").value;
+
+const selectedType =
+document.getElementById("csvDownloadType").value;
+
+if(!selectedDate){
+alert("Select Date");
+return;
+}
+
+const reports = allData.filter(x =>
+x.type === selectedType &&
+fixDate(x.date) === selectedDate &&
+x.csvFile
+);
+
+if(reports.length === 0){
+alert("No CSV Found");
+return;
+}
+
+const zip = new JSZip();
+
+for(let i=0;i<reports.length;i++){
+
+const response =
+await fetch(reports[i].csvFile);
+
+const blob =
+await response.blob();
+
+zip.file(
+reports[i].csvFileName || `CSV_${i+1}.csv`,
+blob
+);
+
+}
+
+const content =
+await zip.generateAsync({
+type:"blob"
+});
+
+const link =
+document.createElement("a");
+
+link.href =
+URL.createObjectURL(content);
+
+link.download =
+`${selectedType}_${selectedDate}.zip`;
+
+link.click();
+
+URL.revokeObjectURL(link.href);
+
+closeCsvDownloadModal();
+
+};
+window.openSearchModal = function(){
+
+document.getElementById("searchModal").style.display = "flex";
+
+document.getElementById("searchInput").value = "";
+
+document.getElementById("searchResults").innerHTML = "";
+
+document.getElementById("searchInput").focus();
+
+}
+document.addEventListener("input", function(e){
+
+if(e.target.id==="searchInput"){
+
+searchReports(e.target.value);
+
+}
+
+});
+
+window.closeSearchModal = function(){
+
+document.getElementById("searchModal").style.display = "none";
+
+}
+window.highlightSearch = function(text, keyword){
+
+text = String(text || "");
+
+if(!keyword) return text;
+
+const reg = new RegExp(keyword,"ig");
+
+return text.replace(reg,function(match){
+
+return `
+<span style="
+background:#facc15;
 color:black;
-width:90%;
-max-width:500px;
-border-radius:20px;
-padding:20px;
-max-height:80vh;
-overflow:auto;
-">
-
-<h2 style="margin-bottom:15px;">
-✅ Present Users
-</h2>
-
-<div style="
-display:flex;
-justify-content:center;
-align-items:center;
-gap:15px;
-margin-bottom:15px;
-">
-
-<button onclick="prevReportDate()">
-⬅
-</button>
-
-<span id="reportDateLabel"></span>
-
-<button onclick="nextReportDate()">
-➡
-</button>
-
-</div>
-<div id="presentUsersList"></div>
-
-<br>
-
-<button onclick="closePresentUsers()"
-style="
-padding:10px 20px;
-border:none;
-background:red;
-color:white;
-border-radius:10px;
-cursor:pointer;
-">
-Close
-</button>
-
-</div>
-
-</div>
-<div id="presentPopup" style="
-display:none;
-position:fixed;
-top:0;
-left:0;
-width:100%;
-height:100%;
-background:rgba(0,0,0,.7);
-z-index:99999;
-justify-content:center;
-align-items:center;
-">
-
-<div style="
-background:white;
-color:black;
-width:90%;
-max-width:500px;
-padding:20px;
-border-radius:20px;
-max-height:80vh;
-overflow:auto;
-">
-
-<h2 style="text-align:center;">
-Present Users
-</h2>
-
-<div style="
-display:flex;
-justify-content:center;
-gap:15px;
-margin:15px 0;
-">
-
-<button onclick="prevAttendanceDate()">⬅</button>
-
-<span id="attendancePopupDate"></span>
-
-<button onclick="nextAttendanceDate()">➡</button>
-
-</div>
-
-<div id="presentUsersList"></div>
-
-<br>
-
-<button onclick="closePresentPopup()"
-style="
-width:100%;
-padding:12px;
-background:red;
-color:white;
-border:none;
-border-radius:10px;
-">
-Close
-</button>
-
-</div>
-
-</div>
-
-<div id="completedPopup"
-style="
-display:none;
-position:fixed;
-top:0;
-left:0;
-width:100%;
-height:100%;
-background:rgba(0,0,0,.6);
-justify-content:center;
-align-items:center;
-z-index:99999;
-">
-
-<div style="
-background:white;
-width:90%;
-max-width:800px;
-max-height:80vh;
-overflow:auto;
-padding:20px;
-border-radius:15px;
-">
-
-<h2>Completed Sites</h2>
-
-<div id="completedList"></div>
-
-<br>
-<div style="
-display:flex;
-gap:10px;
-margin-top:20px;
-">
-
-<button
-onclick="downloadCompletedList()"
-style="
-flex:1;
-padding:12px;
-background:#16a34a;
-color:white;
-border:none;
-border-radius:10px;
-cursor:pointer;
-">
-📥 Download Excel
-</button>
-
-<button
-onclick="closeCompletedPopup()"
-style="
-flex:1;
-padding:12px;
-background:#ef4444;
-color:white;
-border:none;
-border-radius:10px;
-cursor:pointer;
-">
-❌ Close
-</button>
-
-</div>
-</div>
-
-</div>
-<div id="pendingPopup"
-style="
-display:none;
-position:fixed;
-top:0;
-left:0;
-width:100%;
-height:100%;
-background:rgba(0,0,0,.6);
-justify-content:center;
-align-items:center;
-z-index:99999;
-">
-
-<div
-style="
-background:white;
-padding:30px;
-width:320px;
-border-radius:20px;
-text-align:center;
-">
-
-<h2>Pending Sites</h2>
-
-<br>
-
-<button
-onclick="showDownloadOptions()"
-style="
-width:100%;
-padding:12px;
-margin-bottom:15px;
-background:#2563eb;
-color:white;
-border:none;
-border-radius:10px;
-cursor:pointer;
-">
-📥 Download 
-</button>
-
-<button
-onclick="openPendingMap()"
-style="
-width:100%;
-padding:12px;
-background:#16a34a;
-color:white;
-border:none;
-border-radius:10px;
-cursor:pointer;
-">
-🗺 Open Map
-</button>
-
-<br><br>
-
-<button
-onclick="closePendingPopup()"
-style="
-width:100%;
-padding:10px;
-background:red;
-color:white;
-border:none;
-border-radius:10px;
-">
-Close
-</button>
-
-</div>
-
-</div>
-<div id="downloadPopup"
-style="
-display:none;
-position:fixed;
-top:0;
-left:0;
-width:100%;
-height:100%;
-background:rgba(0,0,0,.6);
-justify-content:center;
-align-items:center;
-z-index:99999;
-">
-
-<div
-style="
-background:white;
-padding:30px;
-width:320px;
-border-radius:20px;
-text-align:center;
-">
-
-<h2>Download Pending</h2>
-
-<br>
-
-<button
-onclick="downloadPendingCSV()"
-style="
-width:100%;
-padding:12px;
-margin-bottom:15px;
-background:#16a34a;
-color:white;
-border:none;
-border-radius:10px;
-">
-CSV
-</button>
-
-<button
-onclick="downloadTechPending()"
-style="
-width:100%;
-padding:12px;
-margin-bottom:15px;
-background:#2563eb;
-color:white;
-border:none;
-border-radius:10px;
-cursor:pointer;
+padding:2px 4px;
+border-radius:4px;
 font-weight:bold;
 ">
-📥 Download Excel
-</button>
+${match}
+</span>
+`;
 
-<br><br>
+});
 
-<button
-onclick="closeDownloadPopup()"
-style="
-width:100%;
-padding:10px;
-background:red;
-color:white;
-border:none;
-border-radius:10px;
+}
+window.searchReports = function(keyword){
+
+keyword = keyword.trim().toLowerCase();
+
+const resultBox =
+document.getElementById("searchResults");
+
+if(keyword===""){
+
+resultBox.innerHTML = `
+<div style="
+text-align:center;
+padding:30px;
+opacity:.7;
 ">
-Close
-</button>
-
+Type anything to search...
 </div>
+`;
 
-</div>
-<!-- Pending Tech Menu -->
-<div id="pendingTechPopup"
-onclick="closeTechPendingPopup()"
-style="
-display:none;
-position:fixed;
-top:0;
-left:0;
-width:100%;
-height:100%;
-background:rgba(0,0,0,.35);
-justify-content:center;
-align-items:center;
-z-index:999999;
+return;
+
+}
+
+const results = allData.filter(x=>{
+
+return (
+
+String(x.indusId || "")
+.toLowerCase()
+.includes(keyword)
+
+||
+
+String(x.sensorNo || "")
+.toLowerCase()
+.includes(keyword)
+
+||
+
+String(x.rgno || "")
+.toLowerCase()
+.includes(keyword)
+
+||
+
+String(x.assetcode || "")
+.toLowerCase()
+.includes(keyword)
+
+||
+
+String(x.imei || "")
+.toLowerCase()
+.includes(keyword)
+
+||
+
+String(x.category || "")
+.toLowerCase()
+.includes(keyword)
+
+||
+
+String(x.installationType || "")
+.toLowerCase()
+.includes(keyword)
+
+||
+
+String(x.usedWire || "")
+.toLowerCase()
+.includes(keyword)
+
+||
+
+String(x.name || "")
+.toLowerCase()
+.includes(keyword)
+
+||
+
+String(x.date || "")
+.toLowerCase()
+.includes(keyword)
+
+);
+
+});
+
+if(results.length===0){
+
+resultBox.innerHTML = `
+<div style="
+text-align:center;
+padding:30px;
+color:#ffb4b4;
 ">
+❌ No Report Found
+</div>
+`;
+
+return;
+
+}
+const k = keyword;
+let html="";
+
+results.forEach(r=>{
+const photo =
+r.photos && r.photos.length
+? r.photos[0]
+: "";
+
+html+=`
 
 <div
-onclick="event.stopPropagation()"
+onclick="openSearchResult('${r.id}')"
 style="
-position:relative;
-width:420px;
-max-width:95%;
-max-height:85vh;
-overflow:auto;
-background:white;
+background:#111827;
+border-radius:18px;
+padding:15px;
+margin-bottom:15px;
+cursor:pointer;
+transition:.3s;
+display:flex;
+gap:15px;
+align-items:center;
+">
+
+<img
+src="${photo || 'https://via.placeholder.com/80'}"
+style="
+width:80px;
+height:80px;
 border-radius:12px;
-padding:20px;
-box-shadow:0 10px 30px rgba(0,0,0,.25);
+object-fit:cover;
+flex-shrink:0;
 ">
-<div id="techPendingBody">
 
-<div
-style="
-padding:12px;
+<div style="flex:1;">
+
+<div style="
+font-size:17px;
 font-weight:bold;
-background:#f5f5f5;
-border-bottom:1px solid #ddd;
+margin-bottom:5px;
 ">
-
-Pending By Tech
-
+👤 ${highlightSearch(r.name,k)}
 </div>
 
-<div id="pendingTechList"></div>
-
+<div>
+📅 ${highlightSearch(r.date,k)}
 </div>
 
+<div>
+📌 ${highlightSearch(r.type,k)}
 </div>
 
+<div>
+🆔 ${highlightSearch(r.indusId,k)}
 </div>
-<div id="totalListPopup"
-style="
-display:none;
-position:fixed;
-top:0;
-left:0;
-width:100%;
-height:100%;
-background:rgba(0,0,0,.6);
-justify-content:center;
-align-items:center;
-z-index:999999;
-">
 
-<div
-style="
-background:white;
-width:90%;
-max-width:600px;
-max-height:80vh;
-overflow:auto;
-border-radius:15px;
-padding:20px;
-">
+<div>
+🔢 ${highlightSearch(r.sensorNo,k)}
+</div>
 
-<h2>📋 Download Total List</h2>
-
-<div id="totalListBody"></div>
-
-<br>
-
-<button
-onclick="closeTotalListPopup()"
-style="
-width:100%;
-padding:12px;
-background:#ef4444;
-color:white;
-border:none;
-border-radius:10px;
-cursor:pointer;
-">
-Close
-</button>
+<div>
+🏢 ${highlightSearch(r.assetcode || r.rgno || "-",k)}
+</div>
 
 </div>
 
 </div>
 
+`;
+
+});
+
+resultBox.innerHTML = html;
+
+}
+/* START */
+
+loadData();
+
+</script>
+<script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
+<script src="https://upload-widget.cloudinary.com/global/all.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 </body>
+
 </html>
