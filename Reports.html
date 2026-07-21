@@ -434,7 +434,11 @@ style="margin-top:8px;font-size:13px;color:#fff;">
 </div>
 <div class="form-card">
 <label>Indus ID</label>
-<input id="indusId" type="number" required>
+<input
+type="text"
+id="indusId"
+placeholder="Enter Indus ID"
+oninput="formatIndusInput(this)" required>
 </div>
 
 <div class="form-card">
@@ -2493,12 +2497,21 @@ report.sensorNo || ""
 
 if(sensorNo===null) return;
 
-const indusId = prompt(
-"Indus ID",
-report.indusId || ""
+let indusId = prompt(
+    "Indus ID (Sirf Number)",
+    (report.indusId || "").replace(/^IN-?/i, "")
 );
 
-if(indusId===null) return;
+if(indusId === null) return;
+
+// Sirf numbers allow
+indusId = indusId.replace(/\D/g, "");
+
+// Agar kuch bhi number nahi hai
+if(indusId === ""){
+    alert("❌ Sirf Number Enter Kare.");
+    return;
+}
 
 try{
 
@@ -2508,12 +2521,12 @@ source==="old"
 : db;
 
 await updateDoc(
-doc(database,"reports",reportId),
-{
-usedWire,
-sensorNo,
-indusId
-}
+    doc(database,"reports",reportId),
+    {
+        usedWire,
+        sensorNo,
+        indusId: formatIndusId(indusId)
+    }
 );
 
 alert("✅ Details Updated");
@@ -3140,6 +3153,14 @@ margin-bottom:5px;
 
 resultBox.innerHTML = html;
 
+}
+function formatIndusId(value){
+
+    if(!value) return "";
+
+    const numbers = String(value).replace(/\D/g, "");
+
+    return numbers ? "IN-" + numbers : "";
 }
 /* START */
 
