@@ -1190,11 +1190,12 @@ function showAssignList(){
     ">
 
     <tr>
-        <th>Tech</th>
-        <th>Assigned To</th>
-        <th>Project</th>
-        <th>Time</th>
-    </tr>
+    <th>Tech</th>
+    <th>Assigned To</th>
+    <th>Project</th>
+    <th>Time</th>
+    <th>Location</th>
+</tr>
     `;
 
     assigned.forEach(item=>{
@@ -1220,6 +1221,23 @@ function showAssignList(){
                 ? new Date(item.assignedTime).toLocaleString()
                 : "-"
             }</td>
+            <td>
+<button
+onclick="openSiteLocation(
+'${item["Lat"] || item["LAT"] || item["Latitude"] || item["latitude"] || item["Site Lat"] || ""}',
+'${item["Long"] || item["LONG"] || item["Longitude"] || item["longitude"] || item["Lng"] || item["LNG"] || item["Site Long"] || ""}'
+)"
+style="
+background:#16a34a;
+color:white;
+border:none;
+padding:6px 10px;
+border-radius:6px;
+cursor:pointer;
+">
+📍 Map
+</button>
+</td>
 
         </tr>
         `;
@@ -1262,6 +1280,19 @@ function showAssignList(){
     );
 
     document.body.appendChild(popup);
+
+}
+function openSiteLocation(lat, lng){
+
+    if(!lat || !lng){
+        alert("Location not available");
+        return;
+    }
+
+    window.open(
+        `https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}`,
+        "_blank"
+    );
 
 }
 function listenReports(){
@@ -4057,29 +4088,26 @@ window.onclick = function(e){
     }
 
 };
-function openAssignPopup(firestoreId, techName){
-
-    const assignName = prompt("Enter User Name");
-
-    if(!assignName) return;
-
-    saveAssignedTech(firestoreId, assignName);
-
-}
 
 let selectedAssignTech = "";
 
 function openAssignPopup(techName){
+
+    // Pehle selectedTechPending ko refresh karo
+    openTechPending(techName);
 
     const assignName = prompt("Enter User Name");
 
     if(!assignName) return;
 
     saveAssignedTech(techName, assignName);
-
 }
-async function saveAssignedTech(techName, assignName){
 
+async function saveAssignedTech(techName, assignName){
+if (selectedTechPending.length === 0) {
+    alert("No sites selected for assignment.");
+    return;
+}
     try{
 
         const batch = db.batch();
@@ -4098,10 +4126,31 @@ async function saveAssignedTech(techName, assignName){
             });
 
         });
+console.log("Selected Total:", selectedTechPending.length);
 
+selectedTechPending.forEach(item => {
+    console.log(
+        item["Indus ID"],
+        item.firestoreId,
+        item.assigned
+    );
+});
+console.log("Selected Tech Pending:", selectedTechPending);
+
+selectedTechPending.forEach(item => {
+    console.log(
+        "Indus ID:", item["Indus ID"],
+        "Firestore ID:", item.firestoreId
+    );
+});
         await batch.commit();
 
         alert("✅ Assigned Successfully");
+        showPendingTechMenu();
+
+if(selectedTechName){
+    openTechPending(selectedTechName);
+}
 
     }catch(err){
 
@@ -4152,7 +4201,9 @@ async function unassignTech(techName){
         await batch.commit();
 
         alert("✅ Tech Unassigned Successfully");
+await listenPendingSites();
 
+showPendingTechMenu();
     }catch(err){
 
         console.error(err);
