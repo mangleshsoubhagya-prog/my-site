@@ -1181,67 +1181,143 @@ function showAssignList(){
     ">
 
     <h2>👤 Assign List</h2>
-
-    <table border="1"
-    style="
-    width:100%;
-    border-collapse:collapse;
-    text-align:left;
-    ">
-
-    <tr>
-    <th>Tech</th>
-    <th>Assigned To</th>
-    <th>Project</th>
-    <th>Time</th>
-    <th>Location</th>
+<table
+style="
+width:100%;
+border-collapse:collapse;
+overflow:hidden;
+border-radius:12px;
+box-shadow:0 4px 15px rgba(0,0,0,.12);
+font-size:14px;
+">
+<tr style="
+background:linear-gradient(90deg,#2563eb,#1d4ed8);
+color:white;
+font-weight:bold;
+">
+    <th style="padding:12px;">🆔 Indus ID</th>
+    <th style="padding:12px;">🏢 Site Name</th>
+    <th style="padding:12px;">👷 Tech Name</th>
+    <th style="padding:12px;">📞 Tech Contact</th>
+    <th style="padding:12px;">👤 Assigned To</th>
+    <th style="padding:12px;">👨‍🔧 FSC Name</th>
+    <th style="padding:12px;">☎ FSC Contact</th>
+    <th style="padding:12px;">📍 Location</th>
 </tr>
     `;
 
     assigned.forEach(item=>{
 
-        const tech =
-            item["FSC Name"] ||
-            item["FSC NAME"] ||
-            item["Fsc Name"] ||
-            item["Tech Name"] ||
-            "-";
+const indusId =
+    item["Indus ID"] ||
+    item["Indus Id"] ||
+    item["INDUS ID"] ||
+    item["INDUS_ID"] ||
+    "-";
+
+const siteName =
+    item["Name"] ||
+    item["Site Name"] ||
+    item["SITE NAME"] ||
+    item["Location"] ||
+    "-";
+
+const tech =
+    item["FSC Name"] ||
+    item["FSC NAME"] ||
+    item["Fsc Name"] ||
+    item["Tech Name"] ||
+    "-";
+
+const techNumber =
+    item["Tech Number"] ||
+    item["Tech Contact no"] ||
+    item["Mobile"] ||
+    item["Phone"] ||
+    item["Contact"] ||
+    "-";
+    
+    const fscName =
+    item["FSE Name"] ||
+    item["FSC Name"] ||
+    item["FSC NAME"] ||
+    item["Engineer Name"] ||
+    "-";
+
+const fscContact =
+    item["FSE Contact"] ||
+    item["FSC Contact"] ||
+    item["FSE Mobile"] ||
+    item["FSC Mobile"] ||
+    item["Engineer Mobile"] ||
+    item["Contact No"] ||
+    "-";
 
         html += `
-        <tr>
+<tr>
 
-            <td>${tech}</td>
+    <td>${indusId}</td>
 
-            <td>${item.assignedTo || "-"}</td>
+    <td>${siteName}</td>
 
-            <td>${item.projectId || "-"}</td>
+    <td>${tech}</td>
 
-            <td>${
-                item.assignedTime
-                ? new Date(item.assignedTime).toLocaleString()
-                : "-"
-            }</td>
-            <td>
-<button
-onclick="openSiteLocation(
-'${item["Lat"] || item["LAT"] || item["Latitude"] || item["latitude"] || item["Site Lat"] || ""}',
-'${item["Long"] || item["LONG"] || item["Longitude"] || item["longitude"] || item["Lng"] || item["LNG"] || item["Site Long"] || ""}'
-)"
-style="
-background:#16a34a;
-color:white;
-border:none;
-padding:6px 10px;
-border-radius:6px;
-cursor:pointer;
-">
-📍 Map
-</button>
+    <td>
+    ${
+        techNumber !== "-"
+        ? `
+        <a href="tel:${techNumber}"
+        style="
+        color:#2563eb;
+        text-decoration:none;
+        font-weight:bold;
+        ">
+        📞 ${techNumber}
+        </a>
+        `
+        : "-"
+    }
+</td>
+<td>${item.assignedTo || "-"}</td>
+<td>${fscName}</td>
+
+<td>
+    ${
+        fscContact !== "-"
+        ? `
+        <a href="tel:${fscContact}"
+        style="
+        color:#2563eb;
+        text-decoration:none;
+        font-weight:bold;
+        ">
+        📞 ${fscContact}
+        </a>
+        `
+        : "-"
+    }
 </td>
 
-        </tr>
-        `;
+    <td>
+        <button
+        onclick="openSiteLocation(
+        '${item["Lat"] || item["LAT"] || item["Latitude"] || item["latitude"] || item["Site Lat"] || ""}',
+        '${item["Long"] || item["LONG"] || item["Longitude"] || item["longitude"] || item["Lng"] || item["LNG"] || item["Site Long"] || ""}'
+        )"
+        style="
+        background:#16a34a;
+        color:white;
+        border:none;
+        padding:6px 10px;
+        border-radius:6px;
+        cursor:pointer;
+        ">
+        📍 Map
+        </button>
+    </td>
 
+</tr>
+`;
     });
 
     html += `
@@ -2759,20 +2835,47 @@ function showCompletedPopup(){
 
         if(reportMap[id]){
 
-            html+=`
-            <div style="
-            padding:10px;
-            margin-bottom:10px;
-            border:1px solid #ddd;
-            border-radius:10px;
-            ">
+    
+ html+=`
+<div style="
+background:#111827;
+color:white;
+padding:18px;
+margin-bottom:15px;
+border-radius:16px;
+border:1px solid rgba(255,255,255,.08);
+box-shadow:0 8px 20px rgba(0,0,0,.25);
+transition:.3s;
+">
 
-            <b>Indus ID :</b> ${id}<br>
+<div style="font-size:18px;font-weight:bold;color:#fbbf24;">
+🆔 ${id}
+</div>
 
-            <b>Date :</b> ${reportMap[id].date || "-"}
+<div style="margin-top:10px;color:#d1d5db;">
+📅 ${reportMap[id].date || "-"}
+</div>
 
-            </div>
-            `;
+<div style="
+margin-top:12px;
+display:inline-block;
+background:#16a34a;
+padding:6px 14px;
+border-radius:20px;
+font-size:14px;
+font-weight:bold;
+">
+👤 ${
+    reportMap[id].name ||
+    reportMap[id].engineer ||
+    reportMap[id].userName ||
+    reportMap[id].createdBy ||
+    "-"
+}
+</div>
+
+</div>
+`;
 
         }
 
@@ -4436,6 +4539,7 @@ border-radius:15px;
 ">
 
 <h2>Completed Sites</h2>
+
 
 <div id="completedList"></div>
 
