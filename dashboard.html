@@ -713,7 +713,7 @@ font-weight:bold;
 <input
     type="file"
     id="csvFile"
-    accept=".csv"
+    accept=".csv,.xlsx,.xls"
     multiple
     onchange="handleCSV(this)"
     style="margin-top:15px;width:100%;">
@@ -2131,18 +2131,20 @@ function handleImport() {
       }
 
       // ---------------- EXCEL ----------------
-      else {
+else {
 
-        const workbook = XLSX.read(
-          new Uint8Array(e.target.result),
-          { type: "array" }
-        );
+  const workbook = XLSX.read(
+    new Uint8Array(e.target.result),
+    { type: "array" }
+  );
 
-        const sheetName = workbook.SheetNames[0];
-        const sheet = workbook.Sheets[sheetName];
+  const sheetName = workbook.SheetNames[0];
+  const sheet = workbook.Sheets[sheetName];
 
-    
-      }
+  data = XLSX.utils.sheet_to_json(sheet, {
+    defval: ""
+  });
+}
 
       console.log("Imported Data:", data);
 
@@ -2154,8 +2156,15 @@ function handleImport() {
       // update dashboard
       updateCounts(data);
 
-      alert("✅ Import Successful! Total Records: " + data.length);
+      alert(
+    "✅ Upload Complete!\n\n" +
+    "File : " + file.name +
+    "\nTotal Records : " + data.length +
+    "\nStatus : " +
+    (window.importAsHold ? "HOLD" : "PENDING")
+);
 
+window.importAsHold = false;
     } catch (error) {
       console.error(error);
       alert("❌ Import failed. Invalid file format.");
@@ -2168,7 +2177,223 @@ function handleImport() {
   } else {
     reader.readAsArrayBuffer(file);
   }
+}window.openHoldImportModal = function(){
+
+    const fileInput = document.getElementById("holdImportFile");
+
+    if(!fileInput){
+        alert("❌ Hold Import file input nahi mila!");
+        return;
+    }
+
+    // Purani selected file clear
+    fileInput.value = "";
+
+    // Hold Import ke liye unique batch ID
+    window.currentHoldImportBatchId =
+        "HOLD_" + Date.now();
+
+    // File picker open
+    fileInput.click();
+};
+async function handleHoldImportFile(file){
+
+    if(!file){
+        return;
+    }
+
+    const fileName = file.name.toLowerCase();
+    const allowedExtensions = ["csv", "xlsx", "xls"];
+    const fileExtension = fileName.split(".").pop();
+
+    if(!allowedExtensions.includes(fileExtension)){
+        alert("❌ Sirf CSV aur Excel file allowed hai!");
+        return;
+    }
+
+    try{
+
+        let data = [];
+
+        // ================= CSV =================
+        if(fileExtension === "csv"){
+
+            const text = await file.text();
+
+            const rows = text
+                .split(/\r?\n/)
+                .map(r => r.trim())
+                .filter(r => r.length > 0)
+                .map(r => r.split(","));
+
+            if(rows.length < 2){
+                alert("❌ File empty hai!");
+                return;
+            }
+
+            const headers = rows[0];
+
+            data = rows.slice(1).map(row => {
+
+                let obj = {};
+
+                headers.forEach((h, i) => {
+                    obj[h.trim()] =
+                        (row[i] || "").trim();
+                });
+
+                return obj;
+            });
+        }
+
+        // ================= EXCEL =================
+        else{
+
+            const buffer = await file.arrayBuffer();
+
+            const workbook = XLSX.read(
+                new Uint8Array(buffer),
+                {type:"array"}
+            );
+
+            const sheetName = workbook.SheetNames[0];
+            const sheet = workbook.Sheets[sheetName];
+
+            data = XLSX.utils.sheet_to_json(
+                sheet,
+                {defval:""}
+            );
+        }
+
+        if(!data || data.length === 0){
+            alert("❌ File empty hai!");
+            return;
+        }
+
+        let holdUpdated = 0;
+        let notFound = 0;
+        let alreadyHold = 0;
+        let completed = 0;
+
+        // ================= UPDATE FIRESTORE =================
+
+        for(const row of data){
+
+            const indusId = String(
+                row["Indus ID"] ||
+                row["Indus Id"] ||
+                row["INDUS ID"] ||
+                row["INDUS_ID"] ||
+                row["indusId"] ||
+                ""
+            ).trim();
+
+            if(!indusId){
+                notFound++;
+                continue;
+            }
+
+            // pendingSites ka document Indus ID se bana hua hai
+            const docRef =
+                db.collection("pendingSites").doc(indusId);
+
+            const docSnap = await docRef.get();
+
+            // Record nahi mila
+            if(!docSnap.exists){
+                notFound++;
+                continue;
+            }
+
+            const existing = docSnap.data();
+
+            // Already Hold
+            if(
+                existing.status === "Hold" ||
+                existing.pendingStatus === "Hold"
+            ){
+                alreadyHold++;
+                continue;
+            }
+
+            // Completed ko Hold mat karo
+            if(
+                existing.status === "Completed" ||
+                existing.pendingStatus === "Completed"
+            ){
+                completed++;
+                continue;
+            }
+
+            // ================= PENDING → HOLD =================
+
+            await docRef.update({
+
+                status: "Hold",
+
+                pendingStatus: "Hold",
+
+                importBatchId:
+                    window.currentHoldImportBatchId,
+
+                holdImportTime:
+                    Date.now(),
+
+                holdImportFile:
+                    file.name
+
+            });
+
+            holdUpdated++;
+        }
+
+        // ================= RESULT =================
+
+        alert(
+            "✅ Upload Complete!\n\n" +
+
+            "File : " + file.name +
+
+            "\nTotal Rows : " + data.length +
+
+            "\nHold Updated : " + holdUpdated +
+
+            "\nAlready Hold : " + alreadyHold +
+
+            "\nCompleted Skip : " + completed +
+
+            "\nNot Found : " + notFound
+        );
+
+        // Hold import ke data ko excelData me mat daalo
+        // Isse normal file/data hide nahi hoga.
+
+        window.currentHoldImportBatchId = null;
+
+        // Dashboard ko Firestore se dobara load karo
+        if(typeof loadPendingSites === "function"){
+            await loadPendingSites();
+        }
+
+        if(typeof updateCompletedPending === "function"){
+            updateCompletedPending();
+        }
+
+    }
+    catch(error){
+
+        console.error(
+            "Hold Import Error:",
+            error
+        );
+
+        alert(
+            "❌ Hold Import failed!\n\n" +
+            error.message
+        );
+    }
 }
+
 function applyTheme(){
 
 let theme =
@@ -2817,11 +3042,23 @@ updateCompletedPending();
                 continue;
             }
 
-   await docRef.set({
-    projectId: projectId,   // 👈 New
+await docRef.set({
+    projectId: projectId,
     indusId: indusId,
     data: row,
-    status: "Pending",
+
+    status: window.importAsHold
+        ? "Hold"
+        : "Pending",
+
+    pendingStatus: window.importAsHold
+        ? "Hold"
+        : "",
+
+    importBatchId: window.importAsHold
+        ? window.currentHoldImportBatchId
+        : "",
+
     createdAt: Date.now()
 });
 
@@ -2835,15 +3072,108 @@ await db.collection("pendingMeta")
         }
 
         alert(
-            "✅ Import Complete\n\n" +
-            "Added : " + added +
-            "\nSkipped : " + skipped
-        );
+    "✅ Upload Complete\n\n" +
+    "File : " + file.name +
+    "\nTotal Rows : " + data.length +
+    "\nUploaded : " + added +
+    "\nSkipped : " + skipped
+);
 
     };
 reader.readAsBinaryString(file);
 
 }
+// ---------------- DELETE LAST HOLD IMPORT ----------------
+
+async function deleteLastHoldImport(){
+
+    const confirmDelete = confirm(
+        "⚠️ Kya aap LAST HOLD IMPORT ke saare records delete karna chahte hain?\n\n" +
+        "Sirf last Hold Import delete hoga."
+    );
+
+    if(!confirmDelete){
+        return;
+    }
+
+    try{
+
+        // Latest Hold record find
+        const latestSnap = await db.collection("pendingSites")
+            .where("status", "==", "Hold")
+            .orderBy("createdAt", "desc")
+            .limit(1)
+            .get();
+
+        if(latestSnap.empty){
+
+            alert("❌ Koi Hold Import nahi mila.");
+            return;
+        }
+
+        const latestDoc = latestSnap.docs[0];
+        const latestData = latestDoc.data();
+
+        const batchId = latestData.importBatchId;
+
+        if(!batchId){
+
+            alert(
+                "⚠️ Last Hold record me Import Batch ID nahi hai.\n\n" +
+                "Ye purana Hold Import hai, isliye automatic delete nahi kiya ja sakta."
+            );
+
+            return;
+        }
+
+        // Same batch ke saare records
+        const snap = await db.collection("pendingSites")
+            .where("importBatchId", "==", batchId)
+            .get();
+
+        if(snap.empty){
+
+            alert("❌ Last Hold Import ke records nahi mile.");
+            return;
+        }
+
+        // Firestore batch max 500 writes
+        const docs = snap.docs;
+
+        for(let i = 0; i < docs.length; i += 450){
+
+            const batch = db.batch();
+
+            docs.slice(i, i + 450).forEach(doc => {
+                batch.delete(doc.ref);
+            });
+
+            await batch.commit();
+        }
+
+        alert(
+            "✅ Last Hold Import Deleted!\n\n" +
+            "Deleted Records : " + docs.length
+        );
+
+        // Reset
+        window.currentHoldImportBatchId = null;
+        window.importAsHold = false;
+
+    }catch(error){
+
+        console.error(
+            "Delete Last Hold Import Error:",
+            error
+        );
+
+        alert(
+            "❌ Delete failed!\n\n" +
+            error.message
+        );
+    }
+}
+
 function sendCSVToMap(){
 
     const mapFrame = document.querySelector(
@@ -3254,6 +3584,37 @@ font-weight:bold;
 ">
 📥 Download All
 </button>
+
+${currentMode === "hold" ? `
+<button
+    onclick="openHoldImportModal()"
+    style="
+        background:#dc2626;
+        color:white;
+        border:none;
+        padding:8px 14px;
+        border-radius:8px;
+        cursor:pointer;
+        font-weight:bold;
+        margin-left:8px;
+    ">
+    📤 Import Hold
+</button>
+<button
+    onclick="deleteLastHoldImport()"
+    style="
+        background:#7f1d1d;
+        color:white;
+        border:none;
+        padding:8px 14px;
+        border-radius:8px;
+        cursor:pointer;
+        font-weight:bold;
+        margin-left:8px;
+    ">
+    🗑 Delete Last Hold Import
+</button>
+` : ""}
 
 </div>
 
@@ -5748,6 +6109,12 @@ flex:1;
 </div>
 
 </div>
-
+<input
+  type="file"
+  id="holdImportFile"
+  accept=".csv,.xlsx,.xls"
+  style="display:none"
+  onchange="handleHoldImportFile(this.files[0])"
+>
 </body>
 </html>
