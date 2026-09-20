@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="en">
 
@@ -25,37 +26,119 @@
 
     </div>
 
+<!-- Summary Cards -->
+<div class="summaryCards">
 
-    <!-- Summary Cards -->
-    <div class="summaryCards">
+    <!-- TOTAL -->
+    <div
+        class="card"
+        id="totalRecordsCard"
+        onclick="openTotalRecords()"
+    >
 
-        <div class="card">
-            <div class="cardTitle">📋 Total Records</div>
-            <div class="cardValue" id="totalRecords">0</div>
+        <div class="cardTitle">
+            📋 Total Records
         </div>
 
-        <div class="card">
-            <div class="cardTitle">👀 Showing</div>
-            <div class="cardValue" id="showingRecords">0</div>
-        </div>
-
-        <div class="card">
-            <div class="cardTitle">🔍 Filtered</div>
-            <div class="cardValue" id="filteredRecords">0</div>
-        </div>
-
-        <div class="card">
-            <div class="cardTitle">📄 Total Pages</div>
-            <div class="cardValue" id="totalPages">0</div>
+        <div
+            class="cardValue"
+            id="totalRecords"
+        >
+            0
         </div>
 
     </div>
 
 
-    <!-- Toolbar -->
+    <!-- ASSIGN -->
+    <div
+        class="card"
+        id="assignTaskCard"
+        onclick="openAssignCard()"
+    >
 
+        <div class="cardTitle">
+            👤 Assign Task
+        </div>
+
+        <div
+            class="cardValue"
+            id="Assign Task"
+        >
+            0
+        </div>
+
+    </div>
+
+
+    <!-- HOLD -->
+    <div
+        class="card"
+        id="holdNameCard"
+        onclick="openHoldCard()"
+    >
+
+        <div class="cardTitle">
+            🛑 Hold Name
+        </div>
+
+        <div
+            class="cardValue"
+            id="Hold Name"
+        >
+            0
+        </div>
+
+    </div>
+
+
+    <!-- COMPLETE -->
+    <div
+        class="card"
+        id="completeListCard"
+        onclick="openCompleteCard()"
+    >
+
+        <div class="cardTitle">
+            ✅ Complite List
+        </div>
+
+        <div
+            class="cardValue"
+            id="Complite List"
+        >
+            0
+        </div>
+
+    </div>
+
+
+    <!-- PENDING -->
+    <div
+        class="card"
+        id="pendingCard"
+        onclick="openPendingCard()"
+    >
+
+        <div class="cardTitle">
+            ⏳ Pending
+        </div>
+
+        <div
+            class="cardValue"
+            id="pendingCount"
+        >
+            0
+        </div>
+
+    </div>
+
+</div>
+
+    <!-- Toolbar -->
     <div class="toolbar">
 
+        <!-- Search -->
         <div class="searchBox">
 
             <span>🔍</span>
@@ -67,43 +150,106 @@
                 onkeyup="globalSearch()">
 
         </div>
-<div class="toolbarButtons">
 
-    <select id="pageSize" class="selectBox" onchange="changePageSize()">
 
-        <option value="25">25 Rows</option>
+        <!-- Toolbar Buttons -->
+        <div class="toolbarButtons">
 
-        <option value="50" selected>50 Rows</option>
+            <select
+                id="pageSize"
+                class="selectBox"
+                onchange="changePageSize()">
 
-        <option value="100">100 Rows</option>
+                <option value="25">25 Rows</option>
+                <option value="50" selected>50 Rows</option>
+                <option value="100">100 Rows</option>
+                <option value="200">200 Rows</option>
 
-        <option value="200">200 Rows</option>
+            </select>
 
-    </select>
 
-    <button class="btn refreshBtn">
-        🔄 Refresh
-    </button>
+            <!-- IMPORT EXCEL / CSV -->
+            <input
+                type="file"
+                id="importFile"
+                accept=".xlsx,.xls,.csv"
+                style="display:none"
+                onchange="handleImport(event)"
+            >
 
-    <button class="btn excelBtn">
-        📥 Export Excel
-    </button>
+            <button
+                class="btn importBtn"
+                type="button"
+                onclick="document.getElementById('importFile').click()">
 
-</div>
+                📤 Import Excel
+
+            </button>
+<button
+    class="btn deleteImportBtn"
+    type="button"
+    onclick="deleteLastImport()">
+
+    🗑️ Delete Last Import
+
+</button>
+
+            <!-- REFRESH -->
+            <button
+                class="btn refreshBtn"
+                type="button"
+                onclick="location.reload()">
+
+                🔄 Refresh
+
+            </button>
+
+
+            <!-- EXPORT -->
+            <button
+                class="btn excelBtn"
+                type="button"
+                onclick="exportExcel()">
+
+                📥 Export Excel
+
+            </button>
+
+        </div>
+
+    </div>
+
 
     <!-- Table -->
-
     <div class="tableCard">
+
+        <!-- Pagination -->
         <div class="pagination">
 
-    <button class="pageBtn" onclick="prevPage()">◀ Previous</button>
+            <button
+                class="pageBtn"
+                onclick="prevPage()">
 
-    <span id="pageInfo">Page 1</span>
+                ◀ Previous
 
-    <button class="pageBtn" onclick="nextPage()">Next ▶</button>
+            </button>
 
-</div>
+            <span id="pageInfo">
+                Page 1
+            </span>
 
+            <button
+                class="pageBtn"
+                onclick="nextPage()">
+
+                Next ▶
+
+            </button>
+
+        </div>
+
+
+        <!-- Table -->
         <div class="tableWrapper">
 
             <table id="assignTable">
@@ -112,47 +258,45 @@
 
                     <tr>
 
-                       <th onclick="sortTable(0)">Indus ID ⬍</th>
-                       <th onclick="sortTable(1)">Site Name ⬍</th>
+                        <th onclick="sortTable(0)">
+                            Indus ID ⬍
+                        </th>
 
-                       <th onclick="sortTable(2)">Tech Name ⬍</th>
+                        <th onclick="sortTable(1)">
+                            Site Name ⬍
+                        </th>
 
-                       <th onclick="sortTable(3)">Tech Contact ⬍</th>
+                        <th onclick="sortTable(2)">
+                            Tech Name ⬍
+                        </th>
 
-                       <th onclick="sortTable(4)">Assigned To ⬍</th>
+                        <th onclick="sortTable(3)">
+                            Tech Contact ⬍
+                        </th>
 
-                       <th onclick="sortTable(5)">FSC Name ⬍</th>
+                        <th onclick="sortTable(4)">
+                            Assigned To ⬍
+                        </th>
 
-                       <th onclick="sortTable(6)">FSC Contact ⬍</th>
+                        <th onclick="sortTable(5)">
+                            FSC Name ⬍
+                        </th>
 
-                       <th>Action</th>
+                        <th onclick="sortTable(6)">
+                            FSC Contact ⬍
+                        </th>
+
+                        <th>
+                            Action
+                        </th>
 
                     </tr>
 
                 </thead>
 
+
                 <tbody>
-
-                    <tr>
-
-                        <td>123456</td>
-                        <td>ABC Tower</td>
-                        <td>Rakesh</td>
-                        <td>9876543210</td>
-                        <td>Manglesh</td>
-                        <td>Amit</td>
-                        <td>9876500000</td>
-
-                        <td>
-
-                            <button class="mapBtn">
-                                📍 Map
-                            </button>
-
-                        </td>
-
-                    </tr>
-
+                    <!-- Firebase data will load here -->
                 </tbody>
 
             </table>
@@ -162,12 +306,32 @@
     </div>
 
 </div>
-<!-- Firebase -->
-<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
-<script src="assign.js"></script>
 
+
+<!-- ============================ -->
+<!-- Firebase -->
+<!-- ============================ -->
+
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+
+
+<!-- ============================ -->
+<!-- SheetJS Excel Library -->
+<!-- ============================ -->
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+
+
+<!-- ============================ -->
+<!-- Main JavaScript -->
+<!-- ALWAYS LAST -->
+<!-- ============================ -->
+
+<script src="assign.js"></script>
 
 </body>
 
 </html>
+```
