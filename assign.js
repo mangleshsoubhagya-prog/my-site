@@ -399,7 +399,7 @@ function changeAssignFilter() {
 function getSearchValue() {
 
     const input =
-        document.getElementById("globalSearch");
+        document.getElementById("globalSearch")
 
     return input
         ? input.value.trim().toLowerCase()
@@ -407,238 +407,206 @@ function getSearchValue() {
 }
 
 function globalSearch() {
-
     currentPage = 1;
-
     renderTable();
 }
-// =====================================================
-// FILTER DATA - CARD + ASSIGN FILTER SUPPORT
-// =====================================================
+// =============================================
+// SEARCH ALL RECORDS - ALL STATUS
+// =============================================
+
 function getFilteredData() {
+    const data = Array.isArray(allData) ? [...allData] : [];
+    const search = getSearchValue();
 
-    let data = Array.isArray(allData)
-        ? [...allData]
-        : [];
+    // Search kiya hai to status/card filter ko ignore karein
+    if (search) {
+        return data.filter(function (row) {
+            return Object.entries(row).some(function ([key, value]) {
+                if (value === null || value === undefined) return false;
 
-    // -----------------------------------------
-    // CARD FILTER
-    // -----------------------------------------
-    const cardFilter =
-        window.cardListFilter || "assigned";
-        
+                let text = "";
 
+                if (typeof value === "object") {
+                    try {
+                        text = value.toDate
+                            ? value.toDate().toLocaleString()
+                            : JSON.stringify(value);
+                    } catch (e) {
+                        text = String(value);
+                    }
+                } else {
+                    text = String(value);
+                }
 
-    // =========================================
-    // TOTAL RECORDS
-    // =========================================
+                return (
+                    key.toLowerCase().includes(search) ||
+                    text.toLowerCase().includes(search)
+                );
+            });
+        });
+    }
+
+    // Search blank hai to existing card/filter rules chalayen
+    const cardFilter = window.cardListFilter || "assigned";
+
     if (cardFilter === "total") {
         return data;
     }
 
-
-    // =========================================
-    // ASSIGNED
-    // =========================================
     if (cardFilter === "assigned") {
-
-        data = data.filter(row =>
-            row.assigned === true ||
-            row.assignedTo
+        let result = data.filter(row =>
+            row.assigned === true || !!row.assignedTo
         );
 
+        if (activeFilter === "today") {
+            const today = new Date().toDateString();
+
+            result = result.filter(row => {
+                if (!row.assignedTime) return false;
+                const date = row.assignedTime.toDate
+                    ? row.assignedTime.toDate()
+                    : new Date(row.assignedTime);
+                return !isNaN(date.getTime()) &&
+                    date.toDateString() === today;
+            });
+        } else if (activeFilter === "hold") {
+            result = result.filter(row => getStatus(row) === "Hold");
+        } else if (activeFilter === "completed") {
+            result = result.filter(row => getStatus(row) === "Completed");
+        } else if (activeFilter === "all") {
+            // All Assign Task mein assigned records
+        }
+
+        return result;
     }
 
-
-    // =========================================
-    // HOLD
-    // =========================================
-    else if (cardFilter === "hold") {
-
-        data = data.filter(row =>
-            String(row.pendingStatus || "").toLowerCase() === "hold" ||
-            String(row.status || "").toLowerCase() === "hold" ||
-            !!row.remark ||
-            !!row.Remark
-        );
-
+    if (cardFilter === "hold") {
+        return data.filter(row => getStatus(row) === "Hold");
     }
 
-
-    // =========================================
-    // COMPLETED
-    // =========================================
-    else if (cardFilter === "completed") {
-
-        data = data.filter(row =>
-            row.completed === true ||
-            String(row.pendingStatus || "").toLowerCase() === "completed" ||
-            String(row.status || "").toLowerCase() === "completed"
-        );
-
+    if (cardFilter === "completed") {
+        return data.filter(row => getStatus(row) === "Completed");
     }
 
-
-    // =========================================
-    // PENDING
-    // =========================================
-    else if (cardFilter === "pending") {
-
-        data = data.filter(row => {
-
-            const isCompleted =
-                row.completed === true ||
-                String(row.pendingStatus || "").toLowerCase() === "completed" ||
-                String(row.status || "").toLowerCase() === "completed";
-
-            const isHold =
-                String(row.pendingStatus || "").toLowerCase() === "hold" ||
-                String(row.status || "").toLowerCase() === "hold" ||
-                !!row.remark ||
-                !!row.Remark;
-
-            const isAssigned =
-                row.assigned === true ||
-                !!row.assignedTo;
-
-            return !isCompleted &&
-                   !isHold &&
-                   !isAssigned;
-        });
-
+    if (cardFilter === "pending") {
+        return data.filter(row => getStatus(row) === "Pending");
     }
-
-
-    // =========================================
-    // NORMAL ASSIGN FILTER
-    // =========================================
-    if (
-        cardFilter === "assigned" &&
-        activeFilter === "today"
-    ) {
-
-        const today = new Date().toDateString();
-
-        data = data.filter(row => {
-
-            if (!row.assignedTime) return false;
-
-            const d = row.assignedTime?.toDate
-                ? row.assignedTime.toDate()
-                : new Date(row.assignedTime);
-
-            return d.toDateString() === today;
-        });
-
-    }
-
-
-    if (
-        cardFilter === "assigned" &&
-        activeFilter === "hold"
-    ) {
-
-        data = data.filter(row =>
-            String(row.pendingStatus || "").toLowerCase() === "hold" ||
-            String(row.status || "").toLowerCase() === "hold" ||
-            !!row.remark ||
-            !!row.Remark
-        );
-
-    }
-
-
-    if (
-        cardFilter === "assigned" &&
-        activeFilter === "completed"
-    ) {
-
-        data = data.filter(row =>
-            row.completed === true ||
-            String(row.pendingStatus || "").toLowerCase() === "completed" ||
-            String(row.status || "").toLowerCase() === "completed"
-        );
-
-    }
-
 
     return data;
 }
-// =====================================================
-// TABLE
-// =====================================================
+// =============================================
+// TABLE + FULL RECORD DETAILS
+// =============================================
+
 function renderTable() {
-
     const tableBody = document.querySelector("#assignTable tbody");
-
     if (!tableBody) return;
 
     tableBody.innerHTML = "";
-
     filteredData = getFilteredData();
 
-const data = filteredData;
-
-data.forEach(row => {
+    filteredData.forEach(function (row) {
+        const status = getStatus(row);
 
         const tr = document.createElement("tr");
-
         tr.innerHTML = `
-            <td>${escapeHtml(row.indusId || row["Indus ID"] || "")}</td>
-
-            <td>${escapeHtml(
-                row.name ||
-                row.siteName ||
-                row["Site Name"] ||
-                ""
-            )}</td>
-
-            <td>${escapeHtml(
-                row.techName ||
-                row["Tech Name"] ||
-                ""
-            )}</td>
-
-            <td>${escapeHtml(
-                row.techContact ||
-                row["Tech Contact No."] ||
-                ""
-            )}</td>
-
-            <td>${escapeHtml(
-                row.fscName ||
-                row["FSC Name"] ||
-                ""
-            )}</td>
-
-            <td>${escapeHtml(
-                row.fscContact ||
-                row["FSC Contact No."] ||
-                ""
-            )}</td>
-
+            <td>${escapeHtml(getIndusId(row) || row.indusId || "")}</td>
+            <td>${escapeHtml(row.name || row.siteName || row["Site Name"] || "")}</td>
+            <td>${escapeHtml(row.techName || row["Tech Name"] || "")}</td>
+            <td>${escapeHtml(row.techContact || row["Tech Contact No."] || "")}</td>
+            <td>${escapeHtml(row.fscName || row["FSC Name"] || "")}</td>
+            <td>${escapeHtml(row.fscContact || row["FSC Contact No."] || "")}</td>
             <td>${escapeHtml(row.assignedTo || "")}</td>
-
             <td>
-                <button
-    class="action-btn complete-btn"
-    onclick="completeTaskById('${row.firestoreId}')">
-    Complete
-</button>
-
-                <button
-                    class="action-btn hold-btn"
-                    onclick="openHoldModal('${row.firestoreId}')">
-                    Hold
+                <span style="font-weight:bold;color:${
+                    status === "Completed" ? "#15803d" :
+                    status === "Hold" ? "#dc2626" :
+                    status === "Pending" ? "#b45309" : "#2563eb"
+                }">${escapeHtml(status)}</span>
+                ${
+                    status !== "Completed" && status !== "Hold"
+                    && (row.assigned === true || row.assignedTo)
+                    ? `<button class="action-btn complete-btn"
+                        onclick="completeTaskById('${escapeHtml(row.firestoreId || "")}')">
+                        ✓ Complete
+                       </button>`
+                    : ""
+                }
+                <button type="button"
+                    class="action-btn"
+                    onclick="toggleRecordDetails(this)"
+                    style="margin-left:5px">
+                    Details
                 </button>
             </td>
         `;
 
         tableBody.appendChild(tr);
+
+        // Record ki sabhi available fields
+        const detailRow = document.createElement("tr");
+        detailRow.style.display = "none";
+        detailRow.className = "full-record-details";
+
+        const details = Object.entries(row)
+            .filter(([key]) => key !== "data")
+            .map(([key, value]) => {
+                let displayValue = "";
+
+                if (value === null || value === undefined) {
+                    displayValue = "";
+                } else if (value && typeof value.toDate === "function") {
+                    displayValue = value.toDate().toLocaleString();
+                } else if (typeof value === "object") {
+                    try {
+                        displayValue = JSON.stringify(value);
+                    } catch (e) {
+                        displayValue = String(value);
+                    }
+                } else {
+                    displayValue = String(value);
+                }
+
+                return `
+                    <div style="padding:7px;border-bottom:1px solid #ddd;overflow-wrap:anywhere">
+                        <strong>${escapeHtml(key)}:</strong>
+                        ${escapeHtml(displayValue)}
+                    </div>
+                `;
+            }).join("");
+
+        detailRow.innerHTML = `
+            <td colspan="8" style="background:#f0f9ff;color:#111;padding:12px">
+                <div style="font-weight:bold;margin-bottom:8px">
+                    Record Details — ${escapeHtml(getIndusId(row) || "")}
+                    (${escapeHtml(status)})
+                </div>
+                <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:4px">
+                    ${details}
+                </div>
+            </td>
+        `;
+
+        tableBody.appendChild(detailRow);
     });
 
     showPage();
-}function updateCounts() {
+}
+
+// Details ko kholne/band karne ke liye
+function toggleRecordDetails(button) {
+    const mainRow = button.closest("tr");
+    const detailsRow = mainRow && mainRow.nextElementSibling;
+
+    if (!detailsRow || !detailsRow.classList.contains("full-record-details")) {
+        return;
+    }
+
+    const opening = detailsRow.style.display === "none";
+    detailsRow.style.display = opening ? "table-row" : "none";
+    button.textContent = opening ? "Hide Details" : "Details";
+}
+function updateCounts() {
 
     // =====================================================
     // SAFE DATA
@@ -1456,7 +1424,7 @@ function getRowTechName(row) {
         row.techName ||
         row["Tech Name"] ||
         row["TECH NAME"] ||
-        row.fscName ||
+        row["fSEName"] ||
         row["FSC Name"] ||
         "Unknown Tech"
     );
@@ -1466,19 +1434,64 @@ function getRowTechName(row) {
 // =====================================================
 // GET INDUS ID
 // =====================================================
-
 function getRowIndusId(row) {
 
-    return (
-        row.indusId ||
-        row["Indus ID"] ||
-        row["INDUS ID"] ||
-        row["INDUS_ID"] ||
-        ""
-    );
+    if (!row) return "";
+
+    const directKeys = [
+        "indusId",
+        "Indus ID",
+        "Indus Id",
+        "INDUS ID",
+        "INDUS_ID",
+        "IndusID",
+        "Indus Id.",
+        "ITL/BIL ID",
+        "Indus ID No",
+        "Indus Site ID"
+    ];
+
+    for (const key of directKeys) {
+        const value = row[key];
+
+        if (
+            value !== undefined &&
+            value !== null &&
+            String(value).trim() !== ""
+        ) {
+            return String(value).trim();
+        }
+    }
+
+    // Excel headers ko case aur extra spaces se match karein
+    const normalizedTargetKeys = [
+        "indusid",
+        "itlbilid",
+        "indussiteid"
+    ];
+
+    for (const key of Object.keys(row)) {
+
+        const normalizedKey = String(key)
+            .toLowerCase()
+            .replace(/[^a-z0-9]/g, "");
+
+        if (normalizedTargetKeys.includes(normalizedKey)) {
+
+            const value = row[key];
+
+            if (
+                value !== undefined &&
+                value !== null &&
+                String(value).trim() !== ""
+            ) {
+                return String(value).trim();
+            }
+        }
+    }
+
+    return "";
 }
-
-
 // =====================================================
 // BACK BUTTON
 // =====================================================
@@ -1517,61 +1530,72 @@ function normalizeHeader(value) {
 
 }
 
-
 function getHeaderValue(row, aliases) {
 
-    if (!row) return "";
+    if (!row || !Array.isArray(aliases)) {
+        return "";
+    }
 
+    // Imported Excel fields ko pehle dekhein
     const data =
         row.data && typeof row.data === "object"
             ? row.data
             : row;
 
-    const keys =
-        Object.keys(data);
+    const keys = Object.keys(data);
+
+    // Header normalize karein:
+    // case, spaces, dots aur underscores ignore honge
+    const normalize = function (value) {
+        return String(value || "")
+            .toLowerCase()
+            .trim()
+            .replace(/[^a-z0-9]/g, "");
+    };
 
     const normalizedMap = {};
 
-    keys.forEach(key => {
-
-        normalizedMap[
-            normalizeHeader(key)
-        ] = key;
-
-    });
-
-
-    for (const alias of aliases) {
-
-        const normalizedAlias =
-            normalizeHeader(alias);
-
-        const matchedKey =
-            normalizedMap[normalizedAlias];
+    keys.forEach(function (key) {
+        const normalizedKey = normalize(key);
 
         if (
-            matchedKey !== undefined &&
-            data[matchedKey] !== undefined &&
-            data[matchedKey] !== null &&
-            String(data[matchedKey]).trim() !== ""
+            normalizedKey &&
+            !Object.prototype.hasOwnProperty.call(
+                normalizedMap,
+                normalizedKey
+            )
         ) {
-
-            return data[matchedKey];
-
+            normalizedMap[normalizedKey] = key;
         }
+    });
 
+    // Sirf diye gaye exact aliases match karein
+    for (const alias of aliases) {
+
+        const normalizedAlias = normalize(alias);
+
+        if (!normalizedAlias) continue;
+
+        const matchedKey = normalizedMap[normalizedAlias];
+
+        if (matchedKey === undefined) continue;
+
+        const value = data[matchedKey];
+
+        if (
+            value !== undefined &&
+            value !== null &&
+            String(value).trim() !== ""
+        ) {
+            return value;
+        }
     }
 
-
     return "";
-
 }
-
-
 // =====================================================
 // FLEXIBLE IMPORT HEADER MAPPING
 // =====================================================
-
 function getImportedFields(row) {
 
     return {
@@ -1583,25 +1607,26 @@ function getImportedFields(row) {
             "S No",
             "S.No",
             "Serial No",
-            "Serial Number"
+            "Serial Number",
+            "Imported Sr. No."
         ]),
 
         indusId: getHeaderValue(row, [
             "Indus ID",
             "Indus Id",
             "INDUS ID",
-            "ITL/BIL ID",
             "IndusID",
-            "Indus Id."
-        
-
+            "Indus Id.",
+            "ITL/BIL ID",
+            "Indus ID No",
+            "Indus Site ID"
         ]) || getRowIndusId(row),
 
         siteName: getHeaderValue(row, [
             "Site Name",
             "SiteName",
             "Site",
-            "Name"
+            "Site Name "
         ]),
 
         lat: getHeaderValue(row, [
@@ -1620,8 +1645,7 @@ function getImportedFields(row) {
             "Tech Name",
             "Technician Name",
             "Technician",
-            "Tech",
-            "FSC Name"
+            "Tech"
         ]) || getRowTechName(row),
 
         techNumber: getHeaderValue(row, [
@@ -1632,23 +1656,30 @@ function getImportedFields(row) {
             "Tech Contact No.",
             "Technician Number",
             "Technician Contact",
-            "Technician Contact No"
+            "Technician Contact No",
+            "Tech Mobile"
         ]),
 
         fscName: getHeaderValue(row, [
             "FSC Name",
+            "FSC NAME",
+            "FSC Name.",
             "FSE",
-            "FSC Name."
+            "FSE Name",
+            "FSE Name."
         ]),
 
         fscNumber: getHeaderValue(row, [
             "FSC Number",
             "FSC No",
-            "FSE Contact",
+            "FSC Contact",
             "FSC Contact No",
             "FSC Contact No.",
             "FSC Mobile",
-            "FSC Phone"
+            "FSC Phone",
+            "FSC Contact Number",
+            "FSE Contact",
+            "FSE Contact No"
         ])
 
     };
@@ -2274,21 +2305,19 @@ if (
 
 
                 // Assigned me pehle Assign Name dikhega
-                if (cardFilter === "assigned") {
+                
+if (cardFilter === "assigned") {
+    totalPopupLevel = "assign";
+    window.selectedTotalAssignName = null;
+}
+else if (cardFilter === "pending") {
+    totalPopupLevel = "fsc";
+    window.selectedTotalFSCName = null;
+}
+else {
+    totalPopupLevel = "tech";
+}
 
-                    totalPopupLevel =
-                        "assign";
-
-                    window.selectedTotalAssignName =
-                        null;
-
-                }
-                else {
-
-                    totalPopupLevel =
-                        "tech";
-
-                }
 
 
                 if (searchInput) {
@@ -2674,6 +2703,112 @@ if (
 
 
     // =====================================================
+    // FSC LEVEL - PENDING ONLY
+    // =====================================================
+
+    if (
+        totalPopupLevel === "fsc" &&
+        cardFilter === "pending"
+    ) {
+        if (back) back.style.display = "block";
+
+        if (title) {
+            title.innerText = "Pending → Project → FSC Name";
+        }
+
+        if (searchInput) {
+            searchInput.placeholder = "Search FSC Name...";
+        }
+
+        const projectRows = records.filter(row => {
+            const projectId =
+                row.projectId || getRowProjectName(row);
+
+            return String(projectId) ===
+                String(selectedTotalProject);
+        });
+
+        const fscGroups = {};
+
+        projectRows.forEach(row => {
+            const imported = getImportedFields(row);
+
+            const fscName = String(
+                imported.fscName ||
+                row.fscName ||
+                row["FSC Name"] ||
+                row["FSC NAME"] ||
+                row["FSE NAME"] ||
+                "Unknown FSC"
+            ).trim();
+
+            if (!fscGroups[fscName]) {
+                fscGroups[fscName] = {
+                    name: fscName,
+                    rows: []
+                };
+            }
+
+            fscGroups[fscName].rows.push(row);
+        });
+
+        let fscArray = Object.values(fscGroups);
+
+        const search = String(searchInput?.value || "")
+            .toLowerCase().trim();
+
+        if (search) {
+            fscArray = fscArray.filter(fsc =>
+                fsc.name.toLowerCase().includes(search)
+            );
+        }
+
+        list.innerHTML = "";
+
+        if (!fscArray.length) {
+            list.innerHTML = `
+                <div style="text-align:center;padding:30px;color:#777">
+                    No FSC Name Found
+                </div>`;
+            return;
+        }
+
+        fscArray.forEach(fsc => {
+            const item = document.createElement("div");
+            item.className = "hierarchy-item";
+            item.style.cursor = "pointer";
+
+            item.innerHTML = `
+                <div class="hierarchy-top">
+                    <div>
+                        <div class="hierarchy-name">
+                            👤 ${escapeHtml(fsc.name)}
+                        </div>
+                        <div class="hierarchy-sub">FSC Name</div>
+                    </div>
+                    <div class="hierarchy-count">
+                        ${fsc.rows.length}
+                    </div>
+                </div>`;
+
+            item.onclick = function(event) {
+                event.stopPropagation();
+
+                window.selectedTotalFSCName = fsc.name;
+                totalPopupLevel = "tech";
+
+                if (searchInput) searchInput.value = "";
+
+                renderTotalPopup();
+            };
+
+            list.appendChild(item);
+        });
+
+        return;
+    }
+
+    // =====================================================
     // TECH LEVEL
     // =====================================================
 
@@ -2744,18 +2879,35 @@ if (
                 }
 
 
-                // Assigned popup me Assign Name bhi match hoga
+                
+                // Assigned popup me Assign Name match
                 if (cardFilter === "assigned") {
-
                     return (
                         String(row.assignedTo || "").trim() ===
-                        String(
-                            window.selectedTotalAssignName || ""
-                        ).trim()
+                        String(window.selectedTotalAssignName || "").trim()
                     );
-
                 }
 
+                // Pending popup me selected FSC match
+                if (cardFilter === "pending") {
+
+    const imported = getImportedFields(row);
+
+    const rowFSC = String(
+        imported.fscName ||
+        row.fscName ||
+        row["FSC Name"] ||
+        row["FSC NAME"] ||
+        row["FSC Name."] ||
+        row["FSE"] ||
+        row["FSE Name"] ||
+        row["FSE NAME"] ||
+        "Unknown FSC"
+    ).trim();
+
+    return rowFSC ===
+        String(window.selectedTotalFSCName || "").trim();
+}
 
                 return true;
 
@@ -2767,8 +2919,16 @@ if (
 
         projectRows.forEach(row => {
 
-            const tech =
-                getRowTechName(row);
+    const imported = getImportedFields(row);
+
+    const tech = String(
+        imported.techName ||
+        row.techName ||
+        row["Tech Name"] ||
+        row["TECH NAME"] ||
+        getRowTechName(row) ||
+        "Unknown Tech"
+    ).trim();
 
 
             if (!techs[tech]) {
