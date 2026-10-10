@@ -150,7 +150,29 @@ function escapeHtml(value) {
         .replace(/"/g, "&quot;")
         .replace(/'/g, "&#039;");
 }
+function openCompleteCard() {
 
+    // Completed records filter
+    const completedRecords = (allData || []).filter(function(row) {
+
+        return (
+            row.completed === true ||
+            row.completed === "true"
+        );
+
+    });
+
+    console.log("Completed Records:", completedRecords);
+
+    // कोई completed record नहीं है
+    if (completedRecords.length === 0) {
+        alert("Abhi koi completed record nahi mila.");
+        return;
+    }
+
+    // Completed list popup खोलें
+    openCompletedListPopup(completedRecords);
+}
 // =====================================================
 // FIREBASE - ASSIGNED TASKS
 // =====================================================
@@ -599,10 +621,10 @@ data.forEach(row => {
 
             <td>
                 <button
-                    class="action-btn complete-btn"
-                    onclick="openCompleteModal('${row.firestoreId}')">
-                    Complete
-                </button>
+    class="action-btn complete-btn"
+    onclick="completeTaskById('${row.firestoreId}')">
+    Complete
+</button>
 
                 <button
                     class="action-btn hold-btn"
@@ -1810,7 +1832,307 @@ function renderTotalPopup() {
             unassignedCount;
     }
 
+// =====================================================
+// COMPLETED DIRECT LIST
+// =====================================================
 
+if (
+    cardFilter === "completed" &&
+    totalPopupLevel === "record"
+) {
+
+    if (back) {
+        back.style.display = "none";
+    }
+
+    if (title) {
+        title.innerText =
+            `Completed List (${records.length})`;
+    }
+
+    if (searchInput) {
+        searchInput.placeholder =
+            "Search Indus ID / Site / Tech Name...";
+    }
+
+    list.innerHTML = "";
+
+    if (!records.length) {
+
+        list.innerHTML = `
+            <div style="
+                text-align:center;
+                padding:30px;
+                color:#777;
+                font-weight:600;
+            ">
+                No Completed Records Found
+            </div>
+        `;
+
+        return;
+    }
+
+    records.forEach(row => {
+
+        const imported =
+            getImportedFields(row);
+
+        const indus =
+            imported.indusId || getIndusId(row) || "-";
+
+        const site =
+            imported.siteName ||
+            row["Site Name"] ||
+            row["Site"] ||
+            row.name ||
+            "-";
+
+        const tech =
+            imported.techName ||
+            getRowTechName(row) ||
+            "-";
+
+        const techNumber =
+            imported.techNumber || "-";
+
+        const fscName =
+            imported.fscName || "-";
+
+        const fscNumber =
+            imported.fscNumber || "-";
+
+        const lat =
+            imported.lat || "-";
+
+        const long =
+            imported.long || "-";
+
+        const srNo =
+            imported.srNo || "-";
+
+        const completedBy =
+            row.completedBy || "-";
+
+        let completedTime = "-";
+
+        if (row.completedTime) {
+
+            if (
+                row.completedTime.toDate &&
+                typeof row.completedTime.toDate === "function"
+            ) {
+
+                completedTime =
+                    row.completedTime
+                        .toDate()
+                        .toLocaleString("en-IN");
+
+            } else {
+
+                completedTime =
+                    String(row.completedTime);
+
+            }
+        }
+
+        const sensorSerial =
+            row.sensorSerial || "-";
+
+        const videoUrl =
+            row.videoUrl || "";
+
+        const photoUrls =
+            Array.isArray(row.photoUrl)
+                ? row.photoUrl
+                : (
+                    row.photoUrl
+                        ? [row.photoUrl]
+                        : []
+                );
+
+        const csvUrl =
+            row.csvUrl || "";
+
+        const item =
+            document.createElement("div");
+
+        item.className =
+            "total-record-item";
+
+        item.style.cursor = "default";
+
+        item.innerHTML = `
+
+            <div class="total-record-top">
+
+                <div class="total-record-info">
+
+                    <b>
+                        Indus ID:
+                        ${escapeHtml(indus)}
+                    </b>
+
+                    <small>
+                        Site Name:
+                        ${escapeHtml(site)}
+                    </small>
+
+                    <small>
+                        Tech Name:
+                        ${escapeHtml(tech)}
+                    </small>
+
+                    <small>
+                        Tech Number:
+                        ${escapeHtml(techNumber)}
+                    </small>
+
+                    <small>
+                        FSC Name:
+                        ${escapeHtml(fscName)}
+                    </small>
+
+                    <small>
+                        FSC Number:
+                        ${escapeHtml(fscNumber)}
+                    </small>
+
+                    <small>
+                        Lat:
+                        ${escapeHtml(lat)}
+                    </small>
+
+                    <small>
+                        Long:
+                        ${escapeHtml(long)}
+                    </small>
+
+                    <small>
+                        Imported Sr. No:
+                        ${escapeHtml(srNo)}
+                    </small>
+
+                    <div style="
+                        margin-top:10px;
+                        padding-top:10px;
+                        border-top:1px solid #ddd;
+                    ">
+
+                        <small>
+                            <b>Completed Status:</b>
+                            ✅ Completed
+                        </small>
+
+                        <small>
+                            <b>Sensor Sr. No:</b>
+                            ${escapeHtml(sensorSerial)}
+                        </small>
+
+                        <small>
+                            <b>Completed By:</b>
+                            ${escapeHtml(completedBy)}
+                        </small>
+
+                        <small>
+                            <b>Completed Time:</b>
+                            ${escapeHtml(completedTime)}
+                        </small>
+
+                    </div>
+
+                    <div style="
+                        display:flex;
+                        gap:8px;
+                        flex-wrap:wrap;
+                        margin-top:10px;
+                    ">
+
+                        ${
+                            videoUrl
+                            ? `
+                                <a
+                                    href="${escapeHtml(videoUrl)}"
+                                    target="_blank"
+                                    rel="noopener"
+                                    style="
+                                        padding:7px 12px;
+                                        border-radius:8px;
+                                        background:#2196f3;
+                                        color:white;
+                                        text-decoration:none;
+                                        font-size:12px;
+                                        font-weight:600;
+                                    "
+                                >
+                                    🎥 Video
+                                </a>
+                            `
+                            : ""
+                        }
+
+                        ${
+                            photoUrls.length
+                            ? `
+                                ${photoUrls.map((url, index) => `
+                                    <a
+                                        href="${escapeHtml(url)}"
+                                        target="_blank"
+                                        rel="noopener"
+                                        style="
+                                            padding:7px 12px;
+                                            border-radius:8px;
+                                            background:#4caf50;
+                                            color:white;
+                                            text-decoration:none;
+                                            font-size:12px;
+                                            font-weight:600;
+                                        "
+                                    >
+                                        📷 Photo ${index + 1}
+                                    </a>
+                                `).join("")}
+                            `
+                            : ""
+                        }
+
+                        ${
+                            csvUrl
+                            ? `
+                                <a
+                                    href="${escapeHtml(csvUrl)}"
+                                    target="_blank"
+                                    rel="noopener"
+                                    style="
+                                        padding:7px 12px;
+                                        border-radius:8px;
+                                        background:#ff9800;
+                                        color:white;
+                                        text-decoration:none;
+                                        font-size:12px;
+                                        font-weight:600;
+                                    "
+                                >
+                                    📄 Report CSV
+                                </a>
+                            `
+                            : ""
+                        }
+
+                    </div>
+
+                </div>
+
+            </div>
+
+        `;
+
+        list.appendChild(item);
+
+    });
+
+    return;
+}
     // =====================================================
     // PROJECT LEVEL
     // =====================================================
@@ -2600,6 +2922,72 @@ function renderTotalPopup() {
 
                 </div>
             `;
+                        // =============================================
+            // PENDING - ASSIGN ALL BUTTON
+            // =============================================
+
+            if (cardFilter === "pending") {
+
+                const top =
+                    item.querySelector(".hierarchy-top");
+
+                if (top) {
+
+                    const rightSide =
+                        top.lastElementChild;
+
+                    if (rightSide) {
+
+                        const assignAllBtn =
+                            document.createElement("button");
+
+                        assignAllBtn.type =
+                            "button";
+
+                        assignAllBtn.innerText =
+                            "👤 Assign All";
+
+                        assignAllBtn.style.cssText = `
+                            padding:7px 12px;
+                            border:none;
+                            border-radius:8px;
+                            cursor:pointer;
+                            background:linear-gradient(
+                                135deg,
+                                #3b82f6,
+                                #6366f1
+                            );
+                            color:white;
+                            font-size:12px;
+                            font-weight:700;
+                            white-space:nowrap;
+                        `;
+
+                        assignAllBtn.title =
+                            "Assign all sites of this Tech";
+
+                        assignAllBtn.onclick =
+                            function(event) {
+
+                                event.stopPropagation();
+
+                                bulkAssignTechSites(
+                                    tech.rows,
+                                    tech.name
+                                );
+
+                            };
+
+                        rightSide.appendChild(
+                            assignAllBtn
+                        );
+
+                    }
+
+                }
+
+            }
+            
 
 
             // =============================================
@@ -2979,8 +3367,8 @@ const srNo =
                     >
 
                         ${
-                            cardFilter === "total" &&
-                            !isCompleted
+                            (cardFilter === "pending") &&
+                             !isCompleted
                             ?
                             (
                                 isAssigned
@@ -3019,7 +3407,7 @@ const srNo =
 
 
                         ${
-                            cardFilter === "total" &&
+                            cardFilter === "pending" &&
                             !isCompleted
                             ?
                             `
@@ -3045,11 +3433,11 @@ const srNo =
                             !isCompleted
                             ?
                             `
-                            <button
+      <button
     class="complete-record-btn"
     onclick="
         event.stopPropagation();
-        openCompleteById(
+        completeTaskById(
             '${row.firestoreId}'
         );
     "
@@ -3564,93 +3952,6 @@ function downloadHoldCurrentRecord() {
         getRowTechName(row) || "Hold_Record"
     );
 }
-// =====================================================
-// OPEN COMPLETE
-// =====================================================
-
-function openCompleteById(id) {
-
-    const row =
-        allData.find(
-            x => x.firestoreId === id
-        );
-
-    if (row) {
-        openCompleteModal(row);
-    }
-}
-
-function openCompleteModal(row) {
-
-    createCompleteModal();
-
-    activeCompleteRow =
-        row;
-
-    const modal =
-        document.getElementById(
-            "completeModal"
-        );
-
-    const info =
-        document.getElementById(
-            "completeTaskInfo"
-        );
-
-    info.innerHTML = `
-
-        <b>Indus ID:</b>
-        ${escapeHtml(getIndusId(row))}
-
-        <br>
-
-        <b>Site:</b>
-        ${escapeHtml(
-            row["Site Name"] ||
-            row["Site"] ||
-            ""
-        )}
-
-        <br>
-
-        <b>Tech:</b>
-        ${escapeHtml(
-            row["Tech Name"] ||
-            ""
-        )}
-    `;
-
-    document.getElementById(
-        "sensorSerialInput"
-    ).value = "";
-
-    document.getElementById(
-        "taskVideoInput"
-    ).value = "";
-
-    document.getElementById(
-        "taskPhotoInput"
-    ).value = "";
-
-    document.getElementById(
-        "taskCsvInput"
-    ).value = "";
-
-    const status =
-        document.getElementById(
-            "completeUploadStatus"
-        );
-
-    if (status) {
-        status.style.display = "none";
-        status.textContent = "";
-    }
-
-    checkCompleteForm();
-
-    modal.style.display =
-        "flex";
-}
 
 // =====================================================
 // CHECK COMPLETE FORM
@@ -3769,6 +4070,97 @@ async function uploadToCloudinary(file) {
         await response.json();
 
     return result.secure_url || "";
+}
+// =============================================
+// ONE CLICK COMPLETE - NO FORM / NO MODAL
+// =============================================
+
+async function completeTaskById(firestoreId) {
+
+    if (!firestoreId) {
+        console.error("Task ID nahi mila.");
+        return;
+    }
+
+    const row = allData.find(function (item) {
+        return String(item.firestoreId) === String(firestoreId);
+    });
+
+    if (!row) {
+        console.error("Task record nahi mila:", firestoreId);
+        return;
+    }
+
+    if (row.completed === true) {
+        return;
+    }
+
+    try {
+        const user =
+            typeof getCurrentUser === "function"
+                ? getCurrentUser()
+                : null;
+
+        const completedBy =
+            user?.name ||
+            user?.userName ||
+            user?.email ||
+            "User";
+
+        const completedTime =
+            firebase.firestore.FieldValue.serverTimestamp();
+
+        const batch = db.batch();
+
+        // Assign List mein task complete save karein
+        const taskRef = db
+            .collection("assignImports")
+            .doc(firestoreId);
+
+        batch.update(taskRef, {
+            completed: true,
+            completedBy: completedBy,
+            completedTime: completedTime,
+            status: "Completed",
+            pendingStatus: "Completed"
+        });
+
+        // Reports collection mein completion record save karein
+        const reportRef = db.collection("reports").doc();
+
+        batch.set(reportRef, {
+            indusId: getIndusId(row),
+            type: "TaskComplete",
+            taskCompleted: true,
+            projectId: row.projectId || "",
+            completedBy: completedBy,
+            createdAt:
+                firebase.firestore.FieldValue.serverTimestamp()
+        });
+
+        await batch.commit();
+
+        // Local data turant update karein
+        row.completed = true;
+        row.completedBy = completedBy;
+        row.status = "Completed";
+        row.pendingStatus = "Completed";
+
+        // List aur counts refresh karein
+        if (typeof renderTable === "function") {
+            renderTable();
+        }
+
+        if (typeof updateCounts === "function") {
+            updateCounts();
+        }
+
+        console.log("Task successfully completed:", firestoreId);
+
+    } catch (error) {
+        console.error("Task complete save nahi hua:", error);
+        alert("Task save nahi hua. Internet aur Firebase rules check karein.");
+    }
 }
 
 // =====================================================
@@ -5937,9 +6329,7 @@ function closePendingCard() {
 
 window.onload = function () {
 
-    createCompleteModal();
-
-    createHoldModal();
+       createHoldModal();
 
     createTotalRecordPopup();
 
@@ -6019,19 +6409,12 @@ document.addEventListener("click", function (e) {
 });
 function openCardPopup(type) {
 
-    // Card ka filter save karo
     window.popupCardFilter = type;
-
-    // Sabhi card popup Project se start honge
-    totalPopupLevel = "project";
 
     selectedTotalProject = null;
     selectedTotalTech = null;
-
-    // Assigned ke liye Assign Name selection clear
     window.selectedTotalAssignName = null;
 
-    // Search clear
     const searchInput =
         document.getElementById("totalRecordSearch");
 
@@ -6039,7 +6422,32 @@ function openCardPopup(type) {
         searchInput.value = "";
     }
 
-    // Popup open karo
+    // ==========================================
+    // COMPLETED CARD
+    // DIRECT COMPLETED LIST
+    // ==========================================
+
+    if (type === "completed") {
+
+        // Pehle popup open karo
+        openTotalRecordPopup();
+
+        // openTotalRecordPopup project level set karta hai,
+        // isliye uske baad record level set karna hai
+        totalPopupLevel = "record";
+
+        renderTotalPopup();
+
+        return;
+    }
+
+    // ==========================================
+    // BAAKI CARDS
+    // PURANA FLOW
+    // ==========================================
+
+    totalPopupLevel = "project";
+
     openTotalRecordPopup();
 }
 function enableDashboardCardClicks() {
@@ -6174,3 +6582,266 @@ setTimeout(
     enableDashboardCardClicks,
     4000
 );
+// =====================================================
+// BULK ASSIGN ALL SITES OF ONE TECH
+// =====================================================
+
+async function bulkAssignTechSites(rows, techName) {
+
+    if (!Array.isArray(rows) || rows.length === 0) {
+
+        alert("Is Tech ke liye koi site nahi mili.");
+
+        return;
+    }
+
+
+    // ================================================
+    // ASK ASSIGN NAME
+    // ================================================
+
+    const assignName = prompt(
+        "Tech Name: " +
+        techName +
+        "\n\n" +
+        rows.length +
+        " sites mili hain." +
+        "\n\n" +
+        "Assign To Name enter karein:"
+    );
+
+
+    if (assignName === null) {
+        return;
+    }
+
+
+    const finalAssignName =
+        String(assignName).trim();
+
+
+    if (!finalAssignName) {
+
+        alert(
+            "Assign To Name required hai."
+        );
+
+        return;
+    }
+
+
+    // ================================================
+    // CONFIRM
+    // ================================================
+
+    const confirmAssign = confirm(
+
+        rows.length +
+        " sites ko\n\n" +
+
+        finalAssignName +
+        "\n\n" +
+
+        "ko assign karna hai?"
+
+    );
+
+
+    if (!confirmAssign) {
+        return;
+    }
+
+
+    // ================================================
+    // FIRESTORE BULK UPDATE
+    // ================================================
+
+    try {
+
+        let batch = db.batch();
+
+        let batchCount = 0;
+
+        let totalAssigned = 0;
+
+
+        for (const row of rows) {
+
+            const firestoreId =
+                row.firestoreId;
+
+
+            if (!firestoreId) {
+                continue;
+            }
+
+
+            // ========================================
+            // COMPLETED CHECK
+            // ========================================
+
+            const completed =
+                row.completed === true ||
+
+                String(
+                    row.pendingStatus || ""
+                ).toLowerCase() ===
+                    "completed" ||
+
+                String(
+                    row.status || ""
+                ).toLowerCase() ===
+                    "completed";
+
+
+            if (completed) {
+                continue;
+            }
+
+
+            // ========================================
+            // HOLD CHECK
+            // ========================================
+
+            const hold =
+                String(
+                    row.pendingStatus || ""
+                ).toLowerCase() ===
+                    "hold" ||
+
+                String(
+                    row.status || ""
+                ).toLowerCase() ===
+                    "hold" ||
+
+                String(
+                    row.remark || ""
+                ).trim() !== "" ||
+
+                String(
+                    row.Remark || ""
+                ).trim() !== "";
+
+
+            if (hold) {
+                continue;
+            }
+
+
+            // ========================================
+            // FIRESTORE DOCUMENT
+            // ========================================
+
+            const ref =
+                db
+                    .collection("assignImports")
+                    .doc(firestoreId);
+
+
+            batch.update(ref, {
+
+                assigned: true,
+
+                assignedTo:
+                    finalAssignName,
+
+                assignedTime:
+                    firebase.firestore.FieldValue
+                        .serverTimestamp(),
+
+                status:
+                    "Assigned",
+
+                pendingStatus:
+                    "Assigned"
+
+            });
+
+
+            batchCount++;
+
+            totalAssigned++;
+
+
+            // ========================================
+            // FIRESTORE MAX BATCH SAFETY
+            // ========================================
+
+            if (batchCount >= 450) {
+
+                await batch.commit();
+
+                batch =
+                    db.batch();
+
+                batchCount = 0;
+            }
+
+        }
+
+
+        // ============================================
+        // LAST BATCH
+        // ============================================
+
+        if (batchCount > 0) {
+
+            await batch.commit();
+
+        }
+
+
+        // ============================================
+        // SUCCESS
+        // ============================================
+
+        alert(
+
+            totalAssigned +
+            " sites successfully assigned to \"" +
+            finalAssignName +
+            "\"."
+
+        );
+
+
+        // ============================================
+        // REFRESH DATA
+        // ============================================
+
+        if (
+            typeof loadAssignData ===
+            "function"
+        ) {
+
+            await loadAssignData();
+
+        }
+
+
+        if (
+            typeof renderTotalPopup ===
+            "function"
+        ) {
+
+            renderTotalPopup();
+
+        }
+
+
+    } catch (error) {
+
+        console.error(
+            "Bulk Assign Error:",
+            error
+        );
+
+
+        alert(
+            "Bulk Assign failed:\n" +
+            error.message
+        );
+
+    }
+
+}
